@@ -1,0 +1,26 @@
+{
+  "generator-jhipster": {
+    "applicationIndex": 0,
+    "applicationType": "gateway",
+    "authenticationType": "oauth2",
+    "baseName": "gateway",
+    "buildTool": "maven",
+    "clientFramework": "react",
+    "databaseType": "sql",
+    "devDatabaseType": "postgresql",
+    "devServerPort": 9060,
+    "enableTranslation": true,
+    "entities": ["Student", "Parent"],
+    "jhipsterVersion": "8.11.0",
+    "languages": ["ua", "en"],
+    "lastLiquibaseTimestamp": 1765021247000,
+    "nativeLanguage": "ua",
+    "packageName": "com.kids.platform",
+    "prodDatabaseType": "postgresql",
+    "reactive": true,
+    "serverPort": "8080",
+    "serviceDiscoveryType": "eureka",
+    "skipUserManagement": true,
+    "testFrameworks": ["gatling"]
+  }
+}

@@ -1,0 +1,15 @@
+# OS files
+.DS_Store
+Thumbs.db
+
+# IDE files
+.idea/
+.vscode/
+*.swp
+*.iml
+
+# Logs
+*.log
+
+# Shell scripts (якщо хочеш ігнорувати їх, але скрипт запуску краще зберегти)
+# start-project.sh

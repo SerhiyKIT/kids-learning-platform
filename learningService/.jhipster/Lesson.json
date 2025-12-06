@@ -1,0 +1,45 @@
+{
+  "annotations": {
+    "changelogDate": "20251206113947"
+  },
+  "applications": ["learningService"],
+  "clientRootFolder": "learningService",
+  "databaseType": "sql",
+  "dto": "mapstruct",
+  "fields": [
+    {
+      "fieldName": "title",
+      "fieldType": "String",
+      "fieldValidateRules": ["required"]
+    },
+    {
+      "fieldName": "content",
+      "fieldType": "TextBlob"
+    },
+    {
+      "fieldName": "difficultyLevel",
+      "fieldType": "Integer"
+    }
+  ],
+  "microserviceName": "learningService",
+  "name": "Lesson",
+  "pagination": "pagination",
+  "relationships": [
+    {
+      "otherEntityName": "progress",
+      "otherEntityRelationshipName": "lesson",
+      "relationshipName": "progress",
+      "relationshipSide": "left",
+      "relationshipType": "one-to-many"
+    },
+    {
+      "otherEntityName": "subject",
+      "otherEntityRelationshipName": "lesson",
+      "relationshipName": "subject",
+      "relationshipSide": "right",
+      "relationshipType": "many-to-one"
+    }
+  ],
+  "searchEngine": "no",
+  "service": "serviceClass"
+}

@@ -1,0 +1,19 @@
+services:
+  jhipster-registry:
+    image: jhipster/jhipster-registry:latest
+    volumes:
+      - ./central-server-config:/central-config
+    environment:
+      - _JAVA_OPTIONS=-Xmx512m -Xms256m
+      - SPRING_PROFILES_ACTIVE=dev,api-docs
+      - SPRING_SECURITY_USER_PASSWORD=admin
+      - JHIPSTER_REGISTRY_PASSWORD=admin
+      - SPRING_CLOUD_CONFIG_SERVER_COMPOSITE_0_TYPE=native
+      - SPRING_CLOUD_CONFIG_SERVER_COMPOSITE_0_SEARCH_LOCATIONS=file:./central-config/localhost-config/
+      - SERVER_PORT=8761
+      # ВАРІАНТ 1 (Старий формат)
+      - JHIPSTER_SECURITY_AUTHENTICATION_JWT_SECRET=MmYzaNG5MmYzaNG5MmYzaNG5MmYzaNG5MmYzaNG5MmYzaNG5MmYzaNG5MmYzaNG5MmYzaNG5MmYzaNG5MmYzaNG5MmYzaNG5MmYzaNG5
+      # ВАРІАНТ 2 (Новий формат Base64)
+      - JHIPSTER_SECURITY_AUTHENTICATION_JWT_BASE64_SECRET=MmYzaNG5MmYzaNG5MmYzaNG5MmYzaNG5MmYzaNG5MmYzaNG5MmYzaNG5MmYzaNG5MmYzaNG5MmYzaNG5MmYzaNG5MmYzaNG5MmYzaNG5
+    ports:
+      - 8761:8761

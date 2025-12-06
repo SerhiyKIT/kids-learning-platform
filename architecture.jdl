@@ -1,0 +1,123 @@
+/* Архітектура освітньої платформи для дітей - ВИПРАВЛЕНО (ua) */
+
+application {
+  config {
+    baseName gateway
+    applicationType gateway
+    packageName com.kids.platform
+    authenticationType oauth2
+    buildTool maven
+    clientFramework react
+    serviceDiscoveryType eureka
+    databaseType sql
+    devDatabaseType postgresql
+    prodDatabaseType postgresql
+    serverPort 8080
+    nativeLanguage ua
+    languages [ua, en]
+    enableTranslation true
+    testFrameworks [gatling]
+  }
+  entities Student, Parent
+}
+
+application {
+  config {
+    baseName learningService
+    applicationType microservice
+    packageName com.kids.learning
+    authenticationType oauth2
+    buildTool maven
+    serviceDiscoveryType eureka
+    databaseType sql
+    devDatabaseType postgresql
+    prodDatabaseType postgresql
+    serverPort 8081
+    nativeLanguage ua
+    languages [ua, en]
+  }
+  entities Lesson, Subject, Achievement, Progress
+}
+
+application {
+  config {
+    baseName aiContentService
+    applicationType microservice
+    packageName com.kids.ai
+    authenticationType oauth2
+    buildTool maven
+    serviceDiscoveryType eureka
+    databaseType mongodb
+    devDatabaseType mongodb
+    prodDatabaseType mongodb
+    serverPort 8082
+    nativeLanguage ua
+    languages [ua, en]
+  }
+  entities AiPrompt, GeneratedStory
+}
+
+/* --- ОПИС СУТНОСТЕЙ --- */
+
+// 1. Сутності для Gateway
+entity Parent {
+    firstName String required
+    email String required pattern(/^[^@\s]+@[^@\s]+\.[^@\s]+$/)
+    isPremium Boolean
+}
+
+entity Student {
+    nickname String required
+    age Integer
+    avatarStyle String // "HERO", "CUTE"
+}
+
+// 2. Сутності для Learning Service
+entity Subject {
+    title String required
+    description String
+}
+
+entity Lesson {
+    title String required
+    content TextBlob
+    difficultyLevel Integer
+}
+
+entity Achievement {
+    title String
+    iconUrl String
+    dateEarned Instant
+}
+
+entity Progress {
+    studentId Long required
+    score Integer
+    status String // "STARTED", "COMPLETED"
+    completedAt Instant
+}
+
+// 3. Сутності для AI Service
+entity AiPrompt {
+    styleName String required
+    systemPrompt TextBlob required
+}
+
+entity GeneratedStory {
+    topic String
+    content TextBlob
+    audioUrl String
+    createdAt Instant
+}
+
+/* --- ЗВ'ЯЗКИ --- */
+
+relationship OneToMany {
+    Parent{student} to Student{parent}
+    Subject{lesson} to Lesson{subject}
+    Lesson{progress} to Progress{lesson}
+}
+
+dto * with mapstruct
+service * with serviceClass
+paginate * with pagination

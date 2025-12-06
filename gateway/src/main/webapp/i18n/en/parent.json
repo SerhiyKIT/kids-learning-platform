@@ -1,0 +1,27 @@
+{
+  "gatewayApp": {
+    "parent": {
+      "home": {
+        "title": "Parents",
+        "refreshListLabel": "Refresh list",
+        "createLabel": "Create a new Parent",
+        "createOrEditLabel": "Create or edit a Parent",
+        "notFound": "No Parents found"
+      },
+      "created": "A new Parent is created with identifier {{ param }}",
+      "updated": "A Parent is updated with identifier {{ param }}",
+      "deleted": "A Parent is deleted with identifier {{ param }}",
+      "delete": {
+        "question": "Are you sure you want to delete Parent {{ id }}?"
+      },
+      "detail": {
+        "title": "Parent"
+      },
+      "id": "ID",
+      "firstName": "First Name",
+      "email": "Email",
+      "isPremium": "Is Premium",
+      "student": "Student"
+    }
+  }
+}

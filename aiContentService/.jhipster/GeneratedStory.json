@@ -1,0 +1,33 @@
+{
+  "annotations": {
+    "changelogDate": "20251206114047"
+  },
+  "applications": ["aiContentService"],
+  "clientRootFolder": "aiContentService",
+  "databaseType": "mongodb",
+  "dto": "mapstruct",
+  "fields": [
+    {
+      "fieldName": "topic",
+      "fieldType": "String"
+    },
+    {
+      "fieldName": "content",
+      "fieldType": "TextBlob"
+    },
+    {
+      "fieldName": "audioUrl",
+      "fieldType": "String"
+    },
+    {
+      "fieldName": "createdAt",
+      "fieldType": "Instant"
+    }
+  ],
+  "microserviceName": "aiContentService",
+  "name": "GeneratedStory",
+  "pagination": "pagination",
+  "relationships": [],
+  "searchEngine": "no",
+  "service": "serviceClass"
+}
