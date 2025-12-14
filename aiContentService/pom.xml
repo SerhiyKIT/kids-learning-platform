@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0
-                             https://maven.apache.org/xsd/maven-4.0.0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
 
     <groupId>com.kids.ai</groupId>
@@ -13,14 +14,15 @@
         <groupId>org.springframework.boot</groupId>
         <artifactId>spring-boot-starter-parent</artifactId>
         <version>3.4.5</version>
-        <relativePath/>
+        <relativePath />
         <!-- lookup parent from repository -->
     </parent>
 
     <properties>
         <!--
             Build properties
-            The spring-boot version should match the one managed by https://mvnrepository.com/artifact/tech.jhipster/jhipster-dependencies/${jhipster-dependencies.version}
+            The spring-boot version should match the one managed by
+        https://mvnrepository.com/artifact/tech.jhipster/jhipster-dependencies/${jhipster-dependencies.version}
         -->
         <maven.version>3.2.5</maven.version>
         <java.version>17</java.version>
@@ -59,10 +61,10 @@
         <modernizer-maven-plugin.version>3.1.0</modernizer-maven-plugin.version>
         <mongock-bom.version>5.5.1</mongock-bom.version>
         <nohttp-checkstyle.version>0.0.11</nohttp-checkstyle.version>
-        <profile.api-docs/>
-        <profile.e2e/>
-        <profile.test/>
-        <profile.tls/>
+        <profile.api-docs />
+        <profile.e2e />
+        <profile.test />
+        <profile.tls />
         <properties-maven-plugin.version>1.2.1</properties-maven-plugin.version>
         <resource.delimiter>@</resource.delimiter>
         <sonar-maven-plugin.version>5.1.0.4751</sonar-maven-plugin.version>
@@ -204,7 +206,8 @@
             <scope>test</scope>
         </dependency>
         <dependency>
-            <!-- Adding the engine dependency to the surefire-plugin unfortunately does not work in the current version. -->
+            <!-- Adding the engine dependency to the surefire-plugin unfortunately does not work in
+            the current version. -->
             <!-- https://www.archunit.org/userguide/html/000_Index.html#_junit_5 -->
             <groupId>com.tngtech.archunit</groupId>
             <artifactId>archunit-junit5-engine</artifactId>
@@ -435,7 +438,7 @@
                             <id>enforce-dependencyConvergence</id>
                             <configuration>
                                 <rules>
-                                    <DependencyConvergence/>
+                                    <DependencyConvergence />
                                 </rules>
                                 <fail>false</fail>
                             </configuration>
@@ -447,11 +450,13 @@
                     <configuration>
                         <rules>
                             <requireMavenVersion>
-                                <message>You are running an older version of Maven. JHipster requires at least Maven ${maven.version}</message>
+                                <message>You are running an older version of Maven. JHipster
+                                    requires at least Maven ${maven.version}</message>
                                 <version>[${maven.version},)</version>
                             </requireMavenVersion>
                             <requireJavaVersion>
-                                <message>You are running an incompatible version of Java. JHipster supports JDK 17 to 24.</message>
+                                <message>You are running an incompatible version of Java. JHipster
+                                    supports JDK 17 to 24.</message>
                                 <version>[17,18),[21,22),[24,25)</version>
                             </requireJavaVersion>
                         </rules>
@@ -462,7 +467,8 @@
                     <artifactId>maven-failsafe-plugin</artifactId>
                     <version>${maven-failsafe-plugin.version}</version>
                     <configuration>
-                        <!-- Due to spring-boot repackage, without adding this property test classes are not found
+                        <!-- Due to spring-boot repackage, without adding this property test classes
+                        are not found
                              See https://github.com/spring-projects/spring-boot/issues/6254 -->
                         <!-- Force alphabetical order to have a reproducible build -->
                         <classesDirectory>${project.build.outputDirectory}</classesDirectory>
@@ -629,7 +635,8 @@
                         </extraDirectories>
                         <pluginExtensions>
                             <pluginExtension>
-                                <implementation>com.google.cloud.tools.jib.maven.extension.springboot.JibSpringBootExtension</implementation>
+                                <implementation>
+                                    com.google.cloud.tools.jib.maven.extension.springboot.JibSpringBootExtension</implementation>
                             </pluginExtension>
                         </pluginExtensions>
                     </configuration>
@@ -710,7 +717,8 @@
                             </goals>
                         </execution>
                         <execution>
-                            <!-- Ensures that the code coverage report for unit tests is created after unit tests have been run -->
+                            <!-- Ensures that the code coverage report for unit tests is created
+                            after unit tests have been run -->
                             <id>post-unit-test</id>
                             <phase>test</phase>
                             <goals>
@@ -724,7 +732,8 @@
                             </goals>
                         </execution>
                         <execution>
-                            <!-- Ensures that the code coverage report for integration tests is created after integration tests have been run -->
+                            <!-- Ensures that the code coverage report for integration tests is
+                            created after integration tests have been run -->
                             <id>post-integration-tests</id>
                             <phase>post-integration-test</phase>
                             <goals>
@@ -820,7 +829,7 @@
                                                 </goals>
                                             </pluginExecutionFilter>
                                             <action>
-                                                <ignore/>
+                                                <ignore />
                                             </action>
                                         </pluginExecution>
                                     </pluginExecutions>
@@ -834,7 +843,8 @@
         <profile>
             <!--
                 Profile for applying IDE-specific configuration.
-                At the moment it configures MapStruct and Hibernate JPA Metamodel Generator, which you need when working
+                At the moment it configures MapStruct and Hibernate JPA Metamodel Generator, which you need when
+            working
                 with DTOs and entity filtering.
             -->
             <id>IDE</id>
@@ -908,7 +918,18 @@
                     <groupId>io.zipkin.reporter2</groupId>
                     <artifactId>zipkin-reporter-brave</artifactId>
                 </dependency>
+                <dependency>
+                    <groupId>dev.langchain4j</groupId>
+                    <artifactId>langchain4j-google-ai-gemini</artifactId>
+                    <version>0.35.0</version>
+                </dependency>
+                <dependency>
+                    <groupId>dev.langchain4j</groupId>
+                    <artifactId>langchain4j-spring-boot-starter</artifactId>
+                    <version>0.35.0</version>
+                </dependency>
             </dependencies>
         </profile>
     </profiles>
 </project>
+	
