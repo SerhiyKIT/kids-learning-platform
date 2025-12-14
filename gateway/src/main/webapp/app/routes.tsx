@@ -3,6 +3,9 @@ import { Route } from 'react-router';
 
 import Loadable from 'react-loadable';
 
+import StudentDashboard from 'app/modules/dashboard/student-dashboard';
+import ParentDashboard from 'app/modules/dashboard/parent-dashboard';
+import TeacherDashboard from 'app/modules/dashboard/teacher-dashboard';
 import LoginRedirect from 'app/modules/login/login-redirect';
 import Logout from 'app/modules/login/logout';
 import Home from 'app/modules/home/home';
@@ -42,6 +45,9 @@ const AppRoutes = () => {
           }
         />
         <Route path="*" element={<PageNotFound />} />
+        <Route path="student-dashboard" element={<StudentDashboard />} />
+        <Route path="parent-dashboard" element={<ParentDashboard />} />
+        <Route path="teacher-dashboard" element={<TeacherDashboard />} />
       </ErrorBoundaryRoutes>
     </div>
   );
