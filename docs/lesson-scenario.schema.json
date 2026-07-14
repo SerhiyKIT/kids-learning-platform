@@ -1,0 +1,218 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "lesson-scenario.schema.json",
+  "title": "Сценарій уроку (MVP)",
+  "description": "Єдина схема сценарію уроку. Використовується бекендом (валідація згенерованого ШІ) і фронтендом (генерація TypeScript-типів). Версія 1.0.0. Зміна схеми = свідоме рішення + оновлення документа «Формат подання уроків та ШІ».",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "module", "topic", "pattern_ids", "age_band", "title", "learning_goal", "reality_bridge", "scenes"],
+  "properties": {
+    "schema_version": { "const": "1.0.0" },
+    "module": { "const": "safety", "description": "У MVP лише модуль безпеки" },
+    "topic": { "enum": ["road_safety", "emergency_numbers"] },
+    "pattern_ids": {
+      "type": "array", "minItems": 1, "maxItems": 2,
+      "items": { "type": "string", "pattern": "^[12]\\.[1-9]$" },
+      "description": "Патерни з «Вимог до модуля Безпека», напр. \"1.6\""
+    },
+    "age_band": { "enum": ["age_3_4", "age_5_6"] },
+    "title": { "type": "string", "maxLength": 60, "description": "Для дорослих (каталог); дитина його не читає" },
+    "learning_goal": { "type": "string", "maxLength": 200, "description": "Сформульована як ДІЯ дитини" },
+    "reality_bridge": { "$ref": "#/$defs/voiceLine", "description": "Місток у реальність — обов'язковий, звучить у сцені завершення" },
+    "scenes": {
+      "type": "array",
+      "minItems": 3, "maxItems": 6,
+      "items": {
+        "oneOf": [
+          { "$ref": "#/$defs/demoScene" },
+          { "$ref": "#/$defs/choiceSituation" },
+          { "$ref": "#/$defs/sortingScene" },
+          { "$ref": "#/$defs/dialogQuestion" }
+        ]
+      },
+      "description": "Рівень А: 3–4 сцени; рівень Б: 5–6 (перевіряється бізнес-валідатором). Остання інтерактивна сцена має бути контрольною (is_control=true, без підказок)."
+    }
+  },
+
+  "$defs": {
+    "voiceLine": {
+      "type": "object", "additionalProperties": false,
+      "required": ["key", "text"],
+      "properties": {
+        "key": { "type": "string", "pattern": "^[a-z0-9_]{2,40}$", "description": "Унікальний у межах уроку; ключ кешу TTS" },
+        "text": { "type": "string", "minLength": 2, "maxLength": 120, "description": "Проста українська. Рівень А: ≤10 слів; Б: ≤15 (бізнес-валідатор)" }
+      }
+    },
+
+    "assetRef": {
+      "type": "string", "pattern": "^[a-z0-9_]{2,50}$",
+      "description": "Id з реєстру бібліотеки ассетів; наявність перевіряє бізнес-валідатор"
+    },
+
+    "character": {
+      "type": "object", "additionalProperties": false,
+      "required": ["id", "emotion"],
+      "properties": {
+        "id": { "$ref": "#/$defs/assetRef" },
+        "emotion": { "enum": ["neutral", "joy", "surprise", "mild_fear", "thinking", "pride"] },
+        "pose": { "enum": ["stand", "walk", "stop", "point", "hold_phone", "clap"], "default": "stand" }
+      }
+    },
+
+    "assistant": {
+      "type": "object", "additionalProperties": false,
+      "required": ["hints", "re_explain"],
+      "properties": {
+        "hints": {
+          "type": "array", "minItems": 2, "maxItems": 2,
+          "items": {
+            "type": "object", "additionalProperties": false,
+            "required": ["level", "line"],
+            "properties": {
+              "level": { "enum": [1, 2] },
+              "line": { "$ref": "#/$defs/voiceLine" }
+            }
+          },
+          "description": "Рівень 1 — навідне запитання; рівень 2 — вужча підказка. Показ правильної дії робить сам рушій після рівня 2."
+        },
+        "re_explain": { "$ref": "#/$defs/voiceLine", "description": "Повторне пояснення простішими словами (кнопка-персонаж)" }
+      }
+    },
+
+    "sceneBase": {
+      "type": "object",
+      "required": ["key", "background", "characters"],
+      "properties": {
+        "key": { "type": "string", "pattern": "^scene_[0-9]{1,2}$" },
+        "background": { "$ref": "#/$defs/assetRef" },
+        "characters": { "type": "array", "minItems": 1, "maxItems": 3, "items": { "$ref": "#/$defs/character" } },
+        "props": { "type": "array", "maxItems": 8, "items": { "$ref": "#/$defs/assetRef" } }
+      }
+    },
+
+    "demoScene": {
+      "allOf": [{ "$ref": "#/$defs/sceneBase" }],
+      "type": "object", "additionalProperties": false,
+      "required": ["key", "type", "background", "characters", "narration"],
+      "properties": {
+        "key": true, "background": true, "characters": true, "props": true,
+        "type": { "const": "demo" },
+        "narration": {
+          "type": "array", "minItems": 1, "maxItems": 4,
+          "items": {
+            "type": "object", "additionalProperties": false,
+            "required": ["line"],
+            "properties": {
+              "line": { "$ref": "#/$defs/voiceLine" },
+              "action": { "enum": ["walk_to_road", "stop", "look_left_right", "cross", "pick_phone", "dial", "wave", "none"], "default": "none", "description": "Анімація персонажа, синхронна з реплікою" }
+            }
+          }
+        }
+      }
+    },
+
+    "choiceSituation": {
+      "allOf": [{ "$ref": "#/$defs/sceneBase" }],
+      "type": "object", "additionalProperties": false,
+      "required": ["key", "type", "background", "characters", "setup", "options", "assistant", "is_control"],
+      "properties": {
+        "key": true, "background": true, "characters": true, "props": true,
+        "type": { "const": "choice" },
+        "is_control": { "type": "boolean", "description": "true = контрольна сцена: рушій вимикає підказки" },
+        "setup": { "$ref": "#/$defs/voiceLine", "description": "Постановка ситуації + запитання" },
+        "options": {
+          "type": "array", "minItems": 2, "maxItems": 3,
+          "items": {
+            "type": "object", "additionalProperties": false,
+            "required": ["id", "icon", "label", "correct", "feedback"],
+            "properties": {
+              "id": { "enum": ["a", "b", "c"] },
+              "icon": { "$ref": "#/$defs/assetRef" },
+              "label": { "$ref": "#/$defs/voiceLine", "description": "Озвучення варіанта при дотику-прев'ю" },
+              "correct": { "type": "boolean" },
+              "feedback": {
+                "type": "object", "additionalProperties": false,
+                "required": ["line"],
+                "properties": {
+                  "line": { "$ref": "#/$defs/voiceLine", "description": "Правильно: похвала + «тому що…». Помилка: «Ой!» + чому небезпечно + запрошення спробувати ще" },
+                  "consequence_animation": {
+                    "enum": ["car_horn_stop", "guide_startled", "guide_oops", "none"],
+                    "default": "none",
+                    "description": "ЛИШЕ дозволені м'які наслідки з «Вимог до модуля Безпека», розд. 5. Для correct=true завжди none."
+                  }
+                }
+              }
+            }
+          },
+          "description": "Рівно один варіант із correct=true (бізнес-валідатор). Рівень А: 2 варіанти; Б: 3."
+        },
+        "assistant": { "$ref": "#/$defs/assistant" }
+      }
+    },
+
+    "sortingScene": {
+      "allOf": [{ "$ref": "#/$defs/sceneBase" }],
+      "type": "object", "additionalProperties": false,
+      "required": ["key", "type", "background", "characters", "setup", "categories", "items", "assistant", "is_control"],
+      "properties": {
+        "key": true, "background": true, "characters": true, "props": true,
+        "type": { "const": "sorting" },
+        "is_control": { "type": "boolean" },
+        "setup": { "$ref": "#/$defs/voiceLine" },
+        "categories": {
+          "type": "array", "minItems": 2, "maxItems": 2,
+          "items": {
+            "type": "object", "additionalProperties": false,
+            "required": ["id", "icon", "label"],
+            "properties": {
+              "id": { "enum": ["cat_1", "cat_2"] },
+              "icon": { "$ref": "#/$defs/assetRef" },
+              "label": { "$ref": "#/$defs/voiceLine" }
+            }
+          }
+        },
+        "items": {
+          "type": "array", "minItems": 3, "maxItems": 6,
+          "items": {
+            "type": "object", "additionalProperties": false,
+            "required": ["icon", "target", "feedback_correct", "feedback_wrong"],
+            "properties": {
+              "icon": { "$ref": "#/$defs/assetRef" },
+              "target": { "enum": ["cat_1", "cat_2"] },
+              "feedback_correct": { "$ref": "#/$defs/voiceLine" },
+              "feedback_wrong": { "$ref": "#/$defs/voiceLine" }
+            }
+          }
+        },
+        "assistant": { "$ref": "#/$defs/assistant" }
+      }
+    },
+
+    "dialogQuestion": {
+      "allOf": [{ "$ref": "#/$defs/sceneBase" }],
+      "type": "object", "additionalProperties": false,
+      "required": ["key", "type", "background", "characters", "question", "answers", "assistant", "is_control"],
+      "properties": {
+        "key": true, "background": true, "characters": true, "props": true,
+        "type": { "const": "dialog" },
+        "is_control": { "type": "boolean" },
+        "question": { "$ref": "#/$defs/voiceLine", "description": "Запитання провідника; відповідь — дотиком до картинки (голос — не в MVP)" },
+        "answers": {
+          "type": "array", "minItems": 2, "maxItems": 3,
+          "items": {
+            "type": "object", "additionalProperties": false,
+            "required": ["id", "icon", "label", "correct", "feedback"],
+            "properties": {
+              "id": { "enum": ["a", "b", "c"] },
+              "icon": { "$ref": "#/$defs/assetRef" },
+              "label": { "$ref": "#/$defs/voiceLine" },
+              "correct": { "type": "boolean" },
+              "feedback": { "$ref": "#/$defs/voiceLine" }
+            }
+          }
+        },
+        "assistant": { "$ref": "#/$defs/assistant" }
+      }
+    }
+  }
+}
