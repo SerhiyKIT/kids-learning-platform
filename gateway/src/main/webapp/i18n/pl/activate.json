@@ -1,9 +1,0 @@
-{
-  "activate": {
-    "title": "Aktywacja",
-    "messages": {
-      "success": "<strong>Twoje konto zostało aktywowane.</strong> Proszę ",
-      "error": "<strong>Nie można aktywować konta.</strong> Użyj formularza rejestracji, aby się zarejestrować."
-    }
-  }
-}

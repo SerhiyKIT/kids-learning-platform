@@ -1,0 +1,1 @@
+-- Baseline migration. Real schema (per docs/Модель_даних.md) lands in the next task.

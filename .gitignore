@@ -11,5 +11,6 @@ Thumbs.db
 # Logs
 *.log
 
-# Shell scripts (якщо хочеш ігнорувати їх, але скрипт запуску краще зберегти)
-# start-project.sh
+# Environment files with real secrets
+.env
+infra/.env
