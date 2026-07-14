@@ -1,6 +1,7 @@
 import React from 'react';
 import { Box, Container, Paper, Typography } from '@mui/material';
 import { Row, Col } from 'reactstrap';
+import { translate } from 'react-jhipster';
 import SportsEsportsIcon from '@mui/icons-material/SportsEsports';
 import EmojiEventsIcon from '@mui/icons-material/EmojiEvents';
 import PaletteIcon from '@mui/icons-material/Palette';
@@ -22,7 +23,6 @@ const FeatureCard = ({ icon, title, desc, styles }: { icon: any; title: string; 
       }}
     >
       <Box sx={{ mb: 2 }}>{icon}</Box>
-      {/* Явно задаємо колір тексту */}
       <Typography variant="h5" sx={{ mb: 2, fontWeight: 'bold', color: styles.text }}>
         {title}
       </Typography>
@@ -39,20 +39,20 @@ export const FeaturesSection = ({ styles }: { styles: ThemeStyles }) => {
       <Row>
         <FeatureCard
           icon={<SportsEsportsIcon fontSize="large" sx={{ color: styles.primary }} />}
-          title="Уроки-Міні-Ігри"
-          desc="Квести та головоломки з Математики та Логіки."
+          title={translate('home.features.miniGames.title')}
+          desc={translate('home.features.miniGames.desc')}
           styles={styles}
         />
         <FeatureCard
           icon={<EmojiEventsIcon fontSize="large" sx={{ color: styles.secondary }} />}
-          title="Система Ачівок"
-          desc="Отримуй нагороди та підвищуй Рівень за проходження ігор."
+          title={translate('home.features.achievements.title')}
+          desc={translate('home.features.achievements.desc')}
           styles={styles}
         />
         <FeatureCard
           icon={<PaletteIcon fontSize="large" sx={{ color: styles.primary }} />}
-          title="Персональні Стилі"
-          desc="Обирай вигляд інтерфейсу: від Кіберпанку до Галактики."
+          title={translate('home.features.styles.title')}
+          desc={translate('home.features.styles.desc')}
           styles={styles}
         />
       </Row>

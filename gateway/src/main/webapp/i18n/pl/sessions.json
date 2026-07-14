@@ -1,0 +1,15 @@
+{
+  "sessions": {
+    "title": "Aktywne sesje dla [<strong>{{username}}</strong>]",
+    "table": {
+      "ipaddress": "Adres IP",
+      "useragent": "Agent użytkownika",
+      "date": "Data",
+      "button": "Unieważnij"
+    },
+    "messages": {
+      "success": "<strong>Sesja unieważniona!</strong>",
+      "error": "<strong>Wystąpił błąd!</strong> Nie można unieważnić sesji."
+    }
+  }
+}

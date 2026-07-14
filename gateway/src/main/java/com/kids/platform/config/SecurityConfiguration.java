@@ -106,7 +106,7 @@ public class SecurityConfiguration {
                     )
                     .permissionsPolicy(permissions ->
                         permissions.policy(
-                            "camera=(), fullscreen=(self), geolocation=(), gyroscope=(), magnetometer=(), microphone=(), midi=(), payment=(), sync-xhr=()"
+                            "camera=(), fullscreen=(self), geolocation=(), gyroscope=(), magnetometer=(), microphone=(), midi=(), payment=(), sync-xhr=(), interest-cohort=()"
                         )
                     )
             )

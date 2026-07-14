@@ -1,0 +1,44 @@
+{
+  "home": {
+    "hero": {
+      "title": "Gra to wiedza",
+      "subtitle": "Zdobywaj osiągnięcia w przyszłości edukacji!",
+      "description": "Nasza platforma zamienia każdą lekcję w ekscytującą misję, gdzie sukces jest nagradzany prawdziwymi osiągnięciami.",
+      "ctaContinue": "KONTYNUUJ MISJĘ",
+      "ctaStart": "ROZPOCZNIJ MISJĘ (BEZPŁATNIE)"
+    },
+    "features": {
+      "miniGames": {
+        "title": "Lekcje-Minigry",
+        "desc": "Misje i łamigłówki z Matematyki i Logiki."
+      },
+      "achievements": {
+        "title": "System Osiągnięć",
+        "desc": "Zdobywaj nagrody i podnoś Poziom, przechodząc gry."
+      },
+      "styles": {
+        "title": "Osobiste Style",
+        "desc": "Wybierz wygląd interfejsu: od Cyberpunka po Galaktykę."
+      }
+    },
+    "portals": {
+      "title": "Wybierz Swój Portal",
+      "enter": "Wejdź",
+      "student": {
+        "role": "THE PLAYER",
+        "title": "Gabinet Ucznia",
+        "desc": "Twój gaming hub. Postępy i misje."
+      },
+      "parent": {
+        "role": "THE NAVIGATOR",
+        "title": "Gabinet Rodziców",
+        "desc": "Monitorowanie i raporty."
+      },
+      "teacher": {
+        "role": "THE ARCHITECT",
+        "title": "Gabinet Nauczyciela",
+        "desc": "Analityka klasy i edytor."
+      }
+    }
+  }
+}

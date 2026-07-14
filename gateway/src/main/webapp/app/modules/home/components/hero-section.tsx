@@ -1,6 +1,7 @@
 import React from 'react';
 import { Box, Button, Container, Typography } from '@mui/material';
-import { Row, Col } from 'reactstrap'; // Використовуємо стабільну сітку
+import { Row, Col } from 'reactstrap';
+import { translate } from 'react-jhipster';
 import SportsEsportsIcon from '@mui/icons-material/SportsEsports';
 import { ThemeStyles } from '../home.styles';
 
@@ -14,7 +15,6 @@ export const HeroSection = ({ styles, isAuthenticated, onNavigate }: HeroProps) 
   return (
     <Container maxWidth="lg" sx={{ pt: 8, pb: 8 }}>
       <Row className="align-items-center">
-        {/* Текстова частина */}
         <Col xs="12" md="6">
           <Typography
             variant="h2"
@@ -27,13 +27,13 @@ export const HeroSection = ({ styles, isAuthenticated, onNavigate }: HeroProps) 
               textShadow: styles.isDark ? '0 0 30px rgba(0,229,255,0.3)' : 'none',
             }}
           >
-            Гра – це знання
+            {translate('home.hero.title')}
           </Typography>
           <Typography variant="h4" sx={{ mb: 3, fontWeight: 'medium' }}>
-            Здобувай ачівки в майбутньому освіти!
+            {translate('home.hero.subtitle')}
           </Typography>
           <Typography variant="h6" sx={{ mb: 4, opacity: 0.8, fontWeight: 300 }}>
-            Наша платформа перетворює кожен урок на захоплюючий квест, де успіх винагороджується реальними ачівками.
+            {translate('home.hero.description')}
           </Typography>
 
           <Button
@@ -50,11 +50,10 @@ export const HeroSection = ({ styles, isAuthenticated, onNavigate }: HeroProps) 
               fontWeight: 'bold',
             }}
           >
-            {isAuthenticated ? 'ПРОДОВЖИТИ МІСІЮ' : 'ПОЧАТИ МІСІЮ (БЕЗКОШТОВНО)'}
+            {isAuthenticated ? translate('home.hero.ctaContinue') : translate('home.hero.ctaStart')}
           </Button>
         </Col>
 
-        {/* Анімований Аватар */}
         <Col xs="12" md="6" className="d-flex justify-content-center mt-4 mt-md-0">
           <Box
             sx={{

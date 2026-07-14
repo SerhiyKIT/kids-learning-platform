@@ -88,6 +88,12 @@ public class ProgressService {
         return progressRepository.findAll(pageable).map(progressMapper::toDto);
     }
 
+    @Transactional(readOnly = true)
+    public Page<ProgressDTO> findByStudentId(Long studentId, Pageable pageable) {
+        LOG.debug("Request to get Progresses for studentId : {}", studentId);
+        return progressRepository.findByStudentId(studentId, pageable).map(progressMapper::toDto);
+    }
+
     /**
      * Get one progress by id.
      *

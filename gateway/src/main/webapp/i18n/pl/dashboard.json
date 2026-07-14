@@ -1,0 +1,46 @@
+{
+  "dashboard": {
+    "student": {
+      "greeting": "Cześć, Kosmiczny Strażniku! 🚀",
+      "ready": "Gotowy na nowe odkrycia?",
+      "level": "POZIOM",
+      "streak": "{{count}} dni z rzędu",
+      "missionsTitle": "Twoje Misje",
+      "status": {
+        "start": "ZACZNIJ",
+        "repeat": "POWTÓRZ",
+        "locked": "ZABLOKOWANE"
+      },
+      "subject": {
+        "physics": "Fizyka",
+        "math": "Matematyka",
+        "biology": "Biologia",
+        "programming": "Programowanie",
+        "roadSafety": "Bezpieczeństwo na drodze",
+        "socialSafety": "Bezpieczeństwo społeczne"
+      }
+    },
+    "parent": {
+      "title": "Monitorowanie Wyników",
+      "avgScore": "Średnia ocena",
+      "studyTime": "Czas nauki (tydzień)",
+      "completedLessons": "Ukończone lekcje",
+      "lastActivity": "Ostatnia Aktywność",
+      "aiRecommendations": "Rekomendacje AI",
+      "lesson": "Lekcja",
+      "yesterday": "Wczoraj o"
+    },
+    "teacher": {
+      "title": "Panel Sterowania",
+      "createLesson": "Utwórz Lekcję",
+      "classPerformance": "Wyniki Klasy",
+      "table": {
+        "studentName": "Imię Ucznia",
+        "progress": "Ogólny Postęp",
+        "lastActive": "Ostatnia Aktywność",
+        "actions": "Działania"
+      },
+      "details": "Szczegóły"
+    }
+  }
+}

@@ -1,19 +1,44 @@
 {
   "home": {
-    "title": "Welcome, Java Hipster!",
-    "subtitle": "This is your homepage",
-    "logged": {
-      "message": "You are logged in as user \"{{username}}\"."
+    "hero": {
+      "title": "Play is Knowledge",
+      "subtitle": "Earn achievements in the future of education!",
+      "description": "Our platform turns every lesson into an exciting quest where success is rewarded with real achievements.",
+      "ctaContinue": "CONTINUE MISSION",
+      "ctaStart": "START MISSION (FREE)"
     },
-    "question": "If you have any question on JHipster:",
-    "link": {
-      "homepage": "JHipster homepage",
-      "stackoverflow": "JHipster on Stack Overflow",
-      "bugtracker": "JHipster bug tracker",
-      "chat": "JHipster public chat room",
-      "follow": "follow @jhipster on Twitter"
+    "features": {
+      "miniGames": {
+        "title": "Lesson Mini-Games",
+        "desc": "Quests and puzzles in Math and Logic."
+      },
+      "achievements": {
+        "title": "Achievement System",
+        "desc": "Earn rewards and level up by completing games."
+      },
+      "styles": {
+        "title": "Personal Styles",
+        "desc": "Choose your interface look: from Cyberpunk to Galaxy."
+      }
     },
-    "like": "If you like JHipster, don't forget to give us a star on",
-    "github": "GitHub"
+    "portals": {
+      "title": "Choose Your Portal",
+      "enter": "Enter",
+      "student": {
+        "role": "THE PLAYER",
+        "title": "Student Cabinet",
+        "desc": "Your gaming hub. Progress and missions."
+      },
+      "parent": {
+        "role": "THE NAVIGATOR",
+        "title": "Parent Cabinet",
+        "desc": "Monitoring and reports."
+      },
+      "teacher": {
+        "role": "THE ARCHITECT",
+        "title": "Teacher Cabinet",
+        "desc": "Class analytics and editor."
+      }
+    }
   }
 }

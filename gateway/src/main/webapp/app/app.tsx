@@ -16,6 +16,7 @@ import { hasAnyAuthority } from 'app/shared/auth/private-route';
 import ErrorBoundary from 'app/shared/error/error-boundary';
 import { AUTHORITIES } from 'app/config/constants';
 import AppRoutes from 'app/routes';
+import CoppaConsentBanner from 'app/shared/components/CoppaConsentBanner';
 
 const baseHref = document.querySelector('base').getAttribute('href').replace(/\/$/, '');
 
@@ -57,6 +58,7 @@ export const App = () => {
           </Card>
           <Footer />
         </div>
+        <CoppaConsentBanner />
       </div>
     </BrowserRouter>
   );

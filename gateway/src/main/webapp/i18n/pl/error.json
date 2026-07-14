@@ -1,0 +1,14 @@
+{
+  "error": {
+    "title": "Strona błędu!",
+    "http": {
+      "400": "Nieprawidłowe żądanie.",
+      "403": "Nie masz uprawnień do tej strony.",
+      "404": "Strona nie istnieje.",
+      "405": "Użyta metoda HTTP nie jest obsługiwana dla tego URL.",
+      "500": "Wewnętrzny błąd serwera."
+    },
+    "concurrencyFailure": "Inny użytkownik zmodyfikował te dane w tym samym czasie. Twoje zmiany zostały odrzucone.",
+    "validation": "Błąd walidacji na serwerze."
+  }
+}

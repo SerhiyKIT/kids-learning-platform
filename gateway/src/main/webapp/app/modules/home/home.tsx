@@ -1,18 +1,21 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { useAppSelector } from 'app/config/store';
+import { translate } from 'react-jhipster';
+import { useAppDispatch, useAppSelector } from 'app/config/store';
+import { setLocale } from 'app/shared/reducers/locale';
+import { languages, locales } from 'app/config/translation';
 
-// Імпортуємо наш новий хук
 import useLocalStorage from 'app/shared/hooks/useLocalStorage';
 
 import { Row, Col } from 'reactstrap';
-import { Box, Button, Container, IconButton, AppBar, Toolbar, Chip, Stack, Typography } from '@mui/material';
+import { Box, Button, Container, IconButton, AppBar, Toolbar, Chip, Stack, Typography, Select, MenuItem } from '@mui/material';
 
 import RocketLaunchIcon from '@mui/icons-material/RocketLaunch';
 import DarkModeIcon from '@mui/icons-material/DarkMode';
 import LightModeIcon from '@mui/icons-material/LightMode';
 import PersonIcon from '@mui/icons-material/Person';
 import SecurityIcon from '@mui/icons-material/Security';
+import TranslateIcon from '@mui/icons-material/Translate';
 
 import { getThemeStyles } from './home.styles';
 import { HeroSection } from './components/hero-section';
@@ -21,14 +24,26 @@ import { PortalsSection } from './components/portals-section';
 
 export const Home = () => {
   const account = useAppSelector(state => state.authentication.account);
+  const currentLocale = useAppSelector(state => state.locale.currentLocale);
+  const dispatch = useAppDispatch();
   const navigate = useNavigate();
 
-  // ВИКОРИСТОВУЄМО LOCAL STORAGE для теми
-  // 'app-theme-dark' - це ключ, під яким збережеться значення
   const [isDark, setIsDark] = useLocalStorage('app-theme-dark', true);
+  const [userRole] = useLocalStorage('app-user-role', '');
 
   const styles = getThemeStyles(isDark);
   const toggleTheme = () => setIsDark(!isDark);
+
+  const handleLocaleChange = (event: any) => {
+    dispatch(setLocale(event.target.value));
+  };
+
+  // Auto-redirect logged-in users to their last dashboard
+  useEffect(() => {
+    if (account?.login && userRole) {
+      navigate(`/${userRole}-dashboard`);
+    }
+  }, [account?.login, userRole]);
 
   return (
     <Box
@@ -47,11 +62,34 @@ export const Home = () => {
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
               <RocketLaunchIcon sx={{ color: styles.primary, fontSize: 32 }} />
               <Typography variant="h5" sx={{ fontWeight: 'bold', letterSpacing: 1, color: styles.text }}>
-                НАСТУПНИЙ <span style={{ color: styles.primary }}>РІВЕНЬ</span>
+                {translate('platform.appName')}
               </Typography>
             </Box>
 
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+              {/* Locale switcher */}
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                <TranslateIcon sx={{ color: styles.textSecondary, fontSize: 18 }} />
+                <Select
+                  value={currentLocale || 'ua'}
+                  onChange={handleLocaleChange}
+                  variant="standard"
+                  disableUnderline
+                  sx={{
+                    color: styles.text,
+                    fontSize: '0.9rem',
+                    '& .MuiSelect-icon': { color: styles.text },
+                    '& .MuiSelect-select': { py: 0 },
+                  }}
+                >
+                  {locales.map(locale => (
+                    <MenuItem key={locale} value={locale}>
+                      {languages[locale].name}
+                    </MenuItem>
+                  ))}
+                </Select>
+              </Box>
+
               <IconButton onClick={toggleTheme} sx={{ color: styles.text }}>
                 {isDark ? <LightModeIcon /> : <DarkModeIcon />}
               </IconButton>
@@ -66,7 +104,7 @@ export const Home = () => {
               ) : (
                 <>
                   <Button component={Link} to="/login" sx={{ color: styles.text }}>
-                    Вхід
+                    {translate('platform.nav.login')}
                   </Button>
                   <Button
                     component={Link}
@@ -78,7 +116,7 @@ export const Home = () => {
                       fontWeight: 'bold',
                     }}
                   >
-                    Реєстрація
+                    {translate('platform.nav.register')}
                   </Button>
                 </>
               )}
@@ -99,13 +137,13 @@ export const Home = () => {
             <Col xs="12" md="6">
               <Stack direction="row" spacing={3}>
                 <Link to="/about" style={{ color: styles.text, textDecoration: 'none' }}>
-                  Про Нас
+                  {translate('platform.nav.about')}
                 </Link>
                 <Link to="/pricing" style={{ color: styles.text, textDecoration: 'none' }}>
-                  Ціни
+                  {translate('platform.nav.pricing')}
                 </Link>
                 <Link to="/contact" style={{ color: styles.text, textDecoration: 'none' }}>
-                  Зв&apos;язок
+                  {translate('platform.nav.contact')}
                 </Link>
               </Stack>
             </Col>
@@ -115,7 +153,7 @@ export const Home = () => {
               >
                 <SecurityIcon fontSize="small" sx={{ color: styles.text }} />
                 <Typography variant="body2" sx={{ color: styles.text }}>
-                  COPPA-compliant. Дані захищені.
+                  {translate('platform.footer.coppa')}
                 </Typography>
               </Box>
             </Col>

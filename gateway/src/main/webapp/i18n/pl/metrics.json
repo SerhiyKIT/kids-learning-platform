@@ -1,0 +1,102 @@
+{
+  "metrics": {
+    "title": "Metryki aplikacji",
+    "refresh.button": "Odśwież",
+    "updating": "Aktualizowanie...",
+    "jvm": {
+      "title": "Metryki JVM",
+      "memory": {
+        "title": "Pamięć",
+        "total": "Łączna pamięć",
+        "heap": "Pamięć sterty",
+        "nonheap": "Pamięć poza stertą"
+      },
+      "threads": {
+        "title": "Wątki",
+        "all": "Wszystkie",
+        "runnable": "Uruchomione",
+        "timedwaiting": "Oczekujące (z limitem czasu)",
+        "waiting": "Oczekujące",
+        "blocked": "Zablokowane",
+        "dump": {
+          "title": "Zrzut wątków",
+          "id": "Id: ",
+          "blockedtime": "Czas blokady",
+          "blockedcount": "Liczba blokad",
+          "waitedtime": "Czas oczekiwania",
+          "waitedcount": "Liczba oczekiwań",
+          "lockname": "Nazwa blokady",
+          "stacktrace": "Ślad stosu",
+          "show": "Pokaż ślad stosu",
+          "hide": "Ukryj ślad stosu"
+        }
+      },
+      "gc": {
+        "title": "Odśmiecanie pamięci",
+        "marksweepcount": "Liczba Mark Sweep",
+        "marksweeptime": "Czas Mark Sweep",
+        "scavengecount": "Liczba Scavenge",
+        "scavengetime": "Czas Scavenge"
+      },
+      "http": {
+        "title": "Żądania HTTP (czas w milisekundach)",
+        "active": "Aktywne żądania:",
+        "total": "Łączne żądania:",
+        "table": {
+          "code": "Kod",
+          "count": "Liczba",
+          "mean": "Średnia",
+          "average": "Przeciętna",
+          "max": "Maks"
+        },
+        "code": {
+          "ok": "Ok",
+          "notfound": "Nie znaleziono",
+          "servererror": "Błąd serwera"
+        }
+      }
+    },
+    "servicesstats": {
+      "title": "Statystyki usług (czas w milisekundach)",
+      "table": {
+        "name": "Nazwa usługi",
+        "count": "Liczba",
+        "mean": "Średnia",
+        "min": "Min",
+        "max": "Maks",
+        "p50": "p50",
+        "p75": "p75",
+        "p95": "p95",
+        "p99": "p99"
+      }
+    },
+    "cache": {
+      "title": "Statystyki pamięci podręcznej",
+      "cachename": "Nazwa pamięci podręcznej",
+      "hits": "Trafienia",
+      "misses": "Pudła",
+      "gets": "Pobrania",
+      "puts": "Zapisy",
+      "removals": "Usunięcia",
+      "evictions": "Eksmisje",
+      "hitPercent": "% Trafień",
+      "missPercent": "% Pudłów",
+      "averageGetTime": "Średni czas pobrania (µs)",
+      "averagePutTime": "Średni czas zapisu (µs)",
+      "averageRemoveTime": "Średni czas usunięcia (µs)"
+    },
+    "datasource": {
+      "usage": "Użycie puli połączeń",
+      "title": "Statystyki DataSource (czas w milisekundach)",
+      "name": "Użycie puli",
+      "count": "Liczba",
+      "mean": "Średnia",
+      "min": "Min",
+      "max": "Maks",
+      "p50": "p50",
+      "p75": "p75",
+      "p95": "p95",
+      "p99": "p99"
+    }
+  }
+}
