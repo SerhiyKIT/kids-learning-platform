@@ -1,0 +1,46 @@
+{
+  "dashboard": {
+    "student": {
+      "greeting": "Привіт, Космічний Рейнджере! 🚀",
+      "ready": "Готовий до нових відкриттів?",
+      "level": "РІВЕНЬ",
+      "streak": "{{count}} днів стрік",
+      "missionsTitle": "Твої Місії",
+      "status": {
+        "start": "ПОЧАТИ",
+        "repeat": "ПОВТОРИТИ",
+        "locked": "ЗАБЛОКОВАНО"
+      },
+      "subject": {
+        "physics": "Фізика",
+        "math": "Математика",
+        "biology": "Біологія",
+        "programming": "Програмування",
+        "roadSafety": "Безпека на дорозі",
+        "socialSafety": "Соціальна безпека"
+      }
+    },
+    "parent": {
+      "title": "Моніторинг Успішності",
+      "avgScore": "Середній бал",
+      "studyTime": "Час навчання (тиждень)",
+      "completedLessons": "Пройдено уроків",
+      "lastActivity": "Остання Активність",
+      "aiRecommendations": "Рекомендації ШІ",
+      "lesson": "Урок",
+      "yesterday": "Вчора о"
+    },
+    "teacher": {
+      "title": "Панель Управління",
+      "createLesson": "Створити Урок",
+      "classPerformance": "Успішність Класу",
+      "table": {
+        "studentName": "Ім'я Учня",
+        "progress": "Загальний Прогрес",
+        "lastActive": "Остання Активність",
+        "actions": "Дії"
+      },
+      "details": "Деталі"
+    }
+  }
+}

@@ -7,6 +7,10 @@ import authentication from './authentication';
 import applicationProfile from './application-profile';
 
 import userManagement from './user-management';
+import lesson from 'app/entities/lesson/lesson.reducer';
+import progress from 'app/entities/progress/progress.reducer';
+import subject from 'app/entities/subject/subject.reducer';
+import ai from 'app/entities/ai/ai.reducer';
 /* jhipster-needle-add-reducer-import - JHipster will add reducer here */
 
 const rootReducer: ReducersMapObject = {
@@ -15,6 +19,10 @@ const rootReducer: ReducersMapObject = {
   applicationProfile,
   administration,
   userManagement,
+  lesson,
+  progress,
+  subject,
+  ai,
   loadingBar,
   /* jhipster-needle-add-reducer-combine - JHipster will add reducer here */
 };

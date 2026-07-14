@@ -1,0 +1,36 @@
+{
+  "health": {
+    "title": "Stan systemu",
+    "refresh.button": "Odśwież",
+    "stacktrace": "Ślad stosu",
+    "details": {
+      "details": "Szczegóły",
+      "properties": "Właściwości",
+      "name": "Nazwa",
+      "value": "Wartość",
+      "error": "Błąd"
+    },
+    "indicator": {
+      "discoveryComposite": "Discovery Composite",
+      "refreshScope": "Microservice Refresh Scope",
+      "clientConfigServer": "Microservice Config Server",
+      "hystrix": "Hystrix",
+      "reactiveDiscoveryClients": "Microservice Discovery Clients",
+      "diskSpace": "Przestrzeń dyskowa",
+      "mail": "Email",
+      "livenessState": "Stan aktywności",
+      "readinessState": "Stan gotowości",
+      "ping": "Aplikacja",
+      "r2dbc": "Baza danych"
+    },
+    "table": {
+      "service": "Nazwa usługi",
+      "status": "Status"
+    },
+    "status": {
+      "UNKNOWN": "NIEZNANY",
+      "UP": "AKTYWNY",
+      "DOWN": "NIEAKTYWNY"
+    }
+  }
+}

@@ -10,9 +10,23 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
  */
 @ConfigurationProperties(prefix = "application", ignoreUnknownFields = false)
 public class ApplicationProperties {
-    // jhipster-needle-application-properties-property
 
-    // jhipster-needle-application-properties-property-getter
+    private final Gemini gemini = new Gemini();
 
-    // jhipster-needle-application-properties-property-class
+    public Gemini getGemini() {
+        return gemini;
+    }
+
+    public static class Gemini {
+        private String apiKey = "";
+        private String model = "gemini-2.0-flash";
+        private String promptStyle = "encouraging";
+
+        public String getApiKey() { return apiKey; }
+        public void setApiKey(String apiKey) { this.apiKey = apiKey; }
+        public String getModel() { return model; }
+        public void setModel(String model) { this.model = model; }
+        public String getPromptStyle() { return promptStyle; }
+        public void setPromptStyle(String promptStyle) { this.promptStyle = promptStyle; }
+    }
 }

@@ -1,0 +1,18 @@
+{
+  "platform": {
+    "appName": "НАСТУПНИЙ РІВЕНЬ",
+    "nav": {
+      "login": "Вхід",
+      "register": "Реєстрація",
+      "about": "Про Нас",
+      "pricing": "Ціни",
+      "contact": "Зв'язок"
+    },
+    "footer": {
+      "coppa": "COPPA-compliant. Дані захищені."
+    },
+    "locale": {
+      "label": "Мова"
+    }
+  }
+}

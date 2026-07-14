@@ -2,12 +2,13 @@ import React from 'react';
 import { Box, Button, Card, CardContent, Container, Typography } from '@mui/material';
 import { Row, Col } from 'reactstrap';
 import { Link } from 'react-router-dom';
+import { translate } from 'react-jhipster';
 import SportsEsportsIcon from '@mui/icons-material/SportsEsports';
 import InsightsIcon from '@mui/icons-material/Insights';
 import SchoolIcon from '@mui/icons-material/School';
 import { ThemeStyles } from '../home.styles';
 
-const PortalCard = ({ title, role, desc, icon, color, styles, link }) => (
+const PortalCard = ({ title, role, roleKey, desc, icon, color, styles, link }) => (
   <Col xs="12" md="4" className="mb-4">
     <Card
       sx={{
@@ -50,6 +51,7 @@ const PortalCard = ({ title, role, desc, icon, color, styles, link }) => (
           component={Link}
           to={link}
           variant="outlined"
+          onClick={() => localStorage.setItem('app-user-role', roleKey)}
           sx={{
             borderColor: color,
             color,
@@ -57,7 +59,7 @@ const PortalCard = ({ title, role, desc, icon, color, styles, link }) => (
             '&:hover': { backgroundColor: color, color: '#fff' },
           }}
         >
-          Увійти
+          {translate('home.portals.enter')}
         </Button>
       </CardContent>
     </Card>
@@ -69,35 +71,38 @@ export const PortalsSection = ({ styles }: { styles: ThemeStyles }) => {
     <Box sx={{ py: 8, background: styles.isDark ? 'rgba(255,255,255,0.03)' : '#e3f2fd' }}>
       <Container maxWidth="lg">
         <Typography variant="h3" align="center" sx={{ mb: 6, fontWeight: 'bold', color: styles.text }}>
-          Обери Свій Портал
+          {translate('home.portals.title')}
         </Typography>
         <Row className="justify-content-center">
           <PortalCard
-            title="Кабінет Учня"
-            role="THE PLAYER"
-            desc="Твій ігровий хаб. Прогрес та місії."
+            title={translate('home.portals.student.title')}
+            role={translate('home.portals.student.role')}
+            roleKey="student"
+            desc={translate('home.portals.student.desc')}
             icon={<SportsEsportsIcon sx={{ fontSize: 60 }} />}
             color={styles.primary}
             styles={styles}
-            link="/student-dashboard" // ОНОВЛЕНО
+            link="/student-dashboard"
           />
           <PortalCard
-            title="Кабінет Батьків"
-            role="THE NAVIGATOR"
-            desc="Моніторинг та звіти."
+            title={translate('home.portals.parent.title')}
+            role={translate('home.portals.parent.role')}
+            roleKey="parent"
+            desc={translate('home.portals.parent.desc')}
             icon={<InsightsIcon sx={{ fontSize: 60 }} />}
             color={styles.secondary}
             styles={styles}
-            link="/parent-dashboard" // ОНОВЛЕНО
+            link="/parent-dashboard"
           />
           <PortalCard
-            title="Кабінет Вчителя"
-            role="THE ARCHITECT"
-            desc="Аналітика класу та редактор."
+            title={translate('home.portals.teacher.title')}
+            role={translate('home.portals.teacher.role')}
+            roleKey="teacher"
+            desc={translate('home.portals.teacher.desc')}
             icon={<SchoolIcon sx={{ fontSize: 60 }} />}
             color="#00c853"
             styles={styles}
-            link="/teacher-dashboard" // ОНОВЛЕНО
+            link="/teacher-dashboard"
           />
         </Row>
       </Container>

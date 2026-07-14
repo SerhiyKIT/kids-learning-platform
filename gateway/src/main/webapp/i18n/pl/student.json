@@ -1,0 +1,27 @@
+{
+  "gatewayApp": {
+    "student": {
+      "home": {
+        "title": "Uczniowie",
+        "refreshListLabel": "Odśwież listę",
+        "createLabel": "Utwórz nowego ucznia",
+        "createOrEditLabel": "Utwórz lub edytuj ucznia",
+        "notFound": "Nie znaleziono uczniów"
+      },
+      "created": "Nowy uczeń został utworzony z identyfikatorem {{ param }}",
+      "updated": "Uczeń z identyfikatorem {{ param }} został zaktualizowany",
+      "deleted": "Uczeń z identyfikatorem {{ param }} został usunięty",
+      "delete": {
+        "question": "Czy na pewno chcesz usunąć ucznia {{ id }}?"
+      },
+      "detail": {
+        "title": "Uczeń"
+      },
+      "id": "ID",
+      "nickname": "Pseudonim",
+      "age": "Wiek",
+      "avatarStyle": "Styl awatara",
+      "parent": "Rodzic"
+    }
+  }
+}

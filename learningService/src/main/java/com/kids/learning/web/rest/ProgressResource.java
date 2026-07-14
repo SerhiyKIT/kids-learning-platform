@@ -142,9 +142,14 @@ public class ProgressResource {
      * @return the {@link ResponseEntity} with status {@code 200 (OK)} and the list of progresses in body.
      */
     @GetMapping("")
-    public ResponseEntity<List<ProgressDTO>> getAllProgresses(@org.springdoc.core.annotations.ParameterObject Pageable pageable) {
-        LOG.debug("REST request to get a page of Progresses");
-        Page<ProgressDTO> page = progressService.findAll(pageable);
+    public ResponseEntity<List<ProgressDTO>> getAllProgresses(
+        @org.springdoc.core.annotations.ParameterObject Pageable pageable,
+        @RequestParam(required = false) Long studentId
+    ) {
+        LOG.debug("REST request to get a page of Progresses, studentId={}", studentId);
+        Page<ProgressDTO> page = studentId != null
+            ? progressService.findByStudentId(studentId, pageable)
+            : progressService.findAll(pageable);
         HttpHeaders headers = PaginationUtil.generatePaginationHttpHeaders(ServletUriComponentsBuilder.fromCurrentRequest(), page);
         return ResponseEntity.ok().headers(headers).body(page.getContent());
     }
