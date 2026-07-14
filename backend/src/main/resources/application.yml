@@ -12,3 +12,8 @@ management:
     web:
       exposure:
         include: health,info
+  health:
+    # Mail isn't wired up yet (starter is present for later use); don't let
+    # its health check drag down /actuator/health until it's actually used.
+    mail:
+      enabled: false
