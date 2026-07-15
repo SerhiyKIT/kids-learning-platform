@@ -15,9 +15,8 @@ import org.springframework.security.web.csrf.CsrfTokenRequestAttributeHandler;
 /**
  * Session-based security for the web-first PWA.
  *
- * TODO: Google OAuth2 login, TOTP 2FA for admins, email verification / password
- * reset (Spring Mail), admin data-access audit log, rate limiting on auth
- * endpoints.
+ * TODO: Google OAuth2 login, TOTP 2FA for admins, admin data-access audit log,
+ * rate limiting on auth endpoints.
  */
 @Configuration
 @EnableMethodSecurity(prePostEnabled = true)
@@ -28,7 +27,8 @@ public class SecurityConfig {
 		http
 				.authorizeHttpRequests(auth -> auth
 						.requestMatchers("/actuator/health", "/actuator/info").permitAll()
-						.requestMatchers(HttpMethod.POST, "/api/auth/register").permitAll()
+						.requestMatchers(HttpMethod.POST, "/api/auth/register", "/api/auth/verify-email",
+								"/api/auth/forgot-password", "/api/auth/reset-password").permitAll()
 						.requestMatchers("/login", "/error").permitAll()
 						.anyRequest().authenticated())
 				.csrf(csrf -> csrf
