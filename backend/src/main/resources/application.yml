@@ -13,7 +13,11 @@ management:
       exposure:
         include: health,info
   health:
-    # Mail isn't wired up yet (starter is present for later use); don't let
-    # its health check drag down /actuator/health until it's actually used.
+    # Mail sending is fire-and-forget (see AuthMailSender); a transient SMTP
+    # outage shouldn't flip the whole app's health to DOWN.
     mail:
       enabled: false
+
+auth:
+  email-verification-ttl: 24h
+  password-reset-ttl: 1h
