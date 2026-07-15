@@ -1,5 +1,5 @@
 /**
- * Teacher-owned learning groups: membership, join codes, and invitations
- * that bind children and parents into a group.
+ * Teacher-owned learning groups: membership and join codes that bind
+ * children into a group.
  */
 package ua.kidlearn.groups;
