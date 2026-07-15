@@ -6,6 +6,7 @@ import jakarta.validation.constraints.Size;
 
 public record RegisterRequest(
 		@NotBlank @Email String email,
-		@NotBlank @Size(min = 8) String password,
+		// Minimum length per docs/Ролі_та_приватність.md §2 (adults).
+		@NotBlank @Size(min = 10) String password,
 		@NotBlank String displayName) {
 }
