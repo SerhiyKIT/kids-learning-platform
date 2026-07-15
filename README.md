@@ -24,6 +24,5 @@ is up and Flyway has applied its migrations.
 
 ## Branch status
 
-This skeleton was built on `feat/monolith-skeleton`. `main` still holds the
-old JHipster microservices setup (gateway, aiContentService, learningService)
-as a backup until this branch is reviewed and merged.
+`main` now holds the modular monolith. The old JHipster microservices setup
+(gateway, aiContentService, learningService) has been fully replaced.

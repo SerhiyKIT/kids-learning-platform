@@ -1,0 +1,36 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  backend-test:
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_DB: kidlearn
+          POSTGRES_USER: kidlearn
+          POSTGRES_PASSWORD: kidlearn
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U kidlearn -d kidlearn"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+          cache: maven
+
+      - name: Test
+        run: cd backend && ./mvnw -q test
