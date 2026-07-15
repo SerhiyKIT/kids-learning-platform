@@ -9,6 +9,10 @@ spring:
     username: ${SMTP_USERNAME:}
     password: ${SMTP_PASSWORD:}
 
+app:
+  # Frontend origin used to build verify-email / reset-password links.
+  base-url: ${APP_BASE_URL:http://localhost:3000}
+
 # Local MinIO instance started via /infra/docker-compose.yml.
 minio:
   endpoint: ${MINIO_ENDPOINT:http://localhost:9000}

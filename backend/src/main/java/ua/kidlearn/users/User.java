@@ -49,6 +49,9 @@ public class User {
 	@Column(name = "deleted_at")
 	private Instant deletedAt;
 
+	@Column(name = "email_verified_at")
+	private Instant emailVerifiedAt;
+
 	protected User() {
 		// JPA
 	}
@@ -95,6 +98,22 @@ public class User {
 
 	public Instant getDeletedAt() {
 		return deletedAt;
+	}
+
+	public Instant getEmailVerifiedAt() {
+		return emailVerifiedAt;
+	}
+
+	public boolean isEmailVerified() {
+		return emailVerifiedAt != null;
+	}
+
+	public void markEmailVerified() {
+		this.emailVerifiedAt = Instant.now();
+	}
+
+	public void changePassword(String newPasswordHash) {
+		this.passwordHash = newPasswordHash;
 	}
 
 }

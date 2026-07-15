@@ -11,6 +11,9 @@ spring:
     username: ${SMTP_USERNAME}
     password: ${SMTP_PASSWORD}
 
+app:
+  base-url: ${APP_BASE_URL}
+
 minio:
   endpoint: ${MINIO_ENDPOINT}
   access-key: ${MINIO_ACCESS_KEY}
