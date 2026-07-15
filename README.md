@@ -7,7 +7,7 @@ platform. Architecture decisions live in [`/docs`](docs), starting with
 ## Layout
 
 - `/backend` — Java 21 / Spring Boot 4.1 monolith
-- `/infra` — local Docker infra (PostgreSQL, MinIO)
+- `/infra` — local Docker infra (PostgreSQL, MinIO, Mailpit)
 - `/docs` — architecture and product docs
 - `/frontend` — added in a later task
 
@@ -21,6 +21,9 @@ platform. Architecture decisions live in [`/docs`](docs), starting with
 
 `GET http://localhost:8080/actuator/health` should return `UP` once the app
 is up and Flyway has applied its migrations.
+
+Dev emails (verification, password reset) aren't sent to a real inbox — view
+them at http://localhost:8025 (Mailpit's web UI).
 
 ## Branch status
 
