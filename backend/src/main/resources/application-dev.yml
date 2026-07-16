@@ -12,6 +12,10 @@ spring:
 app:
   # Frontend origin used to build verify-email / reset-password links.
   base-url: ${APP_BASE_URL:http://localhost:3000}
+  tts:
+    # Single voice for MVP; final provider/voice choice is pending the blind
+    # voice test (docs/Формат_подання_уроків_та_ШІ.md §8).
+    voice-id: ${TTS_VOICE_ID:default}
 
 # Local MinIO instance started via /infra/docker-compose.yml.
 minio:

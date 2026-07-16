@@ -13,6 +13,8 @@ spring:
 
 app:
   base-url: ${APP_BASE_URL}
+  tts:
+    voice-id: ${TTS_VOICE_ID}
 
 minio:
   endpoint: ${MINIO_ENDPOINT}
