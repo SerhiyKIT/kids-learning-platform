@@ -1,7 +1,7 @@
 package ua.kidlearn.aipipeline;
 
-import jakarta.annotation.PostConstruct;
 import java.net.URI;
+import java.util.concurrent.atomic.AtomicBoolean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
 import software.amazon.awssdk.auth.credentials.AwsBasicCredentials;
@@ -22,6 +22,9 @@ class MinioAudioStorage implements AudioStorage {
 
 	private final S3Client s3Client;
 	private final MinioProperties properties;
+	// No MinIO call happens until the first store(); bean construction/startup does no network I/O,
+	// so a full Spring context can boot without MinIO being reachable (e.g. in CI).
+	private final AtomicBoolean bucketEnsured = new AtomicBoolean(false);
 
 	MinioAudioStorage(MinioProperties properties) {
 		this.properties = properties;
@@ -34,8 +37,10 @@ class MinioAudioStorage implements AudioStorage {
 				.build();
 	}
 
-	@PostConstruct
-	void ensureBucketExists() {
+	private synchronized void ensureBucketExists() {
+		if (bucketEnsured.get()) {
+			return;
+		}
 		try {
 			s3Client.headBucket(HeadBucketRequest.builder().bucket(properties.bucket()).build());
 		} catch (S3Exception e) {
@@ -45,10 +50,12 @@ class MinioAudioStorage implements AudioStorage {
 				throw e;
 			}
 		}
+		bucketEnsured.set(true);
 	}
 
 	@Override
 	public String store(String objectKey, byte[] data, String contentType) {
+		ensureBucketExists();
 		s3Client.putObject(
 				PutObjectRequest.builder().bucket(properties.bucket()).key(objectKey).contentType(contentType).build(),
 				RequestBody.fromBytes(data));
