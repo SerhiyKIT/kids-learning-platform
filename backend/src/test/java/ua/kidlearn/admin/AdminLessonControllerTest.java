@@ -20,6 +20,7 @@ import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.transaction.annotation.Transactional;
+import ua.kidlearn.scenario.ScenarioFixtures;
 import ua.kidlearn.users.Role;
 import ua.kidlearn.users.User;
 import ua.kidlearn.users.UserRepository;
@@ -77,8 +78,7 @@ class AdminLessonControllerTest {
 		MvcResult versionResult = mockMvc.perform(post("/api/admin/lessons/" + lessonId + "/versions").with(csrf())
 						.session(adminSession)
 						.contentType(MediaType.APPLICATION_JSON)
-						.content("{\"scenario\":{\"learning_goal\":\"Cross safely\",\"scenes\":[{\"type\":\"choice_situation\"}]},"
-								+ "\"generatedBy\":\"human\"}"))
+						.content("{\"scenario\":" + ScenarioFixtures.VALID_MINIMAL_SCENARIO + ",\"generatedBy\":\"human\"}"))
 				.andExpect(status().isCreated())
 				.andExpect(jsonPath("$.status").value("draft"))
 				.andExpect(jsonPath("$.versionNo").value(1))

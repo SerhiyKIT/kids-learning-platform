@@ -98,43 +98,87 @@ class VoicingControllerTest {
 				((Number) JsonPath.<Object>read(body, "$.cached")).intValue());
 	}
 
-	// 5 voice-line objects, 2 of them duplicating another line's text
-	// (fb_b repeats bridge1's text, hint1 repeats setup1's text) -> 5 distinct.
-	private static final String SCENARIO_WITH_DUPLICATES = """
-			{
-			  "learning_goal": "Cross safely",
-			  "reality_bridge": {"key": "bridge1", "text": "Remember to look both ways"},
-			  "scenes": [
-			    {
-			      "key": "scene_1",
-			      "setup": {"key": "setup1", "text": "Look both ways before crossing"},
-			      "options": [
-			        {"id": "a", "label": {"key": "opt_a", "text": "Cross now"}, "correct": false,
-			         "feedback": {"line": {"key": "fb_a", "text": "Not yet, look again"}}},
-			        {"id": "b", "label": {"key": "opt_b", "text": "Look both ways"}, "correct": true,
-			         "feedback": {"line": {"key": "fb_b", "text": "Remember to look both ways"}}}
-			      ],
-			      "assistant": {
-			        "hints": [
-			          {"level": 1, "line": {"key": "hint1", "text": "Look both ways before crossing"}}
-			        ]
-			      }
-			    }
-			  ]
-			}
-			""";
+	/**
+	 * A schema-valid scenario (1 reality_bridge + 1 demo narration line + 2 choice scenes, each with
+	 * setup + 2 options*(label+feedback) + 2 hints + re_explain = 8) = 18 distinct voice-line objects,
+	 * every key/text namespaced by keyPrefix so two calls with different prefixes share no text except
+	 * whatever bridgeText is passed.
+	 */
+	private static String scenario(String keyPrefix, String bridgeText) {
+		return """
+				{
+				  "schema_version": "1.0.0",
+				  "module": "safety",
+				  "topic": "road_safety",
+				  "pattern_ids": ["1.6"],
+				  "age_band": "age_5_6",
+				  "title": "Crossing the street",
+				  "learning_goal": "Look both ways before crossing",
+				  "reality_bridge": {"key": "%1$s_bridge", "text": "%2$s"},
+				  "scenes": [
+				    {
+				      "key": "scene_1", "type": "demo", "background": "street_bg",
+				      "characters": [{"id": "guide", "emotion": "neutral"}],
+				      "narration": [
+				        {"line": {"key": "%1$s_narr", "text": "%1$s narration line here now"}}
+				      ]
+				    },
+				    {
+				      "key": "scene_2", "type": "choice", "background": "street_bg",
+				      "characters": [{"id": "guide", "emotion": "thinking"}],
+				      "is_control": false,
+				      "setup": {"key": "%1$s_setup1", "text": "%1$s setup one question text"},
+				      "options": [
+				        {"id": "a", "icon": "icon_a", "label": {"key": "%1$s_opt1a", "text": "%1$s option one a"}, "correct": true,
+				         "feedback": {"line": {"key": "%1$s_fb1a", "text": "%1$s feedback one a"}}},
+				        {"id": "b", "icon": "icon_b", "label": {"key": "%1$s_opt1b", "text": "%1$s option one b"}, "correct": false,
+				         "feedback": {"line": {"key": "%1$s_fb1b", "text": "%1$s feedback one b"}}}
+				      ],
+				      "assistant": {
+				        "hints": [
+				          {"level": 1, "line": {"key": "%1$s_hint1a", "text": "%1$s hint one a"}},
+				          {"level": 2, "line": {"key": "%1$s_hint1b", "text": "%1$s hint one b"}}
+				        ],
+				        "re_explain": {"key": "%1$s_re1", "text": "%1$s re explain one"}
+				      }
+				    },
+				    {
+				      "key": "scene_3", "type": "choice", "background": "street_bg",
+				      "characters": [{"id": "guide", "emotion": "pride"}],
+				      "is_control": true,
+				      "setup": {"key": "%1$s_setup2", "text": "%1$s setup two question text"},
+				      "options": [
+				        {"id": "a", "icon": "icon_a", "label": {"key": "%1$s_opt2a", "text": "%1$s option two a"}, "correct": true,
+				         "feedback": {"line": {"key": "%1$s_fb2a", "text": "%1$s feedback two a"}}},
+				        {"id": "b", "icon": "icon_b", "label": {"key": "%1$s_opt2b", "text": "%1$s option two b"}, "correct": false,
+				         "feedback": {"line": {"key": "%1$s_fb2b", "text": "%1$s feedback two b"}}}
+				      ],
+				      "assistant": {
+				        "hints": [
+				          {"level": 1, "line": {"key": "%1$s_hint2a", "text": "%1$s hint two a"}},
+				          {"level": 2, "line": {"key": "%1$s_hint2b", "text": "%1$s hint two b"}}
+				        ],
+				        "re_explain": {"key": "%1$s_re2", "text": "%1$s re explain two"}
+				      }
+				    }
+				  ]
+				}
+				""".formatted(keyPrefix, bridgeText);
+	}
+
+	private static final int VOICE_LINES_PER_SCENARIO = 18;
 
 	@Test
 	void firstVoicingSynthesizesEveryDistinctLineWithNoCacheHits() throws Exception {
 		String adminEmail = uniqueEmail("admin");
 		registerAdmin(adminEmail);
 		MockHttpSession adminSession = login(adminEmail);
-		UUID versionId = createVersion(adminSession, "Crossing the street", SCENARIO_WITH_DUPLICATES);
+		UUID versionId = createVersion(adminSession, "Crossing the street", scenario("va", "Remember to look both ways"));
 
 		VoicingResult result = voice(adminSession, versionId);
 
-		assertThat(result.linesTotal()).isEqualTo(5);
-		assertThat(result.synthesized()).isEqualTo(5);
+		assertThat(result.linesTotal()).isEqualTo(VOICE_LINES_PER_SCENARIO);
+		assertThat(result.synthesized()).isEqualTo(VOICE_LINES_PER_SCENARIO);
 		assertThat(result.cached()).isEqualTo(0);
 	}
 
@@ -143,14 +187,14 @@ class VoicingControllerTest {
 		String adminEmail = uniqueEmail("admin");
 		registerAdmin(adminEmail);
 		MockHttpSession adminSession = login(adminEmail);
-		UUID versionId = createVersion(adminSession, "Crossing the street", SCENARIO_WITH_DUPLICATES);
+		UUID versionId = createVersion(adminSession, "Crossing the street", scenario("va", "Remember to look both ways"));
 
 		voice(adminSession, versionId);
 		VoicingResult second = voice(adminSession, versionId);
 
-		assertThat(second.linesTotal()).isEqualTo(5);
+		assertThat(second.linesTotal()).isEqualTo(VOICE_LINES_PER_SCENARIO);
 		assertThat(second.synthesized()).isEqualTo(0);
-		assertThat(second.cached()).isEqualTo(5);
+		assertThat(second.cached()).isEqualTo(VOICE_LINES_PER_SCENARIO);
 	}
 
 	@Test
@@ -159,46 +203,16 @@ class VoicingControllerTest {
 		registerAdmin(adminEmail);
 		MockHttpSession adminSession = login(adminEmail);
 
-		UUID versionA = createVersion(adminSession, "Crossing the street", SCENARIO_WITH_DUPLICATES);
+		UUID versionA = createVersion(adminSession, "Crossing the street", scenario("va", "Remember to look both ways"));
 		voice(adminSession, versionA);
 
-		// One line ("Remember to look both ways") is identical to versionA's bridge1 text.
-		String scenarioB = """
-				{
-				  "learning_goal": "Know emergency numbers",
-				  "reality_bridge": {"key": "bridge2", "text": "Remember to look both ways"},
-				  "scenes": [
-				    {
-				      "key": "scene_1",
-				      "setup": {"key": "setup2", "text": "Which number do you call"},
-				      "options": [
-				        {"id": "a", "label": {"key": "opt_c", "text": "Call 101"}, "correct": true,
-				         "feedback": {"line": {"key": "fb_c", "text": "Great job"}}}
-				      ]
-				    }
-				  ]
-				}
-				""";
-		UUID versionB = createVersion(adminSession, "Emergency numbers", scenarioB);
+		// Only the reality_bridge text is shared with versionA; every other line is namespaced "vb".
+		UUID versionB = createVersion(adminSession, "Emergency numbers", scenario("vb", "Remember to look both ways"));
 		VoicingResult resultB = voice(adminSession, versionB);
 
-		assertThat(resultB.linesTotal()).isEqualTo(4);
-		assertThat(resultB.synthesized()).isEqualTo(3);
+		assertThat(resultB.linesTotal()).isEqualTo(VOICE_LINES_PER_SCENARIO);
+		assertThat(resultB.synthesized()).isEqualTo(VOICE_LINES_PER_SCENARIO - 1);
 		assertThat(resultB.cached()).isEqualTo(1);
-	}
-
-	@Test
-	void versionWithNoVoiceLinesVoicesCleanly() throws Exception {
-		String adminEmail = uniqueEmail("admin");
-		registerAdmin(adminEmail);
-		MockHttpSession adminSession = login(adminEmail);
-		UUID versionId = createVersion(adminSession, "No voice lines", "{\"foo\":\"bar\",\"nested\":{\"baz\":123}}");
-
-		VoicingResult result = voice(adminSession, versionId);
-
-		assertThat(result.linesTotal()).isEqualTo(0);
-		assertThat(result.synthesized()).isEqualTo(0);
-		assertThat(result.cached()).isEqualTo(0);
 	}
 
 	@Test
@@ -206,7 +220,7 @@ class VoicingControllerTest {
 		String adminEmail = uniqueEmail("admin");
 		registerAdmin(adminEmail);
 		MockHttpSession adminSession = login(adminEmail);
-		UUID versionId = createVersion(adminSession, "Crossing the street", SCENARIO_WITH_DUPLICATES);
+		UUID versionId = createVersion(adminSession, "Crossing the street", scenario("nc", "Remember to look both ways"));
 
 		String teacherEmail = uniqueEmail("teacher");
 		registerTeacher(teacherEmail);

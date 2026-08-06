@@ -11,6 +11,9 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.ObjectMapper;
+import ua.kidlearn.scenario.ScenarioProblem;
+import ua.kidlearn.scenario.ScenarioValidationException;
+import ua.kidlearn.scenario.ScenarioValidator;
 
 /**
  * Minimal admin content entry (create lesson + version + publish) — a STOPGAP
@@ -26,13 +29,15 @@ public class LessonService {
 	private final LessonVersionRepository lessonVersionRepository;
 	private final ModuleRepository moduleRepository;
 	private final ObjectMapper objectMapper;
+	private final ScenarioValidator scenarioValidator;
 
 	public LessonService(LessonRepository lessonRepository, LessonVersionRepository lessonVersionRepository,
-			ModuleRepository moduleRepository, ObjectMapper objectMapper) {
+			ModuleRepository moduleRepository, ObjectMapper objectMapper, ScenarioValidator scenarioValidator) {
 		this.lessonRepository = lessonRepository;
 		this.lessonVersionRepository = lessonVersionRepository;
 		this.moduleRepository = moduleRepository;
 		this.objectMapper = objectMapper;
+		this.scenarioValidator = scenarioValidator;
 	}
 
 	@Transactional
@@ -52,6 +57,10 @@ public class LessonService {
 		}
 		if (!VALID_GENERATED_BY.contains(generatedBy)) {
 			throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid generatedBy: " + generatedBy);
+		}
+		List<ScenarioProblem> problems = scenarioValidator.validate(scenario);
+		if (!problems.isEmpty()) {
+			throw new ScenarioValidationException(problems);
 		}
 		int nextVersionNo = lessonVersionRepository.findFirstByLessonIdOrderByVersionNoDesc(lessonId)
 				.map(v -> v.getVersionNo() + 1)

@@ -77,6 +77,15 @@
 			<artifactId>flyway-database-postgresql</artifactId>
 		</dependency>
 
+		<!-- json-schema-validator 3.x targets tools.jackson.* (Jackson 3), matching Boot 4.1's
+		     jackson-databind 3.1.4 exactly, so no Jackson 2/3 clash (unlike the 2.x line, which
+		     is Jackson-2-only). Used to validate AI/human-authored lesson scenarios. -->
+		<dependency>
+			<groupId>com.networknt</groupId>
+			<artifactId>json-schema-validator</artifactId>
+			<version>3.0.6</version>
+		</dependency>
+
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-test</artifactId>
@@ -99,6 +108,33 @@
 			<plugin>
 				<groupId>org.springframework.boot</groupId>
 				<artifactId>spring-boot-maven-plugin</artifactId>
+			</plugin>
+			<!-- docs/lesson-scenario.schema.json is the single source of truth (see the doc's own
+			     header comment); copy it onto the classpath at build time instead of duplicating it
+			     under src/main/resources. -->
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-resources-plugin</artifactId>
+				<executions>
+					<execution>
+						<id>copy-lesson-scenario-schema</id>
+						<phase>generate-resources</phase>
+						<goals>
+							<goal>copy-resources</goal>
+						</goals>
+						<configuration>
+							<outputDirectory>${project.build.outputDirectory}/schema</outputDirectory>
+							<resources>
+								<resource>
+									<directory>${project.basedir}/../docs</directory>
+									<includes>
+										<include>lesson-scenario.schema.json</include>
+									</includes>
+								</resource>
+							</resources>
+						</configuration>
+					</execution>
+				</executions>
 			</plugin>
 		</plugins>
 	</build>

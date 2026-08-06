@@ -22,6 +22,7 @@ import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.transaction.annotation.Transactional;
+import ua.kidlearn.scenario.ScenarioFixtures;
 import ua.kidlearn.users.Role;
 import ua.kidlearn.users.User;
 import ua.kidlearn.users.UserRepository;
@@ -98,7 +99,7 @@ class PlaythroughControllerTest {
 		MvcResult versionResult = mockMvc.perform(post("/api/admin/lessons/" + lessonId + "/versions").with(csrf())
 						.session(adminSession)
 						.contentType(MediaType.APPLICATION_JSON)
-						.content("{\"scenario\":{\"learning_goal\":\"test\"},\"generatedBy\":\"human\"}"))
+						.content("{\"scenario\":" + ScenarioFixtures.VALID_MINIMAL_SCENARIO + ",\"generatedBy\":\"human\"}"))
 				.andExpect(status().isCreated())
 				.andReturn();
 		String versionId = JsonPath.read(versionResult.getResponse().getContentAsString(), "$.id");
