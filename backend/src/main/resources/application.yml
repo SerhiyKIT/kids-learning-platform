@@ -21,3 +21,32 @@ management:
 auth:
   email-verification-ttl: 24h
   password-reset-ttl: 1h
+
+app:
+  ratelimit:
+    # Safe in both profiles: nginx sits in front in prod too, and dev has no proxy so the
+    # header is simply absent (falls back to the remote address). MUST only be true when every
+    # request truly passes through our own reverse proxy — otherwise a client can spoof the
+    # header and dodge per-IP limits entirely.
+    trust-forwarded-header: true
+    login-per-account:
+      max: 5
+      window: 15m
+    login-per-ip:
+      max: 20
+      window: 15m
+    forgot-password-per-ip:
+      max: 5
+      window: 1h
+    resend-verification-per-ip:
+      max: 5
+      window: 1h
+    register-per-ip:
+      max: 10
+      window: 1h
+    verify-email-per-ip:
+      max: 10
+      window: 15m
+    reset-password-per-ip:
+      max: 10
+      window: 15m

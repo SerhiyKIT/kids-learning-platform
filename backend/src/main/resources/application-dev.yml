@@ -20,6 +20,14 @@ app:
     # Total LLM generate() calls per lesson-version request before giving up
     # and persisting the last attempt as rejected_auto.
     max-attempts: ${LLM_MAX_ATTEMPTS:2}
+  ratelimit:
+    # Local dev + the test suite share one simulated client IP (no reverse proxy locally,
+    # so no real X-Forwarded-For diversity) and legitimately register far more than 10
+    # accounts per run across all the other feature test suites. The production default
+    # (10/hour, see the base application.yml) still applies in prod.
+    register-per-ip:
+      max: 100000
+      window: 1h
 
 # Local MinIO instance started via /infra/docker-compose.yml.
 minio:
