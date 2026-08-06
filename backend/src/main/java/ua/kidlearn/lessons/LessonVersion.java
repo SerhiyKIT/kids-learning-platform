@@ -18,6 +18,8 @@ public class LessonVersion {
 
 	public static final String STATUS_DRAFT = "draft";
 	public static final String STATUS_PUBLISHED = "published";
+	public static final String STATUS_AUTO_VALIDATED = "auto_validated";
+	public static final String STATUS_REJECTED_AUTO = "rejected_auto";
 
 	@Id
 	@GeneratedValue(strategy = GenerationType.UUID)
@@ -61,6 +63,17 @@ public class LessonVersion {
 		this.scenario = scenario;
 		this.generatedBy = generatedBy;
 		this.status = STATUS_DRAFT;
+	}
+
+	/** For AI-generated versions: {@code status} is auto_validated or rejected_auto (never draft). */
+	public LessonVersion(UUID lessonId, int versionNo, String scenario, String generatedBy, String aiModel,
+			String status) {
+		this.lessonId = lessonId;
+		this.versionNo = versionNo;
+		this.scenario = scenario;
+		this.generatedBy = generatedBy;
+		this.aiModel = aiModel;
+		this.status = status;
 	}
 
 	public UUID getId() {
