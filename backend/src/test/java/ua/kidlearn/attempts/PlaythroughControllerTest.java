@@ -22,7 +22,6 @@ import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.transaction.annotation.Transactional;
-import ua.kidlearn.scenario.ScenarioFixtures;
 import ua.kidlearn.users.Role;
 import ua.kidlearn.users.User;
 import ua.kidlearn.users.UserRepository;
@@ -82,7 +81,13 @@ class PlaythroughControllerTest {
 		return (MockHttpSession) result.getRequest().getSession(false);
 	}
 
-	/** Registers a fresh admin and returns a published lesson version's id. */
+	private static final String GENERATION_REQUEST_BODY = """
+			{"topic":"road_safety","patternIds":["1.6"],"ageBand":"age_5_6",
+			 "learningGoal":"Look both ways before crossing"}
+			""";
+
+	/** Registers a fresh admin and returns a published lesson version's id, via the generate ->
+	 * approve -> publish moderation pipeline (the stub LLM always returns a valid scenario). */
 	private UUID createPublishedVersion(String title) throws Exception {
 		String adminEmail = uniqueEmail("admin");
 		registerAdmin(adminEmail);
@@ -96,14 +101,17 @@ class PlaythroughControllerTest {
 				.andReturn();
 		String lessonId = JsonPath.read(lessonResult.getResponse().getContentAsString(), "$.id");
 
-		MvcResult versionResult = mockMvc.perform(post("/api/admin/lessons/" + lessonId + "/versions").with(csrf())
+		MvcResult generateResult = mockMvc.perform(post("/api/admin/lessons/" + lessonId + "/generate").with(csrf())
 						.session(adminSession)
 						.contentType(MediaType.APPLICATION_JSON)
-						.content("{\"scenario\":" + ScenarioFixtures.VALID_MINIMAL_SCENARIO + ",\"generatedBy\":\"human\"}"))
-				.andExpect(status().isCreated())
+						.content(GENERATION_REQUEST_BODY))
+				.andExpect(status().isOk())
 				.andReturn();
-		String versionId = JsonPath.read(versionResult.getResponse().getContentAsString(), "$.id");
+		String versionId = JsonPath.read(generateResult.getResponse().getContentAsString(), "$.versionId");
 
+		mockMvc.perform(post("/api/admin/lesson-versions/" + versionId + "/approve").with(csrf())
+						.session(adminSession))
+				.andExpect(status().isOk());
 		mockMvc.perform(post("/api/admin/lesson-versions/" + versionId + "/publish").with(csrf())
 						.session(adminSession))
 				.andExpect(status().isOk());

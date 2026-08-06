@@ -5,6 +5,8 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -16,12 +18,15 @@ import ua.kidlearn.scenario.ScenarioValidationException;
 import ua.kidlearn.scenario.ScenarioValidator;
 
 /**
- * Minimal admin content entry (create lesson + version + publish) — a STOPGAP
- * until the AI generation pipeline and moderation UI exist. Publishing here
- * is a plain status flip with no review workflow.
+ * Lesson/lesson-version admin operations: content entry (manual or AI-generated, both scenario-
+ * validated before persisting) and the moderation lifecycle — auto_validated -> approved ->
+ * published, or auto_validated -> archived (rejected) — per
+ * docs/Формат_подання_уроків_та_ШІ.md §7. Only 'approved' versions may publish.
  */
 @Service
 public class LessonService {
+
+	private static final Logger log = LoggerFactory.getLogger(LessonService.class);
 
 	private static final Set<String> VALID_GENERATED_BY = Set.of("ai", "human", "ai_edited");
 
@@ -87,13 +92,54 @@ public class LessonService {
 
 	@Transactional
 	public LessonVersion publish(UUID lessonVersionId) {
-		LessonVersion version = lessonVersionRepository.findById(lessonVersionId)
-				.orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Lesson version not found"));
+		LessonVersion version = getVersion(lessonVersionId);
+		if (!LessonVersion.STATUS_APPROVED.equals(version.getStatus())) {
+			throw new NotApprovedException();
+		}
 		version.publish();
 		Lesson lesson = lessonRepository.findById(version.getLessonId())
 				.orElseThrow(() -> new IllegalStateException("Lesson missing for version " + lessonVersionId));
 		lesson.setCurrentVersionId(version.getId());
 		return version;
+	}
+
+	@Transactional
+	public LessonVersion approve(UUID lessonVersionId, UUID approvedBy) {
+		LessonVersion version = getVersion(lessonVersionId);
+		if (!LessonVersion.STATUS_AUTO_VALIDATED.equals(version.getStatus())) {
+			throw new NotValidatedException();
+		}
+		version.approve(approvedBy);
+		return version;
+	}
+
+	@Transactional
+	public LessonVersion reject(UUID lessonVersionId, String reason) {
+		LessonVersion version = getVersion(lessonVersionId);
+		if (!LessonVersion.STATUS_AUTO_VALIDATED.equals(version.getStatus())) {
+			throw new NotValidatedException();
+		}
+		log.info("Lesson version {} rejected: {}", lessonVersionId, reason);
+		version.reject();
+		return version;
+	}
+
+	@Transactional(readOnly = true)
+	public LessonVersion getVersion(UUID lessonVersionId) {
+		return lessonVersionRepository.findById(lessonVersionId)
+				.orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Lesson version not found"));
+	}
+
+	@Transactional(readOnly = true)
+	public List<PendingReviewEntry> listByStatus(String status) {
+		List<LessonVersion> versions = lessonVersionRepository.findByStatusOrderByCreatedAtAsc(status);
+		Map<UUID, Lesson> lessonsById = lessonRepository.findAllById(versions.stream().map(LessonVersion::getLessonId).toList())
+				.stream()
+				.collect(Collectors.toMap(Lesson::getId, l -> l));
+		return versions.stream()
+				.map(v -> new PendingReviewEntry(v.getId(), v.getLessonId(), lessonsById.get(v.getLessonId()).getTitle(),
+						v.getVersionNo(), v.getStatus(), v.getGeneratedBy()))
+				.toList();
 	}
 
 	@Transactional(readOnly = true)

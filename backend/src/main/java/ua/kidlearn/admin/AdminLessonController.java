@@ -1,27 +1,36 @@
 package ua.kidlearn.admin;
 
 import jakarta.validation.Valid;
+import java.util.List;
 import java.util.UUID;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
+import tools.jackson.databind.ObjectMapper;
+import ua.kidlearn.auth.AppUserPrincipal;
 import ua.kidlearn.lessons.CreateLessonRequest;
 import ua.kidlearn.lessons.CreateLessonVersionRequest;
 import ua.kidlearn.lessons.Lesson;
 import ua.kidlearn.lessons.LessonResponse;
 import ua.kidlearn.lessons.LessonService;
 import ua.kidlearn.lessons.LessonVersion;
+import ua.kidlearn.lessons.LessonVersionDetailResponse;
 import ua.kidlearn.lessons.LessonVersionResponse;
+import ua.kidlearn.lessons.PendingReviewEntry;
+import ua.kidlearn.lessons.RejectVersionRequest;
 
 /**
- * STOPGAP content entry for admins, standing in for the future AI generation
- * pipeline + moderation UI. Publishing here is an unreviewed status flip —
- * fine for seeding the MVP catalog, not a substitute for real moderation.
+ * Admin content entry (manual or AI-generated, both scenario-validated) plus the moderation
+ * lifecycle: auto_validated -&gt; approve -&gt; approved -&gt; publish -&gt; published, or
+ * auto_validated -&gt; reject -&gt; archived. Only 'approved' versions may publish.
  */
 @RestController
 @RequestMapping("/api/admin")
@@ -29,9 +38,11 @@ import ua.kidlearn.lessons.LessonVersionResponse;
 public class AdminLessonController {
 
 	private final LessonService lessonService;
+	private final ObjectMapper objectMapper;
 
-	public AdminLessonController(LessonService lessonService) {
+	public AdminLessonController(LessonService lessonService, ObjectMapper objectMapper) {
 		this.lessonService = lessonService;
+		this.objectMapper = objectMapper;
 	}
 
 	@PostMapping("/lessons")
@@ -47,6 +58,26 @@ public class AdminLessonController {
 			@Valid @RequestBody CreateLessonVersionRequest request) {
 		LessonVersion version = lessonService.createVersion(id, request.scenario(), request.generatedBy());
 		return LessonVersionResponse.from(version);
+	}
+
+	@GetMapping("/lesson-versions")
+	public List<PendingReviewEntry> listByStatus(@RequestParam String status) {
+		return lessonService.listByStatus(status);
+	}
+
+	@GetMapping("/lesson-versions/{id}")
+	public LessonVersionDetailResponse getVersion(@PathVariable UUID id) {
+		return LessonVersionDetailResponse.from(lessonService.getVersion(id), objectMapper);
+	}
+
+	@PostMapping("/lesson-versions/{id}/approve")
+	public LessonVersionResponse approve(@PathVariable UUID id, @AuthenticationPrincipal AppUserPrincipal principal) {
+		return LessonVersionResponse.from(lessonService.approve(id, principal.getId()));
+	}
+
+	@PostMapping("/lesson-versions/{id}/reject")
+	public LessonVersionResponse reject(@PathVariable UUID id, @Valid @RequestBody RejectVersionRequest request) {
+		return LessonVersionResponse.from(lessonService.reject(id, request.reason()));
 	}
 
 	@PostMapping("/lesson-versions/{id}/publish")

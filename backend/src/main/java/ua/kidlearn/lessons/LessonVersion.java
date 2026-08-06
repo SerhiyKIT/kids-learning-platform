@@ -20,6 +20,8 @@ public class LessonVersion {
 	public static final String STATUS_PUBLISHED = "published";
 	public static final String STATUS_AUTO_VALIDATED = "auto_validated";
 	public static final String STATUS_REJECTED_AUTO = "rejected_auto";
+	public static final String STATUS_APPROVED = "approved";
+	public static final String STATUS_ARCHIVED = "archived";
 
 	@Id
 	@GeneratedValue(strategy = GenerationType.UUID)
@@ -118,6 +120,15 @@ public class LessonVersion {
 
 	public void publish() {
 		this.status = STATUS_PUBLISHED;
+	}
+
+	public void approve(UUID approvedBy) {
+		this.status = STATUS_APPROVED;
+		this.approvedBy = approvedBy;
+	}
+
+	public void reject() {
+		this.status = STATUS_ARCHIVED;
 	}
 
 }
