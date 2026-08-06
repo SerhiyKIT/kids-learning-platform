@@ -62,11 +62,27 @@ public class LessonService {
 		if (!problems.isEmpty()) {
 			throw new ScenarioValidationException(problems);
 		}
-		int nextVersionNo = lessonVersionRepository.findFirstByLessonIdOrderByVersionNoDesc(lessonId)
+		return lessonVersionRepository.save(
+				new LessonVersion(lessonId, nextVersionNo(lessonId), objectMapper.writeValueAsString(scenario), generatedBy));
+	}
+
+	/**
+	 * Persists an AI-generated version as-is (already validated, or already exhausted its retry
+	 * budget, by the caller) — used by the LLM generation pipeline, which needs both outcomes
+	 * (auto_validated and rejected_auto) recorded for human review, not just the valid case.
+	 */
+	@Transactional
+	public LessonVersion createGeneratedVersion(UUID lessonId, JsonNode scenario, String aiModel, String status) {
+		lessonRepository.findById(lessonId)
+				.orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Lesson not found"));
+		return lessonVersionRepository.save(new LessonVersion(lessonId, nextVersionNo(lessonId),
+				objectMapper.writeValueAsString(scenario), "ai", aiModel, status));
+	}
+
+	private int nextVersionNo(UUID lessonId) {
+		return lessonVersionRepository.findFirstByLessonIdOrderByVersionNoDesc(lessonId)
 				.map(v -> v.getVersionNo() + 1)
 				.orElse(1);
-		return lessonVersionRepository.save(
-				new LessonVersion(lessonId, nextVersionNo, objectMapper.writeValueAsString(scenario), generatedBy));
 	}
 
 	@Transactional

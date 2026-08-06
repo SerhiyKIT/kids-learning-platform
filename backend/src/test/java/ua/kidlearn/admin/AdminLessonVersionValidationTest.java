@@ -1,5 +1,6 @@
 package ua.kidlearn.admin;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestBuilders.formLogin;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -20,6 +21,7 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.test.web.servlet.ResultActions;
 import org.springframework.transaction.annotation.Transactional;
+import ua.kidlearn.lessons.LessonVersionRepository;
 import ua.kidlearn.scenario.ScenarioFixtures;
 import ua.kidlearn.users.Role;
 import ua.kidlearn.users.User;
@@ -46,6 +48,9 @@ class AdminLessonVersionValidationTest {
 
 	@Autowired
 	private PasswordEncoder passwordEncoder;
+
+	@Autowired
+	private LessonVersionRepository lessonVersionRepository;
 
 	private static String uniqueEmail(String prefix) {
 		return prefix + "-" + UUID.randomUUID() + "@example.test";
@@ -88,7 +93,7 @@ class AdminLessonVersionValidationTest {
 	}
 
 	@Test
-	void missingRequiredFieldReturns422WithProblems() throws Exception {
+	void missingRequiredFieldReturns422WithProblemsAndPersistsNothing() throws Exception {
 		MockHttpSession adminSession = loginAsNewAdmin();
 		String lessonId = createLesson(adminSession);
 		String scenario = ScenarioFixtures.VALID_MINIMAL_SCENARIO.replace("\"title\": \"Crossing the street\",", "");
@@ -96,6 +101,9 @@ class AdminLessonVersionValidationTest {
 		postVersion(adminSession, lessonId, scenario)
 				.andExpect(status().isUnprocessableEntity())
 				.andExpect(jsonPath("$.problems").isNotEmpty());
+
+		assertThat(lessonVersionRepository.findFirstByLessonIdOrderByVersionNoDesc(UUID.fromString(lessonId)))
+				.isEmpty();
 	}
 
 	@Test
