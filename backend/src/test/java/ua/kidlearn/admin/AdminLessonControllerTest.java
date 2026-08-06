@@ -62,7 +62,7 @@ class AdminLessonControllerTest {
 	}
 
 	@Test
-	void adminCreatesLessonPublishesAndCatalogExcludesTheDraft() throws Exception {
+	void adminCreatesLessonAndDraftVersionButCannotPublishWithoutModeration() throws Exception {
 		String adminEmail = uniqueEmail("admin");
 		registerAdmin(adminEmail);
 		MockHttpSession adminSession = login(adminEmail);
@@ -90,16 +90,11 @@ class AdminLessonControllerTest {
 				.andExpect(status().isOk())
 				.andExpect(jsonPath("$[?(@.lessonId=='" + lessonId + "')]").isEmpty());
 
+		// The old unreviewed status-flip publish is gone: a draft was never approved, so it 409s.
 		mockMvc.perform(post("/api/admin/lesson-versions/" + versionId + "/publish").with(csrf())
 						.session(adminSession))
-				.andExpect(status().isOk())
-				.andExpect(jsonPath("$.status").value("published"));
-
-		mockMvc.perform(get("/api/catalog/lessons").session(adminSession))
-				.andExpect(status().isOk())
-				.andExpect(jsonPath("$[?(@.lessonId=='" + lessonId + "')].title").value("Crossing the street"))
-				.andExpect(jsonPath("$[?(@.lessonId=='" + lessonId + "')].moduleCode").value("safety"))
-				.andExpect(jsonPath("$[?(@.lessonId=='" + lessonId + "')].currentVersionId").value(versionId));
+				.andExpect(status().isConflict())
+				.andExpect(jsonPath("$.code").value("NOT_APPROVED"));
 	}
 
 	@Test
