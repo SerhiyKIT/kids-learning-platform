@@ -7,9 +7,9 @@ platform. Architecture decisions live in [`/docs`](docs), starting with
 ## Layout
 
 - `/backend` — Java 21 / Spring Boot 4.1 monolith
+- `/frontend` — Next.js (App Router, TypeScript) PWA — adult cabinets only so far; see `frontend/README.md`
 - `/infra` — local Docker infra (PostgreSQL, MinIO, Mailpit)
 - `/docs` — architecture and product docs
-- `/frontend` — added in a later task
 
 ## Run locally
 

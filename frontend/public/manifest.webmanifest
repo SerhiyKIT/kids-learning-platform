@@ -1,0 +1,18 @@
+{
+  "name": "Kids Learning Platform",
+  "short_name": "KidsLearn",
+  "description": "Preschool learning platform for parents, teachers, and kids.",
+  "start_url": "/",
+  "display": "standalone",
+  "orientation": "landscape",
+  "background_color": "#ffffff",
+  "theme_color": "#2563eb",
+  "icons": [
+    {
+      "src": "/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ]
+}
