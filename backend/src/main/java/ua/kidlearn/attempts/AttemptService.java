@@ -10,6 +10,8 @@ import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.ObjectMapper;
 import ua.kidlearn.children.Child;
 import ua.kidlearn.children.ChildRepository;
 import ua.kidlearn.children.ParentChildRepository;
@@ -41,12 +43,13 @@ public class AttemptService {
 	private final ChildRepository childRepository;
 	private final GroupRepository groupRepository;
 	private final GroupMemberRepository groupMemberRepository;
+	private final ObjectMapper objectMapper;
 
 	public AttemptService(LessonAttemptRepository lessonAttemptRepository, SceneAnswerRepository sceneAnswerRepository,
 			LessonAssignmentRepository lessonAssignmentRepository, LessonVersionRepository lessonVersionRepository,
 			LessonRepository lessonRepository, ModuleRepository moduleRepository,
 			ParentChildRepository parentChildRepository, ChildRepository childRepository,
-			GroupRepository groupRepository, GroupMemberRepository groupMemberRepository) {
+			GroupRepository groupRepository, GroupMemberRepository groupMemberRepository, ObjectMapper objectMapper) {
 		this.lessonAttemptRepository = lessonAttemptRepository;
 		this.sceneAnswerRepository = sceneAnswerRepository;
 		this.lessonAssignmentRepository = lessonAssignmentRepository;
@@ -57,6 +60,7 @@ public class AttemptService {
 		this.childRepository = childRepository;
 		this.groupRepository = groupRepository;
 		this.groupMemberRepository = groupMemberRepository;
+		this.objectMapper = objectMapper;
 	}
 
 	@Transactional(readOnly = true)
@@ -71,6 +75,29 @@ public class AttemptService {
 					module.getCode(), assignment.getId(), assignment.getDueAt()));
 		}
 		return entries;
+	}
+
+	/**
+	 * The playable scenario for an assigned, published lesson version. Returns the raw jsonb
+	 * scenario as-is.
+	 *
+	 * TODO: once a real TTS provider exists, enrich each voice line with its audio_assets.file_url
+	 * (looked up by the same textHash VoicingService caches by) before returning — the player
+	 * needs somewhere to get audio from. Not needed while StubTtsProvider is the only provider.
+	 */
+	@Transactional(readOnly = true)
+	public JsonNode scenario(UUID parentId, UUID childId, UUID lessonVersionId) {
+		requireChildOwnership(parentId, childId);
+		boolean assigned = resolveAssignmentsForChild(childId).stream()
+				.anyMatch(a -> a.getLessonVersionId().equals(lessonVersionId));
+		if (!assigned) {
+			throw notFound();
+		}
+		LessonVersion version = lessonVersionRepository.findById(lessonVersionId).orElseThrow(this::notFound);
+		if (!version.isPublished()) {
+			throw notFound();
+		}
+		return objectMapper.readTree(version.getScenario());
 	}
 
 	@Transactional

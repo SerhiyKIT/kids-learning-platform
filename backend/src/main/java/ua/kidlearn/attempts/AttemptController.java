@@ -13,6 +13,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
+import tools.jackson.databind.JsonNode;
 import ua.kidlearn.audit.AuditAction;
 import ua.kidlearn.audit.AuditService;
 import ua.kidlearn.audit.AuditTargetType;
@@ -38,6 +39,12 @@ public class AttemptController {
 	public List<AvailableLessonEntry> availableLessons(@AuthenticationPrincipal AppUserPrincipal principal,
 			@PathVariable UUID childId) {
 		return attemptService.availableLessons(principal.getId(), childId);
+	}
+
+	@GetMapping("/api/children/{childId}/lessons/{lessonVersionId}/scenario")
+	public JsonNode scenario(@AuthenticationPrincipal AppUserPrincipal principal, @PathVariable UUID childId,
+			@PathVariable UUID lessonVersionId) {
+		return attemptService.scenario(principal.getId(), childId, lessonVersionId);
 	}
 
 	@PostMapping("/api/children/{childId}/attempts")
