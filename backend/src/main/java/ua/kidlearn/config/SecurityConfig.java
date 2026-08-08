@@ -63,7 +63,14 @@ public class SecurityConfig {
 				// This is a JSON API with no server-rendered pages to redirect to, so
 				// unauthenticated access must return 401, not a 302 to /login.
 				.exceptionHandling(exceptions -> exceptions
-						.authenticationEntryPoint(new HttpStatusEntryPoint(HttpStatus.UNAUTHORIZED)));
+						.authenticationEntryPoint(new HttpStatusEntryPoint(HttpStatus.UNAUTHORIZED)))
+				// Same reasoning: an anonymous hit on a protected endpoint has no "page to return
+				// to" once logged in. Without this, that hit still gets saved (via the default
+				// HttpSessionRequestCache, independently of the 401 entry point above) and a
+				// later successful login redirects to it instead of the frontend's default "/" —
+				// e.g. a client's own CSRF-cookie warm-up GET could otherwise hijack the very
+				// next login's redirect target.
+				.requestCache(cache -> cache.disable());
 		return http.build();
 	}
 
