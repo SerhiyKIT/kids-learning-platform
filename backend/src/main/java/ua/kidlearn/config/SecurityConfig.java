@@ -8,22 +8,31 @@ import org.springframework.security.config.annotation.method.configuration.Enabl
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.HttpStatusEntryPoint;
+import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.security.web.csrf.CookieCsrfTokenRepository;
 import org.springframework.security.web.csrf.CsrfFilter;
 import org.springframework.security.web.csrf.CsrfTokenRequestAttributeHandler;
+import ua.kidlearn.ratelimit.AuthRateLimitFilter;
+import ua.kidlearn.ratelimit.ClientIpResolver;
+import ua.kidlearn.ratelimit.LoginAttemptService;
+import ua.kidlearn.ratelimit.LoginThrottleFilter;
+import ua.kidlearn.ratelimit.RateLimiter;
+import ua.kidlearn.ratelimit.RateLimitingAuthenticationFailureHandler;
+import ua.kidlearn.ratelimit.RateLimitingAuthenticationSuccessHandler;
 
 /**
  * Session-based security for the web-first PWA.
  *
- * TODO: Google OAuth2 login, TOTP 2FA for admins, admin data-access audit log,
- * rate limiting on auth endpoints.
+ * TODO: Google OAuth2 login, TOTP 2FA for admins, admin data-access audit log.
  */
 @Configuration
 @EnableMethodSecurity(prePostEnabled = true)
 public class SecurityConfig {
 
 	@Bean
-	public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+	public SecurityFilterChain securityFilterChain(HttpSecurity http, LoginAttemptService loginAttemptService,
+			ClientIpResolver clientIpResolver, RateLimiter rateLimiter, RateLimitProperties rateLimitProperties)
+			throws Exception {
 		http
 				.authorizeHttpRequests(auth -> auth
 						.requestMatchers("/actuator/health", "/actuator/info").permitAll()
@@ -39,7 +48,17 @@ public class SecurityConfig {
 				// Forces the XSRF-TOKEN cookie to be written on the first response a
 				// client makes, rather than only as a side effect of rendering a form.
 				.addFilterAfter(new CsrfCookieFilter(), CsrfFilter.class)
-				.formLogin(form -> form.permitAll())
+				// Per-IP counting on the other sensitive auth POSTs; placed ahead of CSRF so a
+				// flood is rejected with 429 before paying for CSRF token validation.
+				.addFilterBefore(new AuthRateLimitFilter(rateLimiter, clientIpResolver, rateLimitProperties),
+						CsrfFilter.class)
+				// Short-circuits over-the-limit login attempts (by account or IP) with 429 before
+				// Spring Security's own auth filter runs, so a locked account can't keep probing.
+				.addFilterBefore(new LoginThrottleFilter(loginAttemptService, clientIpResolver),
+						UsernamePasswordAuthenticationFilter.class)
+				.formLogin(form -> form.permitAll()
+						.successHandler(new RateLimitingAuthenticationSuccessHandler(loginAttemptService))
+						.failureHandler(new RateLimitingAuthenticationFailureHandler(loginAttemptService, clientIpResolver)))
 				.logout(logout -> logout.permitAll())
 				// This is a JSON API with no server-rendered pages to redirect to, so
 				// unauthenticated access must return 401, not a 302 to /login.
