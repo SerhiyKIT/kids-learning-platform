@@ -1,5 +1,6 @@
 package ua.kidlearn.attempts;
 
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import java.util.List;
 import java.util.UUID;
@@ -12,16 +13,25 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
+import ua.kidlearn.audit.AuditAction;
+import ua.kidlearn.audit.AuditService;
+import ua.kidlearn.audit.AuditTargetType;
 import ua.kidlearn.auth.AppUserPrincipal;
+import ua.kidlearn.ratelimit.ClientIpResolver;
 
 @RestController
 @PreAuthorize("hasRole('PARENT')")
 public class AttemptController {
 
 	private final AttemptService attemptService;
+	private final AuditService auditService;
+	private final ClientIpResolver clientIpResolver;
 
-	public AttemptController(AttemptService attemptService) {
+	public AttemptController(AttemptService attemptService, AuditService auditService,
+			ClientIpResolver clientIpResolver) {
 		this.attemptService = attemptService;
+		this.auditService = auditService;
+		this.clientIpResolver = clientIpResolver;
 	}
 
 	@GetMapping("/api/children/{childId}/available-lessons")
@@ -54,8 +64,11 @@ public class AttemptController {
 
 	@GetMapping("/api/children/{childId}/history")
 	public List<HistoryEntry> history(@AuthenticationPrincipal AppUserPrincipal principal,
-			@PathVariable UUID childId) {
-		return attemptService.history(principal.getId(), childId);
+			@PathVariable UUID childId, HttpServletRequest request) {
+		List<HistoryEntry> history = attemptService.history(principal.getId(), childId);
+		auditService.record(principal.getId(), principal.getRole(), AuditAction.VIEW_CHILD_HISTORY,
+				AuditTargetType.CHILD, childId, clientIpResolver.resolve(request));
+		return history;
 	}
 
 }

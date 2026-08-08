@@ -1,5 +1,6 @@
 package ua.kidlearn.admin;
 
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import java.util.List;
 import java.util.UUID;
@@ -15,6 +16,9 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 import tools.jackson.databind.ObjectMapper;
+import ua.kidlearn.audit.AuditAction;
+import ua.kidlearn.audit.AuditService;
+import ua.kidlearn.audit.AuditTargetType;
 import ua.kidlearn.auth.AppUserPrincipal;
 import ua.kidlearn.lessons.CreateLessonRequest;
 import ua.kidlearn.lessons.CreateLessonVersionRequest;
@@ -26,6 +30,7 @@ import ua.kidlearn.lessons.LessonVersionDetailResponse;
 import ua.kidlearn.lessons.LessonVersionResponse;
 import ua.kidlearn.lessons.PendingReviewEntry;
 import ua.kidlearn.lessons.RejectVersionRequest;
+import ua.kidlearn.ratelimit.ClientIpResolver;
 
 /**
  * Admin content entry (manual or AI-generated, both scenario-validated) plus the moderation
@@ -39,10 +44,15 @@ public class AdminLessonController {
 
 	private final LessonService lessonService;
 	private final ObjectMapper objectMapper;
+	private final AuditService auditService;
+	private final ClientIpResolver clientIpResolver;
 
-	public AdminLessonController(LessonService lessonService, ObjectMapper objectMapper) {
+	public AdminLessonController(LessonService lessonService, ObjectMapper objectMapper, AuditService auditService,
+			ClientIpResolver clientIpResolver) {
 		this.lessonService = lessonService;
 		this.objectMapper = objectMapper;
+		this.auditService = auditService;
+		this.clientIpResolver = clientIpResolver;
 	}
 
 	@PostMapping("/lessons")
@@ -71,18 +81,30 @@ public class AdminLessonController {
 	}
 
 	@PostMapping("/lesson-versions/{id}/approve")
-	public LessonVersionResponse approve(@PathVariable UUID id, @AuthenticationPrincipal AppUserPrincipal principal) {
-		return LessonVersionResponse.from(lessonService.approve(id, principal.getId()));
+	public LessonVersionResponse approve(@PathVariable UUID id, @AuthenticationPrincipal AppUserPrincipal principal,
+			HttpServletRequest request) {
+		LessonVersionResponse response = LessonVersionResponse.from(lessonService.approve(id, principal.getId()));
+		auditService.record(principal.getId(), principal.getRole(), AuditAction.APPROVE_VERSION,
+				AuditTargetType.LESSON_VERSION, id, clientIpResolver.resolve(request));
+		return response;
 	}
 
 	@PostMapping("/lesson-versions/{id}/reject")
-	public LessonVersionResponse reject(@PathVariable UUID id, @Valid @RequestBody RejectVersionRequest request) {
-		return LessonVersionResponse.from(lessonService.reject(id, request.reason()));
+	public LessonVersionResponse reject(@PathVariable UUID id, @Valid @RequestBody RejectVersionRequest body,
+			@AuthenticationPrincipal AppUserPrincipal principal, HttpServletRequest request) {
+		LessonVersionResponse response = LessonVersionResponse.from(lessonService.reject(id, body.reason()));
+		auditService.record(principal.getId(), principal.getRole(), AuditAction.REJECT_VERSION,
+				AuditTargetType.LESSON_VERSION, id, clientIpResolver.resolve(request));
+		return response;
 	}
 
 	@PostMapping("/lesson-versions/{id}/publish")
-	public LessonVersionResponse publish(@PathVariable UUID id) {
-		return LessonVersionResponse.from(lessonService.publish(id));
+	public LessonVersionResponse publish(@PathVariable UUID id, @AuthenticationPrincipal AppUserPrincipal principal,
+			HttpServletRequest request) {
+		LessonVersionResponse response = LessonVersionResponse.from(lessonService.publish(id));
+		auditService.record(principal.getId(), principal.getRole(), AuditAction.PUBLISH_VERSION,
+				AuditTargetType.LESSON_VERSION, id, clientIpResolver.resolve(request));
+		return response;
 	}
 
 }
