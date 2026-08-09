@@ -30,7 +30,8 @@ public class AuthController {
 
 	@GetMapping("/me")
 	public MeResponse me(@AuthenticationPrincipal AppUserPrincipal principal) {
-		return new MeResponse(principal.getId(), principal.getUsername(), principal.getRole());
+		return new MeResponse(principal.getId(), principal.getUsername(), principal.getRole(),
+				principal.isEmailVerified(), principal.getDisplayName());
 	}
 
 	@PostMapping("/verify-email")
