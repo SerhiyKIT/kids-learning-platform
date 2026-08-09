@@ -16,12 +16,16 @@ public class AppUserPrincipal implements UserDetails {
 	private final String email;
 	private final String passwordHash;
 	private final Role role;
+	private final boolean emailVerified;
+	private final String displayName;
 
 	public AppUserPrincipal(User user) {
 		this.id = user.getId();
 		this.email = user.getEmail();
 		this.passwordHash = user.getPasswordHash();
 		this.role = user.getRole();
+		this.emailVerified = user.isEmailVerified();
+		this.displayName = user.getDisplayName();
 	}
 
 	public UUID getId() {
@@ -30,6 +34,16 @@ public class AppUserPrincipal implements UserDetails {
 
 	public Role getRole() {
 		return role;
+	}
+
+	public String getDisplayName() {
+		return displayName;
+	}
+
+	// Snapshot as of login, same as role/email above (see AppUserDetailsService) — a user who
+	// verifies mid-session won't see this flip until they next log in.
+	public boolean isEmailVerified() {
+		return emailVerified;
 	}
 
 	@Override
