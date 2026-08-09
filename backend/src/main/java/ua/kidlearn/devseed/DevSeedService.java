@@ -21,6 +21,7 @@ import ua.kidlearn.lessons.LessonAssignmentRepository;
 import ua.kidlearn.lessons.LessonRepository;
 import ua.kidlearn.lessons.LessonService;
 import ua.kidlearn.lessons.LessonVersion;
+import ua.kidlearn.lessons.ModuleRepository;
 import ua.kidlearn.scenario.ScenarioFixtures;
 import ua.kidlearn.scenario.ScenarioProblem;
 import ua.kidlearn.scenario.ScenarioValidator;
@@ -52,6 +53,7 @@ public class DevSeedService {
 	private final UserRepository userRepository;
 	private final PasswordEncoder passwordEncoder;
 	private final LessonRepository lessonRepository;
+	private final ModuleRepository moduleRepository;
 	private final LessonService lessonService;
 	private final ScenarioValidator scenarioValidator;
 	private final ObjectMapper objectMapper;
@@ -61,12 +63,14 @@ public class DevSeedService {
 	private final LessonAssignmentRepository lessonAssignmentRepository;
 
 	public DevSeedService(UserRepository userRepository, PasswordEncoder passwordEncoder,
-			LessonRepository lessonRepository, LessonService lessonService, ScenarioValidator scenarioValidator,
-			ObjectMapper objectMapper, GroupRepository groupRepository, GroupService groupService,
-			ChildService childService, LessonAssignmentRepository lessonAssignmentRepository) {
+			LessonRepository lessonRepository, ModuleRepository moduleRepository, LessonService lessonService,
+			ScenarioValidator scenarioValidator, ObjectMapper objectMapper, GroupRepository groupRepository,
+			GroupService groupService, ChildService childService,
+			LessonAssignmentRepository lessonAssignmentRepository) {
 		this.userRepository = userRepository;
 		this.passwordEncoder = passwordEncoder;
 		this.lessonRepository = lessonRepository;
+		this.moduleRepository = moduleRepository;
 		this.lessonService = lessonService;
 		this.scenarioValidator = scenarioValidator;
 		this.objectMapper = objectMapper;
@@ -101,7 +105,10 @@ public class DevSeedService {
 	}
 
 	private LessonVersion ensurePublishedDemoLessonVersion(UUID adminId) {
-		Lesson lesson = lessonRepository.findByTitle(DEMO_LESSON_TITLE).stream().findFirst()
+		UUID moduleId = moduleRepository.findByCode(DEMO_MODULE_CODE)
+				.orElseThrow(() -> new IllegalStateException("Unknown moduleCode: " + DEMO_MODULE_CODE))
+				.getId();
+		Lesson lesson = lessonRepository.findFirstByTitleAndModuleId(DEMO_LESSON_TITLE, moduleId)
 				.orElseGet(() -> lessonService.createLesson(DEMO_MODULE_CODE, DEMO_LESSON_TITLE));
 		if (lesson.getCurrentVersionId() != null) {
 			return lessonService.getVersion(lesson.getCurrentVersionId());

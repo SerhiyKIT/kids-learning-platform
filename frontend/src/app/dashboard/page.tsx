@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { apiFetch, ApiError, logout } from "@/lib/api";
@@ -78,10 +79,16 @@ export default function DashboardPage() {
           </div>
         ) : null}
       </dl>
+      <Link
+        href="/play"
+        className="mt-2 self-start rounded-full bg-blue-600 px-5 py-2 text-white"
+      >
+        Кабінет дитини → /play
+      </Link>
       <button
         type="button"
         onClick={onLogout}
-        className="mt-2 self-start rounded-full border border-black/[.16] px-5 py-2 dark:border-white/[.2]"
+        className="self-start rounded-full border border-black/[.16] px-5 py-2 dark:border-white/[.2]"
       >
         Log out
       </button>
