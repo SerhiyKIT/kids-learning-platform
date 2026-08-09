@@ -6,7 +6,11 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
-@RestControllerAdvice(basePackageClasses = ChildController.class)
+// Deliberately global (no basePackageClasses): EmailNotVerifiedException is a ChildService
+// business rule, but it can bubble up through any controller that calls ChildService (e.g. the
+// dev-only seed endpoint) — scoping this to ChildController's package let it fall through to a
+// bare 500 for callers outside that package. A known business rule must never surface as 500.
+@RestControllerAdvice
 class ChildExceptionHandler {
 
 	@ExceptionHandler(EmailNotVerifiedException.class)
