@@ -97,6 +97,24 @@ class DevSeedControllerTest {
 	}
 
 	@Test
+	void seedingAsUnverifiedParentAutoVerifiesAndStillCreatesAssignedChild() throws Exception {
+		String email = uniqueEmail("seed-unverified-parent");
+		User user = registerParent(email);
+		Assertions.assertFalse(user.isEmailVerified());
+		MockHttpSession session = login(email);
+
+		MvcResult result = mockMvc.perform(post("/api/dev/seed-demo").with(csrf()).session(session))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.childId").exists())
+				.andReturn();
+		String childId = JsonPath.read(result.getResponse().getContentAsString(), "$.childId");
+
+		mockMvc.perform(get("/api/children/" + childId + "/available-lessons").session(session))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.length()").value(1));
+	}
+
+	@Test
 	void seedingAsNonParentSkipsChildAssignmentButStillSeedsSharedDemoContent() throws Exception {
 		MockHttpSession adminSession = login(bootstrapAdmin());
 

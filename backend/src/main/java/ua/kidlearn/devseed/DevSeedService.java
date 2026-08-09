@@ -137,6 +137,7 @@ public class DevSeedService {
 	/** Reuses the parent's first child (if any) rather than always minting a new one, so calling
 	 * this endpoint repeatedly doesn't pile up demo children. */
 	private UUID ensureAssignedDemoChild(UUID parentId, UUID teacherId, UUID lessonVersionId) {
+		ensureCallerEmailVerified(parentId);
 		Child child = childService.listForParent(parentId).stream().findFirst()
 				.orElseGet(() -> childService.create(parentId, new CreateChildRequest(DEMO_CHILD_NAME,
 						Year.now().getValue() - DEMO_CHILD_AGE_YEARS, DEMO_CHILD_RELATION, null)));
@@ -148,6 +149,19 @@ public class DevSeedService {
 			lessonAssignmentRepository.save(new LessonAssignment(lessonVersionId, null, child.getId(), teacherId, null, null));
 		}
 		return child.getId();
+	}
+
+	/** ChildService.create requires a verified email, and a real parent clicking this dev-only
+	 * button shouldn't have to go through the actual email-verification flow first. Auto-
+	 * verifying the caller here is acceptable only because this whole service is @Profile("dev")
+	 * and never ships to production. */
+	private void ensureCallerEmailVerified(UUID parentId) {
+		User caller = userRepository.findById(parentId)
+				.orElseThrow(() -> new IllegalStateException("Authenticated user not found: " + parentId));
+		if (!caller.isEmailVerified()) {
+			caller.markEmailVerified();
+			userRepository.save(caller);
+		}
 	}
 
 }
