@@ -25,6 +25,20 @@ is up and Flyway has applied its migrations.
 Dev emails (verification, password reset) aren't sent to a real inbox — view
 them at http://localhost:8025 (Mailpit's web UI).
 
+## Run backend tests
+
+Postgres must be up (see above), and `infra/.env` must be sourced into the
+shell first — the `dev` profile's fallback DB password (`kidlearn`) does
+**not** match the one actually baked into the Postgres container
+(`POSTGRES_PASSWORD` from `infra/.env`), so skipping this step fails nearly
+every test with an opaque "Failed to load ApplicationContext" instead of an
+obvious auth error:
+
+```
+set -a; source infra/.env; set +a
+cd backend && ./mvnw test
+```
+
 ## Branch status
 
 `main` now holds the modular monolith. The old JHipster microservices setup
