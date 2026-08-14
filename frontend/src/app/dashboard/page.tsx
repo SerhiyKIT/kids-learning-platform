@@ -26,23 +26,28 @@ export default function DashboardPage() {
   const [resendState, setResendState] = useState<"idle" | "sending" | "sent">("idle");
   const [resendError, setResendError] = useState<ApiError | null>(null);
 
-  const load = useCallback(async () => {
-    setLoading(true);
-    setLoadError(null);
-    try {
-      const meData = await apiFetch<Me>("/auth/me");
-      setMe(meData);
-      // /api/children is parent-only; teacher/admin logins skip it and just see the header.
-      setChildren(meData.role === "PARENT" ? await apiFetch<Child[]>("/children") : []);
-    } catch (err) {
-      if (err instanceof ApiError && err.status === 401) {
-        router.replace("/login");
-        return;
-      }
-      setLoadError(err instanceof ApiError ? err : new ApiError(0, "Unexpected error"));
-    } finally {
-      setLoading(false);
-    }
+  // Promise-chained rather than async/await: react-hooks/set-state-in-effect flags setState
+  // calls that are directly in the invoked function's body, even after an await — only calls
+  // nested inside a .then()/.catch() callback (a genuinely separate, deferred closure) pass.
+  const load = useCallback(() => {
+    apiFetch<Me>("/auth/me")
+      .then((meData) =>
+        // /api/children is parent-only; teacher/admin logins skip it and just see the header.
+        (meData.role === "PARENT" ? apiFetch<Child[]>("/children") : Promise.resolve([])).then(
+          (childrenData) => {
+            setMe(meData);
+            setChildren(childrenData);
+          },
+        ),
+      )
+      .catch((err) => {
+        if (err instanceof ApiError && err.status === 401) {
+          router.replace("/login");
+          return;
+        }
+        setLoadError(err instanceof ApiError ? err : new ApiError(0, "Unexpected error"));
+      })
+      .finally(() => setLoading(false));
   }, [router]);
 
   useEffect(() => {

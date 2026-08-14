@@ -41,11 +41,16 @@ export default function ChildPage() {
   const [deleteError, setDeleteError] = useState<ApiError | null>(null);
   const [deleted, setDeleted] = useState(false);
 
+  // Also called after consent/join/leave/delete actions to refresh, not just on mount — the
+  // reset-then-fetch state changes happen inside the promise callbacks (not synchronously here,
+  // which react-hooks/set-state-in-effect flags), so a later refetch doesn't flash the
+  // full-page "Завантаження…" state, it just quietly replaces the data in place.
   const loadChild = useCallback(() => {
-    setChildLoading(true);
-    setChildError(null);
     apiFetch<Child>(`/children/${id}`)
-      .then(setChild)
+      .then((data) => {
+        setChild(data);
+        setChildError(null);
+      })
       .catch((err) => setChildError(err instanceof ApiError ? err : new ApiError(0, "Unexpected error")))
       .finally(() => setChildLoading(false));
   }, [id]);
