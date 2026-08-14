@@ -1,8 +1,7 @@
 package ua.kidlearn.ratelimit;
 
 import org.springframework.stereotype.Service;
-import ua.kidlearn.config.RateLimitProperties;
-import ua.kidlearn.config.RateLimitProperties.Limit;
+import ua.kidlearn.ratelimit.RateLimitProperties.Limit;
 
 /**
  * Failure-counting login throttle: tracks failed logins per account and per client IP, and resets

@@ -1,5 +1,6 @@
 package ua.kidlearn.audit;
 
+import java.util.List;
 import java.util.UUID;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
@@ -18,9 +19,11 @@ import ua.kidlearn.users.Role;
 public class AuditService {
 
 	private final ApplicationEventPublisher eventPublisher;
+	private final AuditLogRepository auditLogRepository;
 
-	public AuditService(ApplicationEventPublisher eventPublisher) {
+	public AuditService(ApplicationEventPublisher eventPublisher, AuditLogRepository auditLogRepository) {
 		this.eventPublisher = eventPublisher;
+		this.auditLogRepository = auditLogRepository;
 	}
 
 	@Transactional
@@ -28,6 +31,11 @@ public class AuditService {
 			String clientIp) {
 		eventPublisher.publishEvent(new AuditEventRequested(actorId, actorRole.name(), action, targetType, targetId,
 				clientIp));
+	}
+
+	@Transactional(readOnly = true)
+	public List<AuditEvent> list(String targetType, UUID targetId, UUID actorId, int limit, int offset) {
+		return auditLogRepository.findFiltered(targetType, targetId, actorId, limit, offset);
 	}
 
 }
