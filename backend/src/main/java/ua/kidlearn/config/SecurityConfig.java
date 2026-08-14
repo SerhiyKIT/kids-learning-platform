@@ -38,6 +38,11 @@ public class SecurityConfig {
 						.requestMatchers("/actuator/health", "/actuator/info").permitAll()
 						.requestMatchers(HttpMethod.POST, "/api/auth/register", "/api/auth/verify-email",
 								"/api/auth/forgot-password", "/api/auth/reset-password").permitAll()
+						// Dev-only account creation (see ua.kidlearn.devauth) — same reasoning as
+						// /api/auth/register: it must be reachable before a session exists. Under any
+						// non-dev profile the controller itself doesn't exist, so this permitAll is a
+						// no-op there (route unmapped -> 404 regardless of this rule).
+						.requestMatchers(HttpMethod.POST, "/api/dev/register-role").permitAll()
 						.requestMatchers("/login", "/error").permitAll()
 						.anyRequest().authenticated())
 				.csrf(csrf -> csrf

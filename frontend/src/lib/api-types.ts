@@ -12,6 +12,22 @@ export interface Me {
   displayName: string;
 }
 
+/** POST /api/dev/register-role body — dev-only, the only way to create a TEACHER/ADMIN login
+ * (public /api/auth/register always creates a PARENT). Absent under NODE_ENV === "production". */
+export interface DevRegisterRoleRequest {
+  email: string;
+  password: string;
+  displayName: string;
+  role: Role;
+}
+
+/** POST /api/dev/register-role response */
+export interface DevRegisterRoleResponse {
+  id: string;
+  email: string;
+  role: Role;
+}
+
 export type ChildStatus = "pending_consent" | "active";
 
 /** GET /api/children, GET /api/children/{id}, POST /api/children */
