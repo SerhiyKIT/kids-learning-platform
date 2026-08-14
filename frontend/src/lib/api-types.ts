@@ -32,12 +32,69 @@ export interface CreateChildRequest {
   avatarId?: string;
 }
 
-/** GET /api/children/{childId}/groups */
+/** GET /api/children/{childId}/groups, GET /api/groups, POST /api/groups,
+ * POST /api/groups/{id}/regenerate-code */
 export interface Group {
   id: string;
   name: string;
   joinCode: string;
   isActive: boolean;
+}
+
+/** POST /api/groups body */
+export interface CreateGroupRequest {
+  name: string;
+}
+
+/** GET /api/groups/{id}/members — deliberately excludes anything about the child's parent. */
+export interface GroupMemberInfo {
+  childId: string;
+  displayName: string;
+  avatarId: string;
+}
+
+/** GET /api/catalog/lessons — published lessons only. */
+export interface CatalogEntry {
+  lessonId: string;
+  title: string;
+  moduleCode: string;
+  currentVersionId: string;
+}
+
+/** POST /api/assignments body — exactly one of groupId/childId. */
+export interface CreateAssignmentRequest {
+  lessonVersionId: string;
+  groupId?: string;
+  childId?: string;
+  availableFrom?: string;
+  dueAt?: string;
+}
+
+/** POST /api/assignments, GET /api/assignments?groupId={id} */
+export interface Assignment {
+  id: string;
+  lessonVersionId: string;
+  groupId: string | null;
+  childId: string | null;
+  assignedBy: string;
+  availableFrom: string | null;
+  dueAt: string | null;
+}
+
+/** One attempt inside a TeacherResultChild — same result/score shape as HistoryEntry, minus
+ * per-scene answers (teachers see outcomes, not the attempt-by-attempt detail parents see). */
+export interface TeacherResultAttempt {
+  title: string;
+  completedAt: string | null;
+  result: AttemptResult | null;
+  score: number | null;
+}
+
+/** GET /api/groups/{groupId}/results — deliberately excludes anything about the child's parent. */
+export interface TeacherResultChild {
+  childId: string;
+  displayName: string;
+  attempts: TeacherResultAttempt[];
 }
 
 /** One scene answer inside a HistoryEntry */

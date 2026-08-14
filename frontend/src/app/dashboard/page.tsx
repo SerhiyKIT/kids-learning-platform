@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 import { apiFetch, ApiError, logout } from "@/lib/api";
-import type { Child, Me } from "@/lib/api-types";
+import type { Child, Group, Me } from "@/lib/api-types";
 
 const ROLE_LABELS: Record<Me["role"], string> = {
   PARENT: "Батьки",
@@ -17,10 +17,16 @@ const STATUS_BADGES: Record<Child["status"], { label: string; className: string 
   active: { label: "Активна", className: "bg-emerald-100 text-emerald-800" },
 };
 
+const GROUP_BADGE = {
+  active: { label: "Активна", className: "bg-emerald-100 text-emerald-800" },
+  archived: { label: "Архів", className: "bg-black/10 text-black/60 dark:bg-white/10 dark:text-white/60" },
+};
+
 export default function DashboardPage() {
   const router = useRouter();
   const [me, setMe] = useState<Me | null>(null);
   const [children, setChildren] = useState<Child[] | null>(null);
+  const [groups, setGroups] = useState<Group[] | null>(null);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState<ApiError | null>(null);
   const [resendState, setResendState] = useState<"idle" | "sending" | "sent">("idle");
@@ -31,15 +37,16 @@ export default function DashboardPage() {
   // nested inside a .then()/.catch() callback (a genuinely separate, deferred closure) pass.
   const load = useCallback(() => {
     apiFetch<Me>("/auth/me")
-      .then((meData) =>
-        // /api/children is parent-only; teacher/admin logins skip it and just see the header.
-        (meData.role === "PARENT" ? apiFetch<Child[]>("/children") : Promise.resolve([])).then(
-          (childrenData) => {
-            setMe(meData);
-            setChildren(childrenData);
-          },
-        ),
-      )
+      .then((meData) => {
+        // /api/children is parent-only, /api/groups is teacher-only — admins see just the header.
+        const childrenPromise = meData.role === "PARENT" ? apiFetch<Child[]>("/children") : Promise.resolve([]);
+        const groupsPromise = meData.role === "TEACHER" ? apiFetch<Group[]>("/groups") : Promise.resolve([]);
+        return Promise.all([childrenPromise, groupsPromise]).then(([childrenData, groupsData]) => {
+          setMe(meData);
+          setChildren(childrenData);
+          setGroups(groupsData);
+        });
+      })
       .catch((err) => {
         if (err instanceof ApiError && err.status === 401) {
           router.replace("/login");
@@ -79,7 +86,7 @@ export default function DashboardPage() {
     );
   }
 
-  if (loadError || !me || !children) {
+  if (loadError || !me || !children || !groups) {
     return (
       <main className="flex flex-1 items-center justify-center p-8">
         <p className="text-red-600">{loadError?.message ?? "Не вдалося завантажити кабінет."}</p>
@@ -179,6 +186,38 @@ export default function DashboardPage() {
             Кабінет дитини — грати
           </Link>
         </>
+      ) : null}
+
+      {me.role === "TEACHER" ? (
+        <section className="flex flex-col gap-3">
+          <div className="flex items-center justify-between">
+            <h2 className="text-lg font-semibold">Мої групи</h2>
+            <Link href="/groups" className="rounded-full bg-blue-600 px-4 py-1.5 text-sm text-white">
+              Керувати групами
+            </Link>
+          </div>
+
+          {groups.length === 0 ? (
+            <p className="text-black/60 dark:text-white/60">Ще немає жодної групи.</p>
+          ) : (
+            <div className="grid grid-cols-2 gap-4 sm:grid-cols-3">
+              {groups.map((group) => {
+                const badge = GROUP_BADGE[group.isActive ? "active" : "archived"];
+                return (
+                  <Link
+                    key={group.id}
+                    href={`/groups/${group.id}`}
+                    className="flex flex-col items-center gap-2 rounded-2xl border border-black/10 bg-white p-4 text-center shadow-sm dark:border-white/10 dark:bg-white/5"
+                  >
+                    <span className="text-4xl">👥</span>
+                    <span className="font-medium text-slate-800 dark:text-white">{group.name}</span>
+                    <span className={`rounded-full px-2 py-0.5 text-xs ${badge.className}`}>{badge.label}</span>
+                  </Link>
+                );
+              })}
+            </div>
+          )}
+        </section>
       ) : null}
     </main>
   );
