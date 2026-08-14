@@ -1,8 +1,10 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { apiFetch, ApiError, ensureCsrfCookie } from "@/lib/api";
+import type { DevRegisterRoleRequest, DevRegisterRoleResponse, Role } from "@/lib/api-types";
 
 interface RegisterResponse {
   id: string;
@@ -10,10 +12,20 @@ interface RegisterResponse {
   displayName: string;
 }
 
+const IS_DEV = process.env.NODE_ENV !== "production";
+
+const DEV_ROLE_LABELS: Record<Role, string> = {
+  PARENT: "Батьки",
+  TEACHER: "Вчитель",
+  ADMIN: "Адміністратор",
+};
+
 export default function RegisterPage() {
+  const router = useRouter();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [displayName, setDisplayName] = useState("");
+  const [devRole, setDevRole] = useState<Role>("PARENT");
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<ApiError | null>(null);
   const [registered, setRegistered] = useState(false);
@@ -27,6 +39,18 @@ export default function RegisterPage() {
     setSubmitting(true);
     setError(null);
     try {
+      if (IS_DEV && devRole !== "PARENT") {
+        // Dev-only shortcut: the only way to obtain a TEACHER/ADMIN login, since the normal
+        // endpoint below always creates a PARENT. The account comes back already verified, so
+        // there's no "check your email" step — straight to login.
+        const body: DevRegisterRoleRequest = { email, password, displayName, role: devRole };
+        await apiFetch<DevRegisterRoleResponse>("/dev/register-role", {
+          method: "POST",
+          body: JSON.stringify(body),
+        });
+        router.push("/login");
+        return;
+      }
       await apiFetch<RegisterResponse>("/auth/register", {
         method: "POST",
         body: JSON.stringify({ email, password, displayName }),
@@ -87,6 +111,23 @@ export default function RegisterPage() {
           />
         </label>
 
+        {IS_DEV ? (
+          <label className="flex flex-col gap-1 rounded border border-dashed border-amber-500 p-2">
+            <span className="text-amber-700 dark:text-amber-500">Роль (лише для розробки)</span>
+            <select
+              value={devRole}
+              onChange={(e) => setDevRole(e.target.value as Role)}
+              className="rounded border border-black/[.16] px-3 py-2 dark:border-white/[.2]"
+            >
+              {(Object.entries(DEV_ROLE_LABELS) as [Role, string][]).map(([value, label]) => (
+                <option key={value} value={value}>
+                  {label}
+                </option>
+              ))}
+            </select>
+          </label>
+        ) : null}
+
         {error ? <ErrorMessage error={error} /> : null}
 
         <button
@@ -114,6 +155,9 @@ function ErrorMessage({ error }: { error: ApiError }) {
         Too many attempts. {error.retryAfterSeconds ? `Try again in ${error.retryAfterSeconds}s.` : "Try again later."}
       </p>
     );
+  }
+  if (error.status === 409) {
+    return <p className="text-red-600">This email is already registered.</p>;
   }
   if (error.problems && error.problems.length > 0) {
     return (
