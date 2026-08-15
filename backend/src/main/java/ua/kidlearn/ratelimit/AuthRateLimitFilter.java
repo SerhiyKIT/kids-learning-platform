@@ -11,8 +11,7 @@ import org.springframework.http.HttpMethod;
 import org.springframework.security.web.servlet.util.matcher.PathPatternRequestMatcher;
 import org.springframework.security.web.util.matcher.RequestMatcher;
 import org.springframework.web.filter.OncePerRequestFilter;
-import ua.kidlearn.config.RateLimitProperties;
-import ua.kidlearn.config.RateLimitProperties.Limit;
+import ua.kidlearn.ratelimit.RateLimitProperties.Limit;
 
 /**
  * Per-IP request counting (every request counts, not just failures) on the other sensitive auth

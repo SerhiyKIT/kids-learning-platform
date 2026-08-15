@@ -107,6 +107,14 @@
 			<artifactId>awaitility</artifactId>
 			<scope>test</scope>
 		</dependency>
+		<!-- Structural conventions (no cyclic packages, constructor injection only, naming, layering)
+		     enforced as a real test — see ArchUnitConventionsTest and docs/CONVENTIONS.md. -->
+		<dependency>
+			<groupId>com.tngtech.archunit</groupId>
+			<artifactId>archunit-junit5</artifactId>
+			<version>1.4.0</version>
+			<scope>test</scope>
+		</dependency>
 	</dependencies>
 
 	<build>

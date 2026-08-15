@@ -2,7 +2,6 @@ package ua.kidlearn.ratelimit;
 
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.stereotype.Component;
-import ua.kidlearn.config.RateLimitProperties;
 
 /**
  * Resolves the client IP used as a rate-limit key. Trusting X-Forwarded-For

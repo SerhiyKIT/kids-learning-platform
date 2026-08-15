@@ -16,6 +16,7 @@ import ua.kidlearn.ratelimit.AuthRateLimitFilter;
 import ua.kidlearn.ratelimit.ClientIpResolver;
 import ua.kidlearn.ratelimit.LoginAttemptService;
 import ua.kidlearn.ratelimit.LoginThrottleFilter;
+import ua.kidlearn.ratelimit.RateLimitProperties;
 import ua.kidlearn.ratelimit.RateLimiter;
 import ua.kidlearn.ratelimit.RateLimitingAuthenticationFailureHandler;
 import ua.kidlearn.ratelimit.RateLimitingAuthenticationSuccessHandler;
