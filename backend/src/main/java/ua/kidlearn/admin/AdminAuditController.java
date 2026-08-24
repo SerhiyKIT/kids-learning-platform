@@ -8,7 +8,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import ua.kidlearn.audit.AuditEntryResponse;
-import ua.kidlearn.audit.AuditLogRepository;
+import ua.kidlearn.audit.AuditService;
 
 /** Read access to the data-access audit log — admins only (docs/Ролі_та_приватність.md §3, §8). */
 @RestController
@@ -16,17 +16,17 @@ import ua.kidlearn.audit.AuditLogRepository;
 @PreAuthorize("hasRole('ADMIN')")
 public class AdminAuditController {
 
-	private final AuditLogRepository auditLogRepository;
+	private final AuditService auditService;
 
-	public AdminAuditController(AuditLogRepository auditLogRepository) {
-		this.auditLogRepository = auditLogRepository;
+	public AdminAuditController(AuditService auditService) {
+		this.auditService = auditService;
 	}
 
 	@GetMapping("/audit")
 	public List<AuditEntryResponse> list(@RequestParam(required = false) String targetType,
 			@RequestParam(required = false) UUID targetId, @RequestParam(required = false) UUID actorId,
 			@RequestParam(defaultValue = "50") int limit, @RequestParam(defaultValue = "0") int offset) {
-		return auditLogRepository.findFiltered(targetType, targetId, actorId, limit, offset).stream()
+		return auditService.list(targetType, targetId, actorId, limit, offset).stream()
 				.map(AuditEntryResponse::from)
 				.toList();
 	}

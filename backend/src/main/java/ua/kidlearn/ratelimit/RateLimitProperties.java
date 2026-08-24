@@ -1,4 +1,9 @@
-package ua.kidlearn.config;
+package ua.kidlearn.ratelimit;
+
+// Lives in ratelimit, not config: it's this feature's own settings, and config must stay a
+// one-directional consumer of ratelimit (see docs/CONVENTIONS.md / ArchUnitConventionsTest's
+// no-cycles rule) — this used to sit in ua.kidlearn.config, which made config and ratelimit
+// import each other, a real two-package cycle the rule caught.
 
 import java.time.Duration;
 import org.springframework.boot.context.properties.ConfigurationProperties;

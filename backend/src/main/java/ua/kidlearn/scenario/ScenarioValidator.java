@@ -10,7 +10,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import org.springframework.stereotype.Service;
+import org.springframework.stereotype.Component;
 import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.ObjectMapper;
 import tools.jackson.databind.node.ObjectNode;
@@ -20,8 +20,12 @@ import tools.jackson.databind.node.ObjectNode;
  * the business rules the schema can't express (see the schema file's own field descriptions and
  * docs/Формат_подання_уроків_та_ШІ.md §4.2). Standalone so both the admin content-entry endpoint
  * and the future LLM generation pipeline can reuse it.
+ *
+ * {@code @Component}, not {@code @Service}: this is a stateless, dependency-free validator, not
+ * an orchestration service (no repositories, no other services) — see
+ * docs/CONVENTIONS.md's naming rule (enforced by ArchUnitConventionsTest).
  */
-@Service
+@Component
 public class ScenarioValidator {
 
 	private static final String SCHEMA_CLASSPATH_LOCATION = "schema/lesson-scenario.schema.json";
