@@ -1,0 +1,38 @@
+# Test-only profile: boots the FULL application context (web + security stack) against the same
+# Postgres the rest of the suite uses, but deliberately does NOT activate "dev" — so
+# @Profile("dev") beans (DevAuthController, DevSeedController, ...) are genuinely absent, the same
+# way they would be in production. "prod" itself can't be used for this: application-prod.yml
+# requires several env vars with no defaults (DATASOURCE_*, SMTP_*, MINIO_*, TWOFA_ENC_KEY, ...).
+# This file mirrors application-dev.yml's test-friendly values (same localhost Postgres/MinIO/
+# Mailpit that CI's Postgres service and infra/docker-compose.yml already provide) without
+# inheriting the dev profile itself. See DevRoutesAbsentOutsideDevProfileTest.
+spring:
+  datasource:
+    url: jdbc:postgresql://localhost:5432/${POSTGRES_DB:kidlearn}
+    username: ${POSTGRES_USER:kidlearn}
+    password: ${POSTGRES_PASSWORD:kidlearn}
+  mail:
+    host: ${SMTP_HOST:localhost}
+    port: ${SMTP_PORT:1025}
+    username: ${SMTP_USERNAME:}
+    password: ${SMTP_PASSWORD:}
+
+app:
+  base-url: ${APP_BASE_URL:http://localhost:3000}
+  tts:
+    voice-id: default
+  llm:
+    max-attempts: 2
+  twofa:
+    # Same dev-only fallback key as application-dev.yml (see TwofaEncryptionService) — this
+    # profile isn't prod, so a real secret isn't needed, just a validly-shaped one so the bean
+    # constructs without needing TWOFA_ENC_KEY set.
+    enc-key: XYbiQmXi0eylM7tSPpOiOtwKBaofHBxUxW5N9+DlEZg=
+
+minio:
+  # No live MinIO needed: MinioAudioStorage's bean construction does no network I/O (only
+  # store() does), and this test never calls it.
+  endpoint: http://localhost:9000
+  access-key: minioadmin
+  secret-key: minioadmin
+  bucket: kidlearn-assets
