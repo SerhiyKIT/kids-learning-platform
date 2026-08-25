@@ -23,6 +23,7 @@ import org.springframework.test.web.servlet.ResultActions;
 import org.springframework.transaction.annotation.Transactional;
 import ua.kidlearn.lessons.LessonVersionRepository;
 import ua.kidlearn.scenario.ScenarioFixtures;
+import ua.kidlearn.twofa.AdminTwoFactorTestSupport;
 import ua.kidlearn.users.Role;
 import ua.kidlearn.users.User;
 import ua.kidlearn.users.UserRepository;
@@ -62,7 +63,9 @@ class AdminLessonVersionValidationTest {
 		MvcResult result = mockMvc.perform(formLogin().user(email).password(PASSWORD))
 				.andExpect(status().is3xxRedirection())
 				.andReturn();
-		return (MockHttpSession) result.getRequest().getSession(false);
+		MockHttpSession session = (MockHttpSession) result.getRequest().getSession(false);
+		AdminTwoFactorTestSupport.completeSetup(mockMvc, session);
+		return session;
 	}
 
 	private String createLesson(MockHttpSession adminSession) throws Exception {

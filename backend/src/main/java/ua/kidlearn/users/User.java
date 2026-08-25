@@ -52,6 +52,15 @@ public class User {
 	@Column(name = "email_verified_at")
 	private Instant emailVerifiedAt;
 
+	// Holds the encrypted secret from setup until enable() confirms it (totpEnabledAt still
+	// null then) — same column serves both the "pending" and "confirmed" secret, distinguished
+	// by whether totpEnabledAt is set. See ua.kidlearn.twofa.
+	@Column(name = "totp_secret_enc")
+	private String totpSecretEnc;
+
+	@Column(name = "totp_enabled_at")
+	private Instant totpEnabledAt;
+
 	protected User() {
 		// JPA
 	}
@@ -118,6 +127,26 @@ public class User {
 
 	public void markDeleted() {
 		this.deletedAt = Instant.now();
+	}
+
+	public String getTotpSecretEnc() {
+		return totpSecretEnc;
+	}
+
+	public Instant getTotpEnabledAt() {
+		return totpEnabledAt;
+	}
+
+	public boolean isTotpEnabled() {
+		return totpEnabledAt != null;
+	}
+
+	public void setPendingTotpSecret(String encryptedSecret) {
+		this.totpSecretEnc = encryptedSecret;
+	}
+
+	public void enableTotp() {
+		this.totpEnabledAt = Instant.now();
 	}
 
 }

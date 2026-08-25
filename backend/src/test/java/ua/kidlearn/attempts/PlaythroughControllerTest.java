@@ -22,6 +22,7 @@ import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.transaction.annotation.Transactional;
+import ua.kidlearn.twofa.AdminTwoFactorTestSupport;
 import ua.kidlearn.users.Role;
 import ua.kidlearn.users.User;
 import ua.kidlearn.users.UserRepository;
@@ -92,6 +93,7 @@ class PlaythroughControllerTest {
 		String adminEmail = uniqueEmail("admin");
 		registerAdmin(adminEmail);
 		MockHttpSession adminSession = login(adminEmail);
+		AdminTwoFactorTestSupport.completeSetup(mockMvc, adminSession);
 
 		MvcResult lessonResult = mockMvc.perform(post("/api/admin/lessons").with(csrf())
 						.session(adminSession)

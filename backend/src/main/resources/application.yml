@@ -28,6 +28,12 @@ app:
     # package javadoc. Set at deploy time via ADMIN_BOOTSTRAP_TOKEN; safe to rotate or remove
     # once the first admin exists, since the endpoint stays permanently closed after that.
     admin-token: ${ADMIN_BOOTSTRAP_TOKEN:}
+  twofa:
+    # AES-GCM key (base64, 32 raw bytes = AES-256) encrypting admin TOTP secrets at rest — see
+    # ua.kidlearn.twofa.TwofaEncryptionService. Blank here; application-dev.yml supplies a
+    # documented dev-only fallback, application-prod.yml requires TWOFA_ENC_KEY with no default
+    # (the app fails to start rather than silently running with no key).
+    enc-key: ${TWOFA_ENC_KEY:}
   ratelimit:
     # Safe in both profiles: nginx sits in front in prod too, and dev has no proxy so the
     # header is simply absent (falls back to the remote address). MUST only be true when every
@@ -56,5 +62,11 @@ app:
       max: 10
       window: 15m
     bootstrap-admin-per-ip:
+      max: 5
+      window: 15m
+    two-factor-per-account:
+      max: 5
+      window: 15m
+    two-factor-per-ip:
       max: 5
       window: 15m

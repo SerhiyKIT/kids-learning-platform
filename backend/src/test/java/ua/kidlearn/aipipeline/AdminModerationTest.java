@@ -29,6 +29,7 @@ import ua.kidlearn.lessons.LessonRepository;
 import ua.kidlearn.lessons.LessonVersion;
 import ua.kidlearn.lessons.LessonVersionRepository;
 import ua.kidlearn.scenario.ScenarioFixtures;
+import ua.kidlearn.twofa.AdminTwoFactorTestSupport;
 import ua.kidlearn.users.Role;
 import ua.kidlearn.users.User;
 import ua.kidlearn.users.UserRepository;
@@ -97,6 +98,7 @@ class AdminModerationTest {
 		String email = uniqueEmail("admin");
 		User admin = userRepository.save(new User(email, passwordEncoder.encode(PASSWORD), Role.ADMIN, "Admin", "uk"));
 		sessionOut[0] = login(email);
+		AdminTwoFactorTestSupport.completeSetup(mockMvc, sessionOut[0]);
 		return admin;
 	}
 

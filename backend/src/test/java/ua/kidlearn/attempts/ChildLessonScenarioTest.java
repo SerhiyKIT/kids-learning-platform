@@ -23,6 +23,7 @@ import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.transaction.annotation.Transactional;
 import ua.kidlearn.lessons.LessonAssignment;
 import ua.kidlearn.lessons.LessonAssignmentRepository;
+import ua.kidlearn.twofa.AdminTwoFactorTestSupport;
 import ua.kidlearn.users.Role;
 import ua.kidlearn.users.User;
 import ua.kidlearn.users.UserRepository;
@@ -121,6 +122,7 @@ class ChildLessonScenarioTest {
 		String adminEmail = uniqueEmail("admin");
 		registerAdmin(adminEmail);
 		MockHttpSession adminSession = login(adminEmail);
+		AdminTwoFactorTestSupport.completeSetup(mockMvc, adminSession);
 		UUID lessonId = createLesson(adminSession, title);
 		UUID versionId = generateAutoValidatedVersion(adminSession, lessonId);
 		mockMvc.perform(post("/api/admin/lesson-versions/" + versionId + "/approve").with(csrf())
@@ -234,6 +236,7 @@ class ChildLessonScenarioTest {
 		String adminEmail = uniqueEmail("admin");
 		User admin = registerAdmin(adminEmail);
 		MockHttpSession adminSession = login(adminEmail);
+		AdminTwoFactorTestSupport.completeSetup(mockMvc, adminSession);
 		UUID lessonId = createLesson(adminSession, "Never Published");
 		UUID unpublishedVersionId = generateAutoValidatedVersion(adminSession, lessonId);
 		// Bypass the assignment endpoint (which itself refuses non-published targets) to prove

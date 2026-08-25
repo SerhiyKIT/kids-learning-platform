@@ -53,6 +53,25 @@ first — ADMIN account, gated by the `ADMIN_BOOTSTRAP_TOKEN` env var
    the correct token — it only ever creates the first one. `ADMIN_BOOTSTRAP_TOKEN` can then be
    rotated or removed; leaving it set is harmless since the endpoint stays closed.
 
+## Admin two-factor authentication (mandatory)
+
+2FA (TOTP, RFC 6238) is mandatory for every ADMIN account — there's no way to opt out and no
+disable endpoint. Set `TWOFA_ENC_KEY` (base64, 32 random bytes, e.g. `openssl rand -base64 32`)
+at deploy time — it encrypts TOTP secrets at rest (AES-GCM; see `app.twofa.enc-key` in
+`application-prod.yml`) and **must** be set in production, unlike `ADMIN_BOOTSTRAP_TOKEN` above.
+
+After password login, an admin session starts restricted:
+
+- No TOTP set up yet (`totp_enabled_at` unset): only `POST /api/admin/2fa/setup`,
+  `POST /api/admin/2fa/enable`, and `GET /api/auth/me` are reachable — every other admin API
+  is blocked until setup finishes.
+- TOTP already enabled: the fresh session is "pre-2FA" — only `POST /api/admin/2fa/verify`
+  (a TOTP code or an unused backup code) is reachable until it succeeds, elevating that session
+  for its lifetime.
+
+`POST /api/admin/2fa/enable` returns ~10 backup codes in plaintext exactly once — there's no way
+to see them again afterward.
+
 ## Branch status
 
 `main` now holds the modular monolith. The old JHipster microservices setup

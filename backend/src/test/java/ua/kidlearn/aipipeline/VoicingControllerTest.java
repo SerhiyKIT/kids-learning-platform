@@ -21,6 +21,7 @@ import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.transaction.annotation.Transactional;
+import ua.kidlearn.twofa.AdminTwoFactorTestSupport;
 import ua.kidlearn.users.Role;
 import ua.kidlearn.users.User;
 import ua.kidlearn.users.UserRepository;
@@ -173,6 +174,7 @@ class VoicingControllerTest {
 		String adminEmail = uniqueEmail("admin");
 		registerAdmin(adminEmail);
 		MockHttpSession adminSession = login(adminEmail);
+		AdminTwoFactorTestSupport.completeSetup(mockMvc, adminSession);
 		UUID versionId = createVersion(adminSession, "Crossing the street", scenario("va", "Remember to look both ways"));
 
 		VoicingResult result = voice(adminSession, versionId);
@@ -187,6 +189,7 @@ class VoicingControllerTest {
 		String adminEmail = uniqueEmail("admin");
 		registerAdmin(adminEmail);
 		MockHttpSession adminSession = login(adminEmail);
+		AdminTwoFactorTestSupport.completeSetup(mockMvc, adminSession);
 		UUID versionId = createVersion(adminSession, "Crossing the street", scenario("va", "Remember to look both ways"));
 
 		voice(adminSession, versionId);
@@ -202,6 +205,7 @@ class VoicingControllerTest {
 		String adminEmail = uniqueEmail("admin");
 		registerAdmin(adminEmail);
 		MockHttpSession adminSession = login(adminEmail);
+		AdminTwoFactorTestSupport.completeSetup(mockMvc, adminSession);
 
 		UUID versionA = createVersion(adminSession, "Crossing the street", scenario("va", "Remember to look both ways"));
 		voice(adminSession, versionA);
@@ -220,6 +224,7 @@ class VoicingControllerTest {
 		String adminEmail = uniqueEmail("admin");
 		registerAdmin(adminEmail);
 		MockHttpSession adminSession = login(adminEmail);
+		AdminTwoFactorTestSupport.completeSetup(mockMvc, adminSession);
 		UUID versionId = createVersion(adminSession, "Crossing the street", scenario("nc", "Remember to look both ways"));
 
 		String teacherEmail = uniqueEmail("teacher");
