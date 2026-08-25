@@ -12,9 +12,11 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import com.jayway.jsonpath.JsonPath;
 import java.time.Duration;
 import java.time.Year;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 import org.awaitility.Awaitility;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -59,12 +61,28 @@ class AuditLogTest {
 	@Autowired
 	private AuditLogRepository auditLogRepository;
 
+	// Not @Transactional (see class javadoc), so admins created here would otherwise persist
+	// forever and permanently satisfy "an ADMIN exists" for every later test in the suite (e.g.
+	// ua.kidlearn.bootstrap's one-time-only check). Soft-deleted (not hard-deleted) after each
+	// test: some of these admins end up referenced by lesson_versions.approved_by, which a hard
+	// delete would violate.
+	private final List<User> createdAdmins = new ArrayList<>();
+
+	@AfterEach
+	void softDeleteCreatedAdmins() {
+		createdAdmins.forEach(User::markDeleted);
+		userRepository.saveAll(createdAdmins);
+		createdAdmins.clear();
+	}
+
 	private static String uniqueEmail(String prefix) {
 		return prefix + "-" + UUID.randomUUID() + "@example.test";
 	}
 
 	private User registerAdmin(String email) {
-		return userRepository.save(new User(email, passwordEncoder.encode(PASSWORD), Role.ADMIN, "Admin", "uk"));
+		User admin = userRepository.save(new User(email, passwordEncoder.encode(PASSWORD), Role.ADMIN, "Admin", "uk"));
+		createdAdmins.add(admin);
+		return admin;
 	}
 
 	private User registerTeacher(String email) {

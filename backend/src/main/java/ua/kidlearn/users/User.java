@@ -116,4 +116,8 @@ public class User {
 		this.passwordHash = newPasswordHash;
 	}
 
+	public void markDeleted() {
+		this.deletedAt = Instant.now();
+	}
+
 }

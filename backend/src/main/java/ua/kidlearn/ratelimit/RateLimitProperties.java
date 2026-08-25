@@ -16,7 +16,7 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 @ConfigurationProperties(prefix = "app.ratelimit")
 public record RateLimitProperties(boolean trustForwardedHeader, Limit loginPerAccount, Limit loginPerIp,
 		Limit forgotPasswordPerIp, Limit resendVerificationPerIp, Limit registerPerIp, Limit verifyEmailPerIp,
-		Limit resetPasswordPerIp) {
+		Limit resetPasswordPerIp, Limit bootstrapAdminPerIp) {
 
 	public record Limit(int max, Duration window) {
 	}

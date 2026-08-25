@@ -44,6 +44,13 @@ public class SecurityConfig {
 						// non-dev profile the controller itself doesn't exist, so this permitAll is a
 						// no-op there (route unmapped -> 404 regardless of this rule).
 						.requestMatchers(HttpMethod.POST, "/api/dev/register-role").permitAll()
+						// Not @Profile-restricted (must work in prod, unlike /api/dev/register-role) — it's
+						// self-securing instead: BootstrapService 404s unless a token is configured, 410s once
+						// any ADMIN exists, and 401s on a wrong token (constant-time compare). See
+						// ua.kidlearn.bootstrap's package javadoc. Also must be reachable pre-session.
+						// TODO: force TOTP 2FA setup on the resulting first admin's first login (see the
+						// class-level TODO above) — not implemented yet.
+						.requestMatchers(HttpMethod.POST, "/api/bootstrap/admin").permitAll()
 						.requestMatchers("/login", "/error").permitAll()
 						.anyRequest().authenticated())
 				.csrf(csrf -> csrf

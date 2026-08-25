@@ -12,6 +12,12 @@ spring:
     password: ${SMTP_PASSWORD}
 
 app:
+  # One-time first-admin bootstrap (POST /api/bootstrap/admin, see ua.kidlearn.bootstrap). Set
+  # ADMIN_BOOTSTRAP_TOKEN at deploy time to create the first admin, then rotate or unset it
+  # afterward — the endpoint stays permanently closed once any admin exists, so leaving it set
+  # is safe but no longer necessary. Leaving it unset from the start disables the endpoint.
+  bootstrap:
+    admin-token: ${ADMIN_BOOTSTRAP_TOKEN:}
   base-url: ${APP_BASE_URL}
   tts:
     voice-id: ${TTS_VOICE_ID}
