@@ -38,6 +38,8 @@ public class AuthRateLimitFilter extends OncePerRequestFilter {
 				properties.verifyEmailPerIp());
 		limitsByPath.put(PathPatternRequestMatcher.pathPattern(HttpMethod.POST, "/api/auth/reset-password"),
 				properties.resetPasswordPerIp());
+		limitsByPath.put(PathPatternRequestMatcher.pathPattern(HttpMethod.POST, "/api/bootstrap/admin"),
+				properties.bootstrapAdminPerIp());
 	}
 
 	@Override

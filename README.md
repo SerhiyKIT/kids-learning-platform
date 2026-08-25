@@ -39,6 +39,20 @@ set -a; source infra/.env; set +a
 cd backend && ./mvnw test
 ```
 
+## Creating the first admin account (production)
+
+There's no default/seeded admin login. `POST /api/bootstrap/admin` creates exactly one — the
+first — ADMIN account, gated by the `ADMIN_BOOTSTRAP_TOKEN` env var
+(`app.bootstrap.admin-token` in `application-prod.yml`):
+
+1. Set `ADMIN_BOOTSTRAP_TOKEN` to a strong random secret at deploy time (unset/blank disables
+   the endpoint entirely).
+2. `POST /api/bootstrap/admin` with `{token, email, password, displayName}` — matches the
+   configured token → creates the admin (201). Wrong token → 401. No token configured → 404.
+3. Once any ADMIN exists, the endpoint permanently returns `410 ALREADY_BOOTSTRAPPED`, even with
+   the correct token — it only ever creates the first one. `ADMIN_BOOTSTRAP_TOKEN` can then be
+   rotated or removed; leaving it set is harmless since the endpoint stays closed.
+
 ## Branch status
 
 `main` now holds the modular monolith. The old JHipster microservices setup

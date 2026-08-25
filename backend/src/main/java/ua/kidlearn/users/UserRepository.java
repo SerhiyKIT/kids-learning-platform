@@ -8,4 +8,6 @@ public interface UserRepository extends JpaRepository<User, UUID> {
 
 	Optional<User> findByEmailAndDeletedAtIsNull(String email);
 
+	boolean existsByRoleAndDeletedAtIsNull(Role role);
+
 }
