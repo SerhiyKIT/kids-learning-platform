@@ -27,6 +27,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
+import ua.kidlearn.twofa.AdminTwoFactorTestSupport;
 import ua.kidlearn.users.Role;
 import ua.kidlearn.users.User;
 import ua.kidlearn.users.UserRepository;
@@ -213,6 +214,7 @@ class AuditLogTest {
 		String adminEmail = uniqueEmail("audit-admin");
 		User admin = registerAdmin(adminEmail);
 		MockHttpSession adminSession = login(adminEmail);
+		AdminTwoFactorTestSupport.completeSetup(mockMvc, adminSession);
 		UUID lessonId = createLesson(adminSession);
 		UUID versionId = generateAutoValidatedVersion(adminSession, lessonId);
 
@@ -237,6 +239,7 @@ class AuditLogTest {
 		String adminEmail = uniqueEmail("audit-admin");
 		User admin = registerAdmin(adminEmail);
 		MockHttpSession adminSession = login(adminEmail);
+		AdminTwoFactorTestSupport.completeSetup(mockMvc, adminSession);
 		UUID lessonId = createLesson(adminSession);
 		UUID versionId = generateAutoValidatedVersion(adminSession, lessonId);
 		mockMvc.perform(post("/api/admin/lesson-versions/" + versionId + "/approve").with(csrf())

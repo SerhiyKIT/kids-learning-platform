@@ -14,10 +14,8 @@ import ua.kidlearn.users.UserRepository;
 
 /**
  * Creates the very first ADMIN account. See the package javadoc for the three-part safety model:
- * token configured, no ADMIN yet, correct token.
- *
- * TODO: once this creates the first admin, force a TOTP 2FA setup step on that admin's first
- * login (see SecurityConfig's TODO) — not implemented yet.
+ * token configured, no ADMIN yet, correct token. That admin lands in the mandatory-2FA
+ * "setup required" gate on their first login, same as any other admin — see ua.kidlearn.twofa.
  */
 @Service
 public class BootstrapService {

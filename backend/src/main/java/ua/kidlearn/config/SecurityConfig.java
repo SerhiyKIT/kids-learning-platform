@@ -19,12 +19,15 @@ import ua.kidlearn.ratelimit.LoginThrottleFilter;
 import ua.kidlearn.ratelimit.RateLimitProperties;
 import ua.kidlearn.ratelimit.RateLimiter;
 import ua.kidlearn.ratelimit.RateLimitingAuthenticationFailureHandler;
-import ua.kidlearn.ratelimit.RateLimitingAuthenticationSuccessHandler;
+import ua.kidlearn.ratelimit.TwoFactorRateLimitFilter;
+import ua.kidlearn.twofa.TwoFactorGateFilter;
+import ua.kidlearn.twofa.TwoFactorSessionAuthenticationSuccessHandler;
+import ua.kidlearn.users.UserRepository;
 
 /**
  * Session-based security for the web-first PWA.
  *
- * TODO: Google OAuth2 login, TOTP 2FA for admins, admin data-access audit log.
+ * TODO: Google OAuth2 login, admin data-access audit log.
  */
 @Configuration
 @EnableMethodSecurity(prePostEnabled = true)
@@ -32,8 +35,8 @@ public class SecurityConfig {
 
 	@Bean
 	public SecurityFilterChain securityFilterChain(HttpSecurity http, LoginAttemptService loginAttemptService,
-			ClientIpResolver clientIpResolver, RateLimiter rateLimiter, RateLimitProperties rateLimitProperties)
-			throws Exception {
+			ClientIpResolver clientIpResolver, RateLimiter rateLimiter, RateLimitProperties rateLimitProperties,
+			UserRepository userRepository) throws Exception {
 		http
 				.authorizeHttpRequests(auth -> auth
 						.requestMatchers("/actuator/health", "/actuator/info").permitAll()
@@ -48,8 +51,8 @@ public class SecurityConfig {
 						// self-securing instead: BootstrapService 404s unless a token is configured, 410s once
 						// any ADMIN exists, and 401s on a wrong token (constant-time compare). See
 						// ua.kidlearn.bootstrap's package javadoc. Also must be reachable pre-session.
-						// TODO: force TOTP 2FA setup on the resulting first admin's first login (see the
-						// class-level TODO above) — not implemented yet.
+						// The resulting first admin lands in the mandatory-2FA "setup required" gate on
+						// their first login, same as any other admin — see ua.kidlearn.twofa.
 						.requestMatchers(HttpMethod.POST, "/api/bootstrap/admin").permitAll()
 						.requestMatchers("/login", "/error").permitAll()
 						.anyRequest().authenticated())
@@ -70,9 +73,15 @@ public class SecurityConfig {
 				.addFilterBefore(new LoginThrottleFilter(loginAttemptService, clientIpResolver),
 						UsernamePasswordAuthenticationFilter.class)
 				.formLogin(form -> form.permitAll()
-						.successHandler(new RateLimitingAuthenticationSuccessHandler(loginAttemptService))
+						.successHandler(new TwoFactorSessionAuthenticationSuccessHandler(loginAttemptService, userRepository))
 						.failureHandler(new RateLimitingAuthenticationFailureHandler(loginAttemptService, clientIpResolver)))
 				.logout(logout -> logout.permitAll())
+				// Both need the already-authenticated session's Authentication, so they only make
+				// sense after formLogin's own filter has run. Rate-limit first (fail fast on abuse
+				// before evaluating gate state), then the gate itself.
+				.addFilterAfter(new TwoFactorRateLimitFilter(rateLimiter, clientIpResolver, rateLimitProperties),
+						UsernamePasswordAuthenticationFilter.class)
+				.addFilterAfter(new TwoFactorGateFilter(), TwoFactorRateLimitFilter.class)
 				// This is a JSON API with no server-rendered pages to redirect to, so
 				// unauthenticated access must return 401, not a 302 to /login.
 				.exceptionHandling(exceptions -> exceptions

@@ -20,6 +20,10 @@ app:
     # Total LLM generate() calls per lesson-version request before giving up
     # and persisting the last attempt as rejected_auto.
     max-attempts: ${LLM_MAX_ATTEMPTS:2}
+  twofa:
+    # DEV-ONLY fallback AES-256 key (base64, 32 raw bytes) — never use in prod. Still overridden
+    # by TWOFA_ENC_KEY if set. Generated once with `openssl rand -base64 32`.
+    enc-key: ${TWOFA_ENC_KEY:XYbiQmXi0eylM7tSPpOiOtwKBaofHBxUxW5N9+DlEZg=}
   ratelimit:
     # Local dev + the test suite share one simulated client IP (no reverse proxy locally,
     # so no real X-Forwarded-For diversity) and legitimately register far more than 10

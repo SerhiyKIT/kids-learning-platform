@@ -21,6 +21,7 @@ import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.transaction.annotation.Transactional;
+import ua.kidlearn.twofa.AdminTwoFactorTestSupport;
 import ua.kidlearn.users.Role;
 import ua.kidlearn.users.User;
 import ua.kidlearn.users.UserRepository;
@@ -117,6 +118,7 @@ class DevSeedControllerTest {
 	@Test
 	void seedingAsNonParentSkipsChildAssignmentButStillSeedsSharedDemoContent() throws Exception {
 		MockHttpSession adminSession = login(bootstrapAdmin());
+		AdminTwoFactorTestSupport.completeSetup(mockMvc, adminSession);
 
 		MvcResult result = mockMvc.perform(post("/api/dev/seed-demo").with(csrf()).session(adminSession))
 				.andExpect(status().isOk())

@@ -18,6 +18,11 @@ app:
   # is safe but no longer necessary. Leaving it unset from the start disables the endpoint.
   bootstrap:
     admin-token: ${ADMIN_BOOTSTRAP_TOKEN:}
+  # AES-256 key (base64) encrypting admin TOTP secrets at rest — ua.kidlearn.twofa. MUST be set
+  # at deploy time (32 random bytes, base64-encoded, e.g. `openssl rand -base64 32`). No default
+  # here: the app refuses to start without it rather than risk running with no key at all.
+  twofa:
+    enc-key: ${TWOFA_ENC_KEY}
   base-url: ${APP_BASE_URL}
   tts:
     voice-id: ${TTS_VOICE_ID}
