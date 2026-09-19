@@ -1,26 +1,173 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
-
+/* Design tokens — «Безпечний Простір», кабінет дорослого.
+   Єдине місце, де живуть hex-значення: компоненти вживають лише утиліти
+   (bg-brand, text-ink, border-line …), згенеровані з @theme нижче. */
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  /* Поверхні */
+  --color-canvas: #f4f7f9;
+  --color-surface: #ffffff;
+
+  /* Текст */
+  --color-ink: #12283d;
+  --color-ink-muted: #5c6b7a;
+  --color-ink-soft: #6b7887;
+  --color-ink-faint: #8895a2;
+  --color-ink-icon: #7a8794;
+  --color-ink-placeholder: #9aa4ae;
+
+  /* Бренд */
+  --color-brand: #0b5560;
+  --color-brand-hover: #094851;
+  --color-brand-active: #073c44;
+  --color-brand-ring: #7fb6bf;
+
+  /* Лінії */
+  --color-line: #e3e8ec;
+  --color-line-soft: #edf1f4;
+  --color-line-field: #d3dae0;
+  --color-line-chip: #dde3e8;
+
+  /* Стан помилки */
+  --color-danger: #c0392b;
+  --color-danger-field: #d9534f;
+  --color-danger-surface: #fdf3f2;
+  --color-danger-line: #f0cfcb;
+  --color-danger-title: #a5322a;
+  --color-danger-body: #8f4a43;
+
+  /* Dev-only блоки (жовта пунктирна рамка) */
+  --color-dev-surface: #fdf6ea;
+  --color-dev-line: #d9a441;
+  --color-dev-line-field: #dcc190;
+  --color-dev-ink: #8a6118;
+  --color-dev-mark: #b9832a;
+
+  /* Наведення на іконкові кнопки */
+  --color-hover-soft: #f1f4f7;
+
+  /* Другорядна кнопка в бренд-кольорі */
+  --color-brand-line: #cfdde0;
+  --color-brand-tint: #f0f6f7;
+
+  /* Попередження (email не підтверджено, очікування згоди) */
+  --color-notice-surface: #fdf6ea;
+  --color-notice-line: #e6cd97;
+  --color-notice-title: #7a5512;
+  --color-notice-body: #8a6118;
+  --color-notice-hover: #fbf1dc;
+
+  /* Успішний / активний стан */
+  --color-ok-ink: #1f6b45;
+  --color-ok-surface: #eef7f1;
+  --color-ok-line: #c3e2ce;
+
+  /* Небезпечна зона / рядки таблиць */
+  --color-danger-hover: #a53024;
+  --color-danger-line-soft: #eccdc9;
+  --color-row-hover: #f8fafb;
+  --color-line-row: #eef2f5;
+  --color-line-head: #e7ecf0;
+  --color-mark-ok: #2f7d55;
+
+  /* Аватар і підказка */
+  --color-avatar-surface: #e7edf1;
+  --color-avatar-ink: #48586a;
+  --color-ink-invert: #eef3f5;
+
+  /* Дитячий режим — окремий світ: тепла палітра, круглий шрифт, «іграшкові» тіні.
+     Дорослі екрани цих токенів не вживають і навпаки. */
+  --color-kid-canvas: #ffe9c9;
+  --color-kid-sun: #ffc13b;
+  --color-kid-sun-deep: #7a4e0b;
+  --color-kid-sun-shadow: rgba(199, 143, 26, 0.35);
+  --color-kid-teal: #2fb3a3;
+  --color-kid-teal-shadow: rgba(30, 124, 113, 0.35);
+  --color-kid-ink: #5a4322;
+  --color-kid-ink-soft: #8a6a3c;
+  --color-kid-card-shadow: rgba(190, 146, 90, 0.24);
+  --color-kid-pip: #e8d3ae;
+  --color-kid-glow: #ffd98a;
+  --color-kid-correct: #8ede9f;
+  --color-kid-correct-surface: #eafaee;
+  --color-kid-scroll: #f0c78a;
+
+  --font-sans: var(--font-plex-sans), system-ui, sans-serif;
+  --font-kid: var(--font-baloo), system-ui, sans-serif;
+  --font-mono: var(--font-plex-mono), ui-monospace, monospace;
+
+  --shadow-card: 0 1px 2px rgba(18, 40, 61, 0.05);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+/* Дизайн світлий — темної схеми в макетах немає, тому й медіазапиту тут немає. */
+body {
+  background: var(--color-canvas);
+  color: var(--color-ink);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+}
+
+::placeholder {
+  color: var(--color-ink-placeholder);
+}
+
+:focus-visible {
+  outline: 2px solid var(--color-brand-ring);
+  outline-offset: 1px;
+}
+
+a {
+  color: var(--color-brand);
+}
+
+a:hover {
+  color: var(--color-brand-active);
+}
+
+/* Дитячий режим: рух, який неможливо задати утилітами. */
+@keyframes breathe {
+  0%, 100% { transform: scale(1) rotate(-0.4deg); }
+  50% { transform: scale(1.045) rotate(0.4deg); }
+}
+
+@keyframes glowring {
+  0%, 100% { opacity: 0.55; transform: scale(1); }
+  50% { opacity: 0.95; transform: scale(1.06); }
+}
+
+@keyframes bob {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-10px); }
+}
+
+@keyframes pulsedot {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.12); }
+}
+
+@keyframes softbounce {
+  0% { transform: translateY(0) scale(1); }
+  30% { transform: translateY(10px) scale(0.97); }
+  55% { transform: translateY(-6px) scale(1.01); }
+  80% { transform: translateY(3px) scale(0.995); }
+  100% { transform: translateY(0) scale(1); }
+}
+
+@keyframes yay {
+  0% { transform: scale(1); }
+  45% { transform: scale(1.09) rotate(1deg); }
+  100% { transform: scale(1.05) rotate(0deg); }
+}
+
+/* Діти часто «залипають» на анімаціях — системне налаштування має вимикати їх повністю. */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
   }
 }
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
-}
+.kid-shelf::-webkit-scrollbar { height: 14px; }
+.kid-shelf::-webkit-scrollbar-track { background: transparent; }
+.kid-shelf::-webkit-scrollbar-thumb { background: var(--color-kid-scroll); border-radius: 999px; }

@@ -5,6 +5,13 @@ import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 import { apiFetch, ApiError, logout } from "@/lib/api";
 import type { Child, Group, Me } from "@/lib/api-types";
+import { AppHeader } from "@/components/ui/AppHeader";
+import { Avatar, tintFor } from "@/components/ui/Avatar";
+import { Button } from "@/components/ui/Button";
+import { Notice, NoticeButton } from "@/components/ui/Notice";
+import { Pill } from "@/components/ui/Pill";
+import { SecondaryLink } from "@/components/ui/SecondaryButton";
+import { Tooltip } from "@/components/ui/Tooltip";
 
 const ROLE_LABELS: Record<Me["role"], string> = {
   PARENT: "Батьки",
@@ -12,14 +19,9 @@ const ROLE_LABELS: Record<Me["role"], string> = {
   ADMIN: "Адміністратор",
 };
 
-const STATUS_BADGES: Record<Child["status"], { label: string; className: string }> = {
-  pending_consent: { label: "Очікує згоди", className: "bg-amber-100 text-amber-800" },
-  active: { label: "Активна", className: "bg-emerald-100 text-emerald-800" },
-};
-
-const GROUP_BADGE = {
-  active: { label: "Активна", className: "bg-emerald-100 text-emerald-800" },
-  archived: { label: "Архів", className: "bg-black/10 text-black/60 dark:bg-white/10 dark:text-white/60" },
+const CHILD_STATUS: Record<Child["status"], { label: string; tone: "ok" | "waiting"; meta: string }> = {
+  active: { label: "Активна", tone: "ok", meta: "Профіль активний" },
+  pending_consent: { label: "Очікує згоди", tone: "waiting", meta: "Запрошення надіслано" },
 };
 
 export default function DashboardPage() {
@@ -52,7 +54,7 @@ export default function DashboardPage() {
           router.replace("/login");
           return;
         }
-        setLoadError(err instanceof ApiError ? err : new ApiError(0, "Unexpected error"));
+        setLoadError(err instanceof ApiError ? err : new ApiError(0, "Несподівана помилка"));
       })
       .finally(() => setLoading(false));
   }, [router]);
@@ -69,7 +71,7 @@ export default function DashboardPage() {
       setResendState("sent");
     } catch (err) {
       setResendState("idle");
-      setResendError(err instanceof ApiError ? err : new ApiError(0, "Unexpected error"));
+      setResendError(err instanceof ApiError ? err : new ApiError(0, "Несподівана помилка"));
     }
   }
 
@@ -80,145 +82,203 @@ export default function DashboardPage() {
 
   if (loading) {
     return (
-      <main className="flex flex-1 items-center justify-center p-8">
-        <p>Завантаження…</p>
-      </main>
+      <>
+        <AppHeader />
+        <main className="flex flex-1 items-center justify-center p-8">
+          <p className="text-ink-muted">Завантаження…</p>
+        </main>
+      </>
     );
   }
 
   if (loadError || !me || !children || !groups) {
     return (
-      <main className="flex flex-1 items-center justify-center p-8">
-        <p className="text-red-600">{loadError?.message ?? "Не вдалося завантажити кабінет."}</p>
-      </main>
+      <>
+        <AppHeader />
+        <main className="flex flex-1 items-center justify-center p-8">
+          <p className="text-danger">{loadError?.message ?? "Не вдалося завантажити кабінет."}</p>
+        </main>
+      </>
     );
   }
 
   return (
-    <main className="mx-auto flex w-full max-w-2xl flex-1 flex-col gap-6 p-6 sm:p-8">
-      <header className="flex items-center justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-semibold">Привіт, {me.displayName}!</h1>
-          <p className="text-sm text-black/60 dark:text-white/60">{ROLE_LABELS[me.role]}</p>
-        </div>
-        <button
-          type="button"
-          onClick={onLogout}
-          className="shrink-0 rounded-full border border-black/[.16] px-4 py-2 text-sm dark:border-white/[.2]"
-        >
-          Вийти
-        </button>
-      </header>
+    <>
+      <AppHeader context={ROLE_LABELS[me.role]} userName={me.displayName} onLogout={onLogout} />
 
-      {!me.emailVerified ? (
-        <div className="flex flex-col gap-2 rounded-2xl border border-amber-300 bg-amber-50 p-4 text-amber-900">
-          <p className="font-medium">Підтвердьте email, щоб додати дитину</p>
-          <p className="text-sm">
-            Ми надіслали лист на {me.email}. Перейдіть за посиланням у листі, щоб підтвердити адресу.
-          </p>
-          <div className="flex items-center gap-3">
-            <button
-              type="button"
-              onClick={onResendVerification}
-              disabled={resendState !== "idle"}
-              className="self-start rounded-full bg-amber-600 px-4 py-1.5 text-sm text-white disabled:opacity-60"
-            >
-              {resendState === "sending" ? "Надсилаємо…" : resendState === "sent" ? "Лист надіслано" : "Надіслати ще раз"}
-            </button>
-            {resendError ? (
-              <span className="text-sm text-red-700">
-                {resendError.status === 429
-                  ? resendError.retryAfterSeconds
-                    ? `Занадто часто. Спробуйте через ${resendError.retryAfterSeconds}с.`
-                    : "Занадто часто. Спробуйте пізніше."
-                  : resendError.message}
-              </span>
-            ) : null}
-          </div>
-        </div>
-      ) : null}
-
-      {me.role === "PARENT" ? (
-        <>
-          <section className="flex flex-col gap-3">
-            <div className="flex items-center justify-between">
-              <h2 className="text-lg font-semibold">Діти</h2>
-              {me.emailVerified ? (
-                <Link
-                  href="/children/new"
-                  className="rounded-full bg-blue-600 px-4 py-1.5 text-sm text-white"
-                >
-                  Додати дитину
-                </Link>
-              ) : (
-                <span
-                  title="Спершу підтвердьте email — див. повідомлення вище"
-                  className="cursor-not-allowed rounded-full bg-black/10 px-4 py-1.5 text-sm text-black/40 dark:bg-white/10 dark:text-white/40"
-                >
-                  Додати дитину
-                </span>
-              )}
-            </div>
-
-            {children.length === 0 ? (
-              <p className="text-black/60 dark:text-white/60">Ще немає жодної дитини.</p>
-            ) : (
-              <div className="grid grid-cols-2 gap-4 sm:grid-cols-3">
-                {children.map((child) => {
-                  const badge = STATUS_BADGES[child.status];
-                  return (
-                    <Link
-                      key={child.id}
-                      href={`/children/${child.id}`}
-                      className="flex flex-col items-center gap-2 rounded-2xl border border-black/10 bg-white p-4 text-center shadow-sm dark:border-white/10 dark:bg-white/5"
-                    >
-                      <span className="text-4xl">🧒</span>
-                      <span className="font-medium text-slate-800 dark:text-white">{child.displayName}</span>
-                      <span className={`rounded-full px-2 py-0.5 text-xs ${badge.className}`}>{badge.label}</span>
-                    </Link>
-                  );
-                })}
-              </div>
-            )}
-          </section>
-
-          <Link href="/play" className="self-start rounded-full border border-black/[.16] px-5 py-2 dark:border-white/[.2]">
-            Кабінет дитини — грати
-          </Link>
-        </>
-      ) : null}
-
-      {me.role === "TEACHER" ? (
-        <section className="flex flex-col gap-3">
-          <div className="flex items-center justify-between">
-            <h2 className="text-lg font-semibold">Мої групи</h2>
-            <Link href="/groups" className="rounded-full bg-blue-600 px-4 py-1.5 text-sm text-white">
-              Керувати групами
-            </Link>
-          </div>
-
-          {groups.length === 0 ? (
-            <p className="text-black/60 dark:text-white/60">Ще немає жодної групи.</p>
-          ) : (
-            <div className="grid grid-cols-2 gap-4 sm:grid-cols-3">
-              {groups.map((group) => {
-                const badge = GROUP_BADGE[group.isActive ? "active" : "archived"];
-                return (
-                  <Link
-                    key={group.id}
-                    href={`/groups/${group.id}`}
-                    className="flex flex-col items-center gap-2 rounded-2xl border border-black/10 bg-white p-4 text-center shadow-sm dark:border-white/10 dark:bg-white/5"
+      <main className="flex flex-1 justify-center px-6 pt-10 pb-24">
+        <div className="flex w-full max-w-260 flex-col gap-7">
+          {!me.emailVerified ? (
+            <Notice
+              title="Підтвердьте email, щоб додати дитину"
+              action={
+                <>
+                  <NoticeButton
+                    type="button"
+                    onClick={onResendVerification}
+                    disabled={resendState !== "idle"}
                   >
-                    <span className="text-4xl">👥</span>
-                    <span className="font-medium text-slate-800 dark:text-white">{group.name}</span>
-                    <span className={`rounded-full px-2 py-0.5 text-xs ${badge.className}`}>{badge.label}</span>
+                    {resendState === "sending"
+                      ? "Надсилаємо…"
+                      : resendState === "sent"
+                        ? "Лист надіслано"
+                        : "Надіслати лист повторно"}
+                  </NoticeButton>
+                  {resendError ? (
+                    <span className="text-danger text-sm">
+                      {resendError.status === 429
+                        ? resendError.retryAfterSeconds
+                          ? `Занадто часто. Спробуйте через ${resendError.retryAfterSeconds} с.`
+                          : "Занадто часто. Спробуйте пізніше."
+                        : resendError.message}
+                    </span>
+                  ) : null}
+                </>
+              }
+            >
+              Ми надіслали лист на {me.email}. Посилання дійсне 24 години.
+            </Notice>
+          ) : null}
+
+          <div className="flex flex-col gap-2">
+            <h1 className="text-[32px] leading-[1.15] font-medium tracking-[-0.02em]">
+              Вітаємо, {me.displayName}
+            </h1>
+            <p className="text-ink-muted text-base leading-relaxed">
+              Тут ви керуєте профілями дітей, переглядаєте звіти та налаштування безпеки.
+            </p>
+          </div>
+
+          {me.role === "PARENT" ? (
+            <section className="flex flex-col gap-4">
+              <div className="flex flex-wrap items-center justify-between gap-4">
+                <div className="flex items-baseline gap-2.5">
+                  <h2 className="text-xl font-medium tracking-[-0.01em]">Мої діти</h2>
+                  <span className="text-ink-icon text-sm">{countLabel(children.length)}</span>
+                </div>
+
+                {me.emailVerified ? (
+                  <Link href="/children/new" className="no-underline">
+                    <Button type="button" className="h-11 w-auto px-5 text-[15px]">
+                      + Додати дитину
+                    </Button>
                   </Link>
-                );
-              })}
-            </div>
-          )}
-        </section>
-      ) : null}
-    </main>
+                ) : (
+                  <Tooltip text="Підтвердьте email, щоб додати дитину. Кнопка стане активною після підтвердження.">
+                    {(describedBy) => (
+                      <button
+                        type="button"
+                        disabled
+                        aria-describedby={describedBy}
+                        className="h-11 cursor-not-allowed rounded-lg bg-[color:var(--color-ink-icon)]/55 px-5 text-[15px] font-medium text-white"
+                      >
+                        + Додати дитину
+                      </button>
+                    )}
+                  </Tooltip>
+                )}
+              </div>
+
+              {children.length === 0 ? (
+                <p className="text-ink-muted">Ще немає жодного дитячого профілю.</p>
+              ) : (
+                <div className="grid grid-cols-[repeat(auto-fill,minmax(300px,1fr))] gap-4">
+                  {children.map((child) => {
+                    const status = CHILD_STATUS[child.status];
+                    return (
+                      <article
+                        key={child.id}
+                        className="bg-surface border-line shadow-card flex flex-col gap-4.5 rounded-xl border p-5"
+                      >
+                        <div className="flex items-center gap-3.5">
+                          <Avatar name={child.displayName} size={52} tint={tintFor(child.id)} />
+                          <div className="flex min-w-0 flex-col gap-1.5">
+                            <Link
+                              href={`/children/${child.id}`}
+                              className="text-ink text-[17px] font-medium tracking-[-0.005em] no-underline hover:underline"
+                            >
+                              {child.displayName}
+                            </Link>
+                            <Pill tone={status.tone}>{status.label}</Pill>
+                          </div>
+                        </div>
+                        <div className="border-line-soft text-ink-icon flex items-center justify-between gap-3 border-t pt-3.5 text-sm">
+                          <span>{status.meta}</span>
+                          <SecondaryLink href={`/play/${child.id}`}>
+                            Кабінет дитини → грати
+                          </SecondaryLink>
+                        </div>
+                      </article>
+                    );
+                  })}
+                </div>
+              )}
+            </section>
+          ) : null}
+
+          {me.role === "TEACHER" ? (
+            <section className="flex flex-col gap-4">
+              <div className="flex flex-wrap items-center justify-between gap-4">
+                <div className="flex items-baseline gap-2.5">
+                  <h2 className="text-xl font-medium tracking-[-0.01em]">Мої групи</h2>
+                  <span className="text-ink-icon text-sm">{groupCountLabel(groups.length)}</span>
+                </div>
+                <SecondaryLink href="/groups">Керувати групами</SecondaryLink>
+              </div>
+
+              {groups.length === 0 ? (
+                <p className="text-ink-muted">Ще немає жодної групи.</p>
+              ) : (
+                <div className="grid grid-cols-[repeat(auto-fill,minmax(300px,1fr))] gap-4">
+                  {groups.map((group) => (
+                    <article
+                      key={group.id}
+                      className="bg-surface border-line shadow-card flex flex-col gap-4.5 rounded-xl border p-5"
+                    >
+                      <div className="flex items-center gap-3.5">
+                        <Avatar name={group.name} size={52} tint={tintFor(group.id)} />
+                        <div className="flex min-w-0 flex-col gap-1.5">
+                          <Link
+                            href={`/groups/${group.id}`}
+                            className="text-ink text-[17px] font-medium tracking-[-0.005em] no-underline hover:underline"
+                          >
+                            {group.name}
+                          </Link>
+                          <Pill tone={group.isActive ? "ok" : "neutral"}>
+                            {group.isActive ? "Активна" : "Архів"}
+                          </Pill>
+                        </div>
+                      </div>
+                      <div className="border-line-soft text-ink-icon flex items-center justify-between gap-3 border-t pt-3.5 text-sm">
+                        <span className="font-mono">Код: {group.joinCode}</span>
+                        <SecondaryLink href={`/groups/${group.id}`}>Відкрити</SecondaryLink>
+                      </div>
+                    </article>
+                  ))}
+                </div>
+              )}
+            </section>
+          ) : null}
+        </div>
+      </main>
+    </>
   );
+}
+
+/** «1 профіль / 3 профілі / 5 профілів» — інакше підпис під заголовком читається як помилка. */
+function countLabel(n: number): string {
+  return `${n} ${plural(n, "профіль", "профілі", "профілів")}`;
+}
+
+function groupCountLabel(n: number): string {
+  return `${n} ${plural(n, "група", "групи", "груп")}`;
+}
+
+function plural(n: number, one: string, few: string, many: string): string {
+  const mod100 = n % 100;
+  const mod10 = n % 10;
+  if (mod100 >= 11 && mod100 <= 14) return many;
+  if (mod10 === 1) return one;
+  if (mod10 >= 2 && mod10 <= 4) return few;
+  return many;
 }

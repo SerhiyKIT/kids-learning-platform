@@ -5,15 +5,23 @@ import { useParams } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 import { apiFetch, ApiError } from "@/lib/api";
 import type { Child, Group, HistoryEntry } from "@/lib/api-types";
+import { AppHeader } from "@/components/ui/AppHeader";
+import { Avatar, tintFor } from "@/components/ui/Avatar";
+import { Button } from "@/components/ui/Button";
+import { Modal } from "@/components/ui/Modal";
+import { Pill } from "@/components/ui/Pill";
+import { Section, SectionHeader } from "@/components/ui/Card";
+import { DangerButton, QuietButton, SecondaryButton, SecondaryLink } from "@/components/ui/SecondaryButton";
+import { TextInput } from "@/components/ui/Field";
 
-const STATUS_BADGES: Record<Child["status"], { label: string; className: string }> = {
-  pending_consent: { label: "Очікує згоди", className: "bg-amber-100 text-amber-800" },
-  active: { label: "Активна", className: "bg-emerald-100 text-emerald-800" },
+const STATUS: Record<Child["status"], { label: string; tone: "ok" | "waiting" }> = {
+  pending_consent: { label: "Очікує згоди", tone: "waiting" },
+  active: { label: "Активна", tone: "ok" },
 };
 
-const RESULT_LABELS: Record<string, string> = {
-  completed: "Завершено",
-  abandoned: "Перервано",
+const RESULTS: Record<string, { label: string; tone: "ok" | "bad" }> = {
+  completed: { label: "Завершено", tone: "ok" },
+  abandoned: { label: "Перервано", tone: "bad" },
 };
 
 export default function ChildPage() {
@@ -51,20 +59,20 @@ export default function ChildPage() {
         setChild(data);
         setChildError(null);
       })
-      .catch((err) => setChildError(err instanceof ApiError ? err : new ApiError(0, "Unexpected error")))
+      .catch((err) => setChildError(err instanceof ApiError ? err : new ApiError(0, "Несподівана помилка")))
       .finally(() => setChildLoading(false));
   }, [id]);
 
   const loadGroups = useCallback(() => {
     apiFetch<Group[]>(`/children/${id}/groups`)
       .then(setGroups)
-      .catch((err) => setGroupsError(err instanceof ApiError ? err : new ApiError(0, "Unexpected error")));
+      .catch((err) => setGroupsError(err instanceof ApiError ? err : new ApiError(0, "Несподівана помилка")));
   }, [id]);
 
   const loadHistory = useCallback(() => {
     apiFetch<HistoryEntry[]>(`/children/${id}/history`)
       .then(setHistory)
-      .catch((err) => setHistoryError(err instanceof ApiError ? err : new ApiError(0, "Unexpected error")));
+      .catch((err) => setHistoryError(err instanceof ApiError ? err : new ApiError(0, "Несподівана помилка")));
   }, [id]);
 
   useEffect(() => {
@@ -79,7 +87,7 @@ export default function ChildPage() {
       await apiFetch(`/children/${id}/consent`, { method: "POST" });
       loadChild();
     } catch (err) {
-      setChildError(err instanceof ApiError ? err : new ApiError(0, "Unexpected error"));
+      setChildError(err instanceof ApiError ? err : new ApiError(0, "Несподівана помилка"));
     } finally {
       setConsenting(false);
     }
@@ -97,7 +105,7 @@ export default function ChildPage() {
       setJoinCode("");
       loadGroups();
     } catch (err) {
-      setJoinError(err instanceof ApiError ? err : new ApiError(0, "Unexpected error"));
+      setJoinError(err instanceof ApiError ? err : new ApiError(0, "Несподівана помилка"));
     } finally {
       setJoining(false);
     }
@@ -109,7 +117,7 @@ export default function ChildPage() {
       await apiFetch(`/children/${id}/groups/${groupId}`, { method: "DELETE" });
       loadGroups();
     } catch (err) {
-      setGroupsError(err instanceof ApiError ? err : new ApiError(0, "Unexpected error"));
+      setGroupsError(err instanceof ApiError ? err : new ApiError(0, "Несподівана помилка"));
     } finally {
       setLeavingGroupId(null);
     }
@@ -122,258 +130,350 @@ export default function ChildPage() {
       await apiFetch(`/children/${id}`, { method: "DELETE" });
       setDeleted(true);
     } catch (err) {
-      setDeleteError(err instanceof ApiError ? err : new ApiError(0, "Unexpected error"));
+      setDeleteError(err instanceof ApiError ? err : new ApiError(0, "Несподівана помилка"));
       setDeleting(false);
     }
   }
 
   if (deleted) {
     return (
-      <main className="mx-auto flex max-w-sm flex-1 flex-col justify-center gap-4 p-8">
-        <p>Дитину видалено.</p>
-        <Link href="/dashboard" className="rounded-full bg-foreground px-5 py-2 text-background text-center">
-          До кабінету
-        </Link>
-      </main>
+      <>
+        <AppHeader />
+        <main className="flex flex-1 flex-col items-center justify-center gap-4 p-8">
+          <p className="text-ink-muted">Профіль дитини видалено.</p>
+          <Link href="/dashboard" className="no-underline">
+            <Button type="button" className="w-auto px-5">
+              До кабінету
+            </Button>
+          </Link>
+        </main>
+      </>
     );
   }
 
   if (childLoading) {
     return (
-      <main className="flex flex-1 items-center justify-center p-8">
-        <p>Завантаження…</p>
-      </main>
+      <>
+        <AppHeader />
+        <main className="flex flex-1 items-center justify-center p-8">
+          <p className="text-ink-muted">Завантаження…</p>
+        </main>
+      </>
     );
   }
 
   if (childError || !child) {
     return (
-      <main className="mx-auto flex max-w-sm flex-1 flex-col justify-center gap-4 p-8">
-        <p className="text-red-600">
-          {childError?.status === 404 ? "Дитину не знайдено." : childError?.message ?? "Дитину не знайдено."}
-        </p>
-        <Link href="/dashboard" className="underline">
-          ← До кабінету
-        </Link>
-      </main>
+      <>
+        <AppHeader />
+        <main className="flex flex-1 flex-col items-center justify-center gap-3 p-8">
+          <p className="text-danger">
+            {childError?.status === 404 ? "Дитину не знайдено." : (childError?.message ?? "Дитину не знайдено.")}
+          </p>
+          <Link href="/dashboard" className="text-sm">
+            ← До кабінету
+          </Link>
+        </main>
+      </>
     );
   }
 
-  const badge = STATUS_BADGES[child.status];
+  const status = STATUS[child.status];
 
   return (
-    <main className="mx-auto flex w-full max-w-2xl flex-1 flex-col gap-6 p-6 sm:p-8">
-      <div>
-        <Link href="/dashboard" className="text-sm text-blue-600 underline">
-          ← До кабінету
-        </Link>
-        <div className="mt-2 flex items-center gap-3">
-          <span className="text-4xl">🧒</span>
-          <div>
-            <h1 className="text-2xl font-semibold">{child.displayName}</h1>
-            <span className={`rounded-full px-2 py-0.5 text-xs ${badge.className}`}>{badge.label}</span>
+    <>
+      <AppHeader />
+
+      <main className="flex flex-1 justify-center px-6 pt-7 pb-24">
+        <div className="flex w-full max-w-220 flex-col gap-6">
+          <Link href="/dashboard" className="text-ink-muted text-sm no-underline hover:underline">
+            ← Мої діти
+          </Link>
+
+          <div className="flex flex-wrap items-center gap-4">
+            <Avatar name={child.displayName} size={52} tint={tintFor(child.id)} />
+            <div className="flex flex-col gap-[7px]">
+              <h1 className="text-[30px] leading-[1.15] font-medium tracking-[-0.02em]">
+                {child.displayName}
+              </h1>
+              <div className="flex flex-wrap items-center gap-2.5">
+                <Pill tone={status.tone}>{status.label}</Pill>
+                <span className="text-ink-icon text-sm">{child.birthYear} рік народження</span>
+              </div>
+            </div>
           </div>
-        </div>
-      </div>
 
-      {child.status === "pending_consent" ? (
-        <div className="flex flex-col gap-2 rounded-2xl border border-amber-300 bg-amber-50 p-4 text-amber-900">
-          <p className="font-medium">Потрібна згода на обробку даних дитини</p>
-          <p className="text-sm">
-            Перш ніж дитина зможе грати уроки або приєднатися до групи, підтвердьте, що ви даєте
-            згоду на створення облікового запису дитини та обробку її даних (COPPA/GDPR).
-          </p>
-          <button
-            type="button"
-            onClick={onConsent}
-            disabled={consenting}
-            className="self-start rounded-full bg-amber-600 px-4 py-2 text-white disabled:opacity-60"
-          >
-            {consenting ? "Зберігаємо…" : "Надати згоду"}
-          </button>
-        </div>
-      ) : null}
-
-      <Link
-        href={`/play/${child.id}`}
-        className="self-start rounded-full bg-blue-600 px-5 py-2 text-white"
-      >
-        Грати
-      </Link>
-
-      <section className="flex flex-col gap-3">
-        <h2 className="text-lg font-semibold">Групи</h2>
-        {groupsError ? <p className="text-red-600">{groupsError.message}</p> : null}
-        {!groups && !groupsError ? <p>Завантаження…</p> : null}
-        {groups && groups.length === 0 ? <p className="text-black/60 dark:text-white/60">Дитина ще не в жодній групі.</p> : null}
-        {groups && groups.length > 0 ? (
-          <ul className="flex flex-col gap-2">
-            {groups.map((group) => (
-              <li
-                key={group.id}
-                className="flex items-center justify-between rounded-xl border border-black/10 p-3 dark:border-white/10"
-              >
-                <span>
-                  {group.name}
-                  {!group.isActive ? <span className="ml-2 text-xs text-black/50">(архівна)</span> : null}
+          {child.status === "pending_consent" ? (
+            <section className="bg-notice-surface border-notice-line flex flex-col gap-4 rounded-xl border px-6 py-5.5">
+              <div className="flex items-start gap-3">
+                <span
+                  aria-hidden="true"
+                  className="border-dev-mark text-notice-body mt-0.5 flex size-5.5 flex-none items-center justify-center rounded-full border text-[13px] font-semibold"
+                >
+                  !
                 </span>
-                <button
+                <div className="flex flex-col gap-1.5">
+                  <h2 className="text-notice-title text-lg font-medium">Потрібна згода батьків</h2>
+                  <p className="text-notice-body text-sm leading-relaxed text-pretty">
+                    Згідно з COPPA та GDPR ми обробляємо дані дитини лише за підтвердженою згодою
+                    батьків або опікуна. До надання згоди {child.displayName} може проходити лише
+                    демо-урок, а результати не зберігаються. Згоду можна відкликати будь-коли у
+                    налаштуваннях профілю.
+                  </p>
+                </div>
+              </div>
+              <div className="flex flex-wrap items-center gap-3">
+                <Button
+                  type="button"
+                  onClick={onConsent}
+                  disabled={consenting}
+                  className="h-11 w-auto px-5 text-[15px]"
+                >
+                  {consenting ? "Зберігаємо…" : "Надати згоду"}
+                </Button>
+                <Link href="/privacy" className="text-notice-title text-sm">
+                  Що саме ми збираємо?
+                </Link>
+              </div>
+            </section>
+          ) : (
+            <SecondaryLink href={`/play/${child.id}`}>Кабінет дитини → грати</SecondaryLink>
+          )}
+
+          <Section>
+            <SectionHeader title="Групи" description="Клас або гурток, у якому дитина проходить уроки." />
+
+            {groupsError ? (
+              <p className="text-danger border-line-soft border-b px-6 py-4 text-sm">{groupsError.message}</p>
+            ) : null}
+            {!groups && !groupsError ? (
+              <p className="text-ink-muted border-line-soft border-b px-6 py-4 text-sm">Завантаження…</p>
+            ) : null}
+            {groups && groups.length === 0 ? (
+              <p className="text-ink-muted border-line-soft border-b px-6 py-4 text-sm">
+                Дитина ще не в жодній групі.
+              </p>
+            ) : null}
+
+            {groups?.map((group) => (
+              <div
+                key={group.id}
+                className="border-line-soft flex items-center justify-between gap-4 border-b px-6 py-4"
+              >
+                <div className="flex min-w-0 flex-col gap-0.75">
+                  <span className="font-medium">{group.name}</span>
+                  <span className="text-ink-icon font-mono text-sm">
+                    Код: {group.joinCode}
+                    {!group.isActive ? " · архівна" : ""}
+                  </span>
+                </div>
+                <QuietButton
                   type="button"
                   onClick={() => onLeaveGroup(group.id)}
                   disabled={leavingGroupId === group.id}
-                  className="rounded-full border border-black/[.16] px-3 py-1 text-sm disabled:opacity-60 dark:border-white/[.2]"
                 >
                   {leavingGroupId === group.id ? "Виходимо…" : "Вийти з групи"}
-                </button>
-              </li>
+                </QuietButton>
+              </div>
             ))}
-          </ul>
-        ) : null}
 
-        {child.status === "active" ? (
-          <form onSubmit={onJoinGroup} className="flex items-end gap-2">
-            <label className="flex flex-1 flex-col gap-1">
-              <span className="text-sm">Приєднатися за кодом</span>
-              <input
-                type="text"
-                required
-                value={joinCode}
-                onChange={(e) => setJoinCode(e.target.value)}
-                placeholder="Код групи"
-                className="rounded border border-black/[.16] px-3 py-2 uppercase dark:border-white/[.2]"
-              />
-            </label>
-            <button
-              type="submit"
-              disabled={joining}
-              className="rounded-full bg-foreground px-4 py-2 text-background disabled:opacity-50"
-            >
-              {joining ? "Приєднуємо…" : "Приєднатися"}
-            </button>
-          </form>
-        ) : (
-          <p className="text-sm text-black/60 dark:text-white/60">
-            Спершу надайте згоду вище, щоб приєднатися до групи.
-          </p>
-        )}
-        {joinError ? <JoinErrorMessage error={joinError} /> : null}
-      </section>
+            {child.status === "active" ? (
+              <form onSubmit={onJoinGroup} className="flex flex-col gap-2 px-6 pt-5 pb-6">
+                <label htmlFor="join-code" className="text-[15px] font-medium">
+                  Приєднатися за кодом
+                </label>
+                <div className="flex flex-wrap gap-2.5">
+                  <TextInput
+                    id="join-code"
+                    type="text"
+                    required
+                    value={joinCode}
+                    onChange={(e) => setJoinCode(e.target.value.toUpperCase())}
+                    placeholder="Напр. 4F7-2KD"
+                    className="h-11 min-w-50 flex-1 font-mono tracking-[0.06em]"
+                  />
+                  <SecondaryButton type="submit" disabled={joining} className="h-11 px-5 text-[15px]">
+                    {joining ? "Приєднуємо…" : "Приєднатися"}
+                  </SecondaryButton>
+                </div>
+                {joinError ? (
+                  <p className="text-danger text-[13px] leading-snug">{joinErrorText(joinError)}</p>
+                ) : (
+                  <p className="text-ink-soft text-[13px] leading-snug">
+                    Код видає вчитель. Одна дитина може бути щонайбільше у трьох групах.
+                  </p>
+                )}
+              </form>
+            ) : (
+              <p className="text-ink-soft px-6 pt-5 pb-6 text-sm">
+                Спершу надайте згоду вище, щоб приєднатися до групи.
+              </p>
+            )}
+          </Section>
 
-      <section className="flex flex-col gap-3">
-        <h2 className="text-lg font-semibold">Історія проходжень</h2>
-        {historyError ? <p className="text-red-600">{historyError.message}</p> : null}
-        {!history && !historyError ? <p>Завантаження…</p> : null}
-        {history && history.length === 0 ? (
-          <p className="text-black/60 dark:text-white/60">Ще немає проходжень.</p>
-        ) : null}
-        {history && history.length > 0 ? (
-          <ul className="flex flex-col gap-2">
-            {history.map((entry) => {
+          <Section>
+            <SectionHeader
+              title="Історія уроків"
+              description="Натисніть на спробу, щоб побачити відповіді по сценах."
+              aside={history ? attemptsLabel(history.length) : undefined}
+            />
+
+            {historyError ? (
+              <p className="text-danger px-6 py-4 text-sm">{historyError.message}</p>
+            ) : null}
+            {!history && !historyError ? (
+              <p className="text-ink-muted px-6 py-4 text-sm">Завантаження…</p>
+            ) : null}
+            {history && history.length === 0 ? (
+              <p className="text-ink-muted px-6 py-4 text-sm">Ще немає жодного проходження.</p>
+            ) : null}
+
+            {history?.map((entry) => {
               const expanded = expandedAttemptId === entry.attemptId;
+              const result = entry.result ? RESULTS[entry.result] : null;
               return (
-                <li key={entry.attemptId} className="rounded-xl border border-black/10 dark:border-white/10">
+                <div key={entry.attemptId} className="border-line-soft border-b last:border-b-0">
                   <button
                     type="button"
                     onClick={() => setExpandedAttemptId(expanded ? null : entry.attemptId)}
-                    className="flex w-full items-center justify-between gap-3 p-3 text-left"
+                    aria-expanded={expanded}
+                    className="hover:bg-row-hover flex w-full cursor-pointer items-center gap-3.5 px-6 py-4 text-left transition-colors duration-100"
                   >
-                    <span className="flex flex-col">
+                    <span
+                      aria-hidden="true"
+                      className={`border-ink-icon size-2.25 flex-none border-r-[1.6px] border-b-[1.6px] transition-transform duration-150 ${
+                        expanded ? "rotate-[225deg]" : "-rotate-45"
+                      }`}
+                    />
+                    <span className="flex min-w-0 flex-1 flex-col gap-0.75">
                       <span className="font-medium">{entry.title}</span>
-                      <span className="text-sm text-black/60 dark:text-white/60">
+                      <span className="text-ink-icon text-sm">
                         {new Date(entry.startedAt).toLocaleString("uk-UA")}
-                        {entry.result ? ` — ${RESULT_LABELS[entry.result] ?? entry.result}` : " — у процесі"}
-                        {entry.score != null ? ` — ${Math.round(entry.score * 100)}%` : ""}
                       </span>
                     </span>
-                    <span className="text-sm text-blue-600">{expanded ? "Згорнути" : "Деталі"}</span>
+                    <Pill tone={result ? result.tone : "waiting"}>
+                      {result ? result.label : "У процесі"}
+                    </Pill>
+                    <span className="text-avatar-ink w-15.5 flex-none text-right font-mono text-[15px]">
+                      {entry.score != null ? `${Math.round(entry.score * 100)}%` : "—"}
+                    </span>
                   </button>
+
                   {expanded ? (
-                    <ul className="flex flex-col gap-1 border-t border-black/10 p-3 text-sm dark:border-white/10">
+                    <div className="bg-row-hover flex flex-col gap-2.5 pt-1 pr-6 pb-5 pl-[47px]">
+                      <div className="text-ink-faint border-line-head grid grid-cols-[1fr_1fr_auto] gap-3 border-b pb-1.5 font-mono text-xs tracking-[0.08em] uppercase">
+                        <span>Сцена</span>
+                        <span>Відповідь дитини</span>
+                        <span>Підказки</span>
+                      </div>
                       {entry.answers.map((answer, i) => (
-                        <li key={i} className="flex justify-between gap-2">
-                          <span>
-                            {answer.sceneKey} (спроба {answer.tryNo}, варіант {answer.chosenOption})
+                        <div
+                          key={`${answer.sceneKey}-${answer.tryNo}-${i}`}
+                          className="border-line-row grid grid-cols-[1fr_1fr_auto] items-start gap-3 border-b pb-2.5 text-sm leading-relaxed"
+                        >
+                          <span className="text-avatar-ink">
+                            {answer.sceneKey}
+                            {answer.tryNo > 1 ? ` · спроба ${answer.tryNo}` : ""}
                           </span>
-                          <span className={answer.isCorrect ? "text-emerald-700" : "text-red-600"}>
-                            {answer.isCorrect ? "правильно" : "неправильно"}
-                            {answer.hintsUsed > 0 ? ` · підказок: ${answer.hintsUsed}` : ""}
+                          <span className="flex items-start gap-2">
+                            <span
+                              aria-hidden="true"
+                              className={`mt-0.5 flex size-4 flex-none items-center justify-center rounded-full text-[10px] font-semibold text-white ${
+                                answer.isCorrect ? "bg-mark-ok" : "bg-danger"
+                              }`}
+                            >
+                              {answer.isCorrect ? "✓" : "✕"}
+                            </span>
+                            <span>Варіант {answer.chosenOption}</span>
                           </span>
-                        </li>
+                          <span className="text-ink-icon text-right font-mono">{answer.hintsUsed}</span>
+                        </div>
                       ))}
-                    </ul>
+                    </div>
                   ) : null}
-                </li>
+                </div>
               );
             })}
-          </ul>
-        ) : null}
-      </section>
+          </Section>
 
-      <section className="flex flex-col gap-3 rounded-2xl border border-red-300 bg-red-50 p-4 dark:border-red-900/50 dark:bg-red-950/30">
-        <h2 className="text-lg font-semibold text-red-800 dark:text-red-300">Небезпечна зона</h2>
-        <p className="text-sm text-red-800 dark:text-red-300">
-          Видалення дитини незворотно стирає весь її профіль, участь у групах та історію
-          проходжень уроків. Це неможливо скасувати.
-        </p>
-        <button
-          type="button"
-          onClick={() => setConfirmOpen(true)}
-          className="self-start rounded-full bg-red-700 px-4 py-2 text-white"
-        >
-          Видалити дитину
-        </button>
-      </section>
+          <section className="bg-surface border-danger-line-soft flex flex-col gap-4 rounded-xl border px-6 py-5.5">
+            <div className="flex flex-col gap-1.5">
+              <h2 className="text-danger-title text-lg font-medium">Небезпечна зона</h2>
+              <p className="text-ink-soft text-sm leading-relaxed text-pretty">
+                Видалення профілю остаточно стирає всю історію уроків, відповіді та прогрес
+                {" "}
+                {child.displayName}. Дані не можна відновити, і дитина втратить доступ до груп.
+              </p>
+            </div>
+            <div className="flex flex-wrap items-center gap-3">
+              <DangerButton type="button" onClick={() => setConfirmOpen(true)}>
+                Видалити дитину
+              </DangerButton>
+            </div>
+          </section>
+        </div>
+      </main>
 
       {confirmOpen ? (
-        <div className="fixed inset-0 flex items-center justify-center bg-black/50 p-4">
-          <div className="flex w-full max-w-sm flex-col gap-3 rounded-2xl bg-white p-6 dark:bg-neutral-900">
-            <h3 className="text-lg font-semibold">Підтвердьте видалення</h3>
-            <p className="text-sm">
-              Щоб видалити <strong>{child.displayName}</strong> та всю історію назавжди, введіть
-              ім&apos;я дитини нижче.
-            </p>
-            <input
-              type="text"
-              value={confirmText}
-              onChange={(e) => setConfirmText(e.target.value)}
-              placeholder={child.displayName}
-              className="rounded border border-black/[.16] px-3 py-2 dark:border-white/[.2]"
-            />
-            {deleteError ? <p className="text-red-600">{deleteError.message}</p> : null}
-            <div className="flex justify-end gap-2">
-              <button
+        <Modal
+          title="Підтвердьте видалення"
+          onClose={() => {
+            setConfirmOpen(false);
+            setConfirmText("");
+            setDeleteError(null);
+          }}
+          footer={
+            <>
+              <QuietButton
                 type="button"
+                className="h-11 px-4 text-[15px]"
                 onClick={() => {
                   setConfirmOpen(false);
                   setConfirmText("");
                   setDeleteError(null);
                 }}
-                className="rounded-full border border-black/[.16] px-4 py-2 dark:border-white/[.2]"
               >
                 Скасувати
-              </button>
-              <button
+              </QuietButton>
+              <DangerButton
                 type="button"
                 onClick={onDelete}
                 disabled={confirmText !== child.displayName || deleting}
-                className="rounded-full bg-red-700 px-4 py-2 text-white disabled:opacity-50"
               >
                 {deleting ? "Видаляємо…" : "Видалити назавжди"}
-              </button>
-            </div>
-          </div>
-        </div>
+              </DangerButton>
+            </>
+          }
+        >
+          <p className="text-ink-soft text-sm leading-relaxed text-pretty">
+            Щоб назавжди видалити <strong className="text-ink font-medium">{child.displayName}</strong>{" "}
+            та всю історію уроків, введіть ім&apos;я дитини нижче.
+          </p>
+          <TextInput
+            type="text"
+            value={confirmText}
+            onChange={(e) => setConfirmText(e.target.value)}
+            placeholder={child.displayName}
+            aria-label="Ім'я дитини для підтвердження"
+          />
+          {deleteError ? <p className="text-danger text-sm">{deleteError.message}</p> : null}
+        </Modal>
       ) : null}
-    </main>
+    </>
   );
 }
 
-function JoinErrorMessage({ error }: { error: ApiError }) {
-  if (error.code === "CHILD_NOT_ACTIVE") {
-    return <p className="text-red-600">Спершу надайте згоду для цієї дитини.</p>;
-  }
-  if (error.code === "GROUP_INACTIVE") {
-    return <p className="text-red-600">Ця група більше не активна.</p>;
-  }
-  return <p className="text-red-600">{error.message}</p>;
+function joinErrorText(error: ApiError): string {
+  if (error.code === "CHILD_NOT_ACTIVE") return "Спершу надайте згоду для цієї дитини.";
+  if (error.code === "GROUP_INACTIVE") return "Ця група більше не активна.";
+  return error.message;
+}
+
+function attemptsLabel(n: number): string {
+  const mod100 = n % 100;
+  const mod10 = n % 10;
+  if (mod100 >= 11 && mod100 <= 14) return `${n} спроб`;
+  if (mod10 === 1) return `${n} спроба`;
+  if (mod10 >= 2 && mod10 <= 4) return `${n} спроби`;
+  return `${n} спроб`;
 }

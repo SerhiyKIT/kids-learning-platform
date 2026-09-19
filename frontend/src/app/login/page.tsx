@@ -4,6 +4,11 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { ApiError, ensureCsrfCookie, loginWithFormPost } from "@/lib/api";
+import { AppHeader } from "@/components/ui/AppHeader";
+import { Alert } from "@/components/ui/Alert";
+import { Button } from "@/components/ui/Button";
+import { AuthLayout, Card, CardBody, CardFooter, CardHeader, PageHeading } from "@/components/ui/Card";
+import { Field, PasswordInput, TextInput } from "@/components/ui/Field";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -24,68 +29,93 @@ export default function LoginPage() {
       await loginWithFormPost(email, password);
       router.push("/dashboard");
     } catch (err) {
-      setError(err instanceof ApiError ? err : new ApiError(0, "Unexpected error"));
+      setError(err instanceof ApiError ? err : new ApiError(0, "Несподівана помилка"));
     } finally {
       setSubmitting(false);
     }
   }
 
   return (
-    <main className="mx-auto flex max-w-sm flex-1 flex-col justify-center gap-4 p-8">
-      <h1 className="text-xl font-semibold">Log in</h1>
-      <form onSubmit={onSubmit} className="flex flex-col gap-3">
-        <label className="flex flex-col gap-1">
-          <span>Email</span>
-          <input
-            type="email"
-            required
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            className="rounded border border-black/[.16] px-3 py-2 dark:border-white/[.2]"
-          />
-        </label>
-        <label className="flex flex-col gap-1">
-          <span>Password</span>
-          <input
-            type="password"
-            required
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            className="rounded border border-black/[.16] px-3 py-2 dark:border-white/[.2]"
-          />
-        </label>
+    <>
+      <AppHeader />
+      <AuthLayout>
+        <PageHeading
+          title="Вхід"
+          description="Увійдіть до кабінету дорослого, щоб переглянути звіти та налаштування безпеки дитини."
+        />
 
-        {error ? <ErrorMessage error={error} /> : null}
+        <Card as="form" onSubmit={onSubmit}>
+          <CardHeader
+            title="Вхід в акаунт"
+            description="Використовуйте email, який ви вказали під час реєстрації."
+          />
 
-        <button
-          type="submit"
-          disabled={submitting}
-          className="mt-2 rounded-full bg-foreground px-5 py-2 text-background disabled:opacity-50"
-        >
-          {submitting ? "Logging in…" : "Log in"}
-        </button>
-      </form>
-      <p>
-        No account yet?{" "}
-        <Link href="/register" className="underline">
-          Register
-        </Link>
-      </p>
-    </main>
+          <CardBody>
+            {error ? <Alert title="Не вдалося увійти">{errorText(error)}</Alert> : null}
+
+            <Field label="Електронна пошта">
+              {({ id }) => (
+                <TextInput
+                  id={id}
+                  type="email"
+                  required
+                  placeholder="name@example.com"
+                  invalid={error?.status === 401}
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                />
+              )}
+            </Field>
+
+            <div className="flex flex-col gap-[7px]">
+              <div className="flex items-baseline justify-between gap-3">
+                <label htmlFor="password" className="text-[15px] font-medium">
+                  Пароль
+                </label>
+                <Link href="/forgot-password" className="text-sm">
+                  Забули пароль?
+                </Link>
+              </div>
+              <PasswordInput
+                id="password"
+                required
+                placeholder="Введіть пароль"
+                invalid={error?.status === 401}
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+              />
+            </div>
+          </CardBody>
+
+          <CardFooter>
+            <Button type="submit" disabled={submitting}>
+              {submitting ? "Входимо…" : "Увійти"}
+            </Button>
+            <p className="text-ink-muted flex items-center justify-center gap-2 text-[15px]">
+              <span>Ще немає акаунту?</span>
+              <Link href="/register" className="font-medium underline underline-offset-[3px]">
+                Реєстрація
+              </Link>
+            </p>
+          </CardFooter>
+        </Card>
+
+        <p className="text-ink-faint text-[13px] leading-relaxed">
+          Дитячі профілі доступні лише після входу дорослого.
+        </p>
+      </AuthLayout>
+    </>
   );
 }
 
-function ErrorMessage({ error }: { error: ApiError }) {
+function errorText(error: ApiError): string {
   if (error.status === 429) {
-    return (
-      <p className="text-red-600">
-        Too many attempts.{" "}
-        {error.retryAfterSeconds ? `Try again in ${error.retryAfterSeconds}s.` : "Try again later."}
-      </p>
-    );
+    return error.retryAfterSeconds
+      ? `Занадто багато спроб. Спробуйте за ${error.retryAfterSeconds} с.`
+      : "Занадто багато спроб. Спробуйте пізніше.";
   }
   if (error.status === 401) {
-    return <p className="text-red-600">Invalid email or password.</p>;
+    return "Невірний email або пароль. Перевірте дані та спробуйте ще раз.";
   }
-  return <p className="text-red-600">{error.message}</p>;
+  return error.message;
 }
