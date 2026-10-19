@@ -23,6 +23,13 @@ auth:
   password-reset-ttl: 1h
 
 app:
+  llm:
+    # "stub" (default, no network) or "anthropic". The Anthropic provider is wired only when
+    # provider=anthropic AND KIDLEARN_LLM_API_KEY is non-blank; otherwise the stub stays active,
+    # so CI and local dev never need a key. Never commit a key — env only.
+    provider: ${KIDLEARN_LLM_PROVIDER:stub}
+    api-key: ${KIDLEARN_LLM_API_KEY:}
+    model: ${KIDLEARN_LLM_MODEL:claude-sonnet-5-5}
   bootstrap:
     # Blank/unset disables POST /api/bootstrap/admin entirely — see ua.kidlearn.bootstrap's
     # package javadoc. Set at deploy time via ADMIN_BOOTSTRAP_TOKEN; safe to rotate or remove
