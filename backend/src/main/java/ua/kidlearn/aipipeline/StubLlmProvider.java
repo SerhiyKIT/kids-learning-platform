@@ -1,23 +1,19 @@
 package ua.kidlearn.aipipeline;
 
 import java.util.concurrent.atomic.AtomicReference;
+import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.ObjectMapper;
 
 /**
  * Deterministic fake LLM: no network, no API key, always returns the same fixed, schema-valid
- * scenario. The only implementation for now — final provider choice (Claude / GPT / Gemini) is
- * pending the Ukrainian-quality test (docs/Промпт_генерації_уроків.md §5).
- *
- * TODO: add a real provider implementation that builds the prompt from
- * docs/Промпт_генерації_уроків.md (system prompt + PATTERN/AGE_BAND/TOPIC/VERIFIED_FACTS/
- * ASSET_REGISTRY/JSON_SCHEMA user message) and the given GenerationRequest, calling out to
- * Claude/GPT/Gemini with the API key read from an environment variable (never commit it), and
- * make it the active LlmProvider in dev/prod — mirroring how MinioAudioStorage/InMemoryAudioStorage
- * are split between real and test wiring.
+ * scenario. Active whenever the real provider isn't (see {@link AnthropicLlmCondition}): the
+ * default in dev and the only provider the test suite and CI ever see — mirroring how
+ * MinioAudioStorage/InMemoryAudioStorage are split between real and test wiring.
  */
 @Component
+@Conditional(AnthropicLlmCondition.Inverse.class)
 class StubLlmProvider implements LlmProvider {
 
 	private static final String MODEL_ID = "stub";

@@ -154,7 +154,39 @@
 							</resources>
 						</configuration>
 					</execution>
+					<!-- Same idea for the generation prompt: AnthropicLlmProvider reads the system prompt
+					     straight out of the doc's §1 code block, so the doc stays the only copy. -->
+					<execution>
+						<id>copy-lesson-generation-prompt</id>
+						<phase>generate-resources</phase>
+						<goals>
+							<goal>copy-resources</goal>
+						</goals>
+						<configuration>
+							<outputDirectory>${project.build.outputDirectory}/prompt</outputDirectory>
+							<resources>
+								<resource>
+									<directory>${project.basedir}/../docs</directory>
+									<includes>
+										<include>Промпт_генерації_уроків.md</include>
+									</includes>
+								</resource>
+							</resources>
+						</configuration>
+					</execution>
 				</executions>
+			</plugin>
+			<!-- The test suite always runs against StubLlmProvider, even if a developer's shell exports
+			     KIDLEARN_LLM_PROVIDER=anthropic plus a real key: a system property outranks env vars and
+			     application.yml. Tests that exercise the real wiring override it via their own properties. -->
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-surefire-plugin</artifactId>
+				<configuration>
+					<systemPropertyVariables>
+						<app.llm.provider>stub</app.llm.provider>
+					</systemPropertyVariables>
+				</configuration>
 			</plugin>
 		</plugins>
 	</build>

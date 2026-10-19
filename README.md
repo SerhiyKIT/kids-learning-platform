@@ -39,6 +39,24 @@ set -a; source infra/.env; set +a
 cd backend && ./mvnw test
 ```
 
+## LLM lesson generation (optional real provider)
+
+`POST /api/admin/lessons/{id}/generate` uses a deterministic stub by default — no network, no
+key, which is what CI and the test suite always run against. To generate real lessons with
+Anthropic Claude, set in `infra/.env` (gitignored; see `infra/.env.example`):
+
+| Variable | Default | Meaning |
+|---|---|---|
+| `KIDLEARN_LLM_PROVIDER` | `stub` | `anthropic` enables the real provider |
+| `KIDLEARN_LLM_API_KEY` | _(empty)_ | Anthropic API key — env only, never committed |
+| `KIDLEARN_LLM_MODEL` | `claude-sonnet-5-5` | Messages API model id |
+
+The real provider is wired **only** when the provider is `anthropic` **and** the key is
+non-blank; any other combination silently keeps the stub. Its output still goes through
+`ScenarioValidator` and teacher moderation exactly like any other scenario. Provider failures
+return `502` (`LLM_UPSTREAM_ERROR`, `LLM_UNAVAILABLE`, `LLM_NO_SCENARIO`, `LLM_TRUNCATED`) or
+`422` (`LLM_REFUSED`), never `500`. `./mvnw test` forces the stub even if these are exported.
+
 ## Creating the first admin account (production)
 
 There's no default/seeded admin login. `POST /api/bootstrap/admin` creates exactly one — the
