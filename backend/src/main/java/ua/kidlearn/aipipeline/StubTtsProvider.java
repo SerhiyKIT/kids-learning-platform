@@ -1,19 +1,16 @@
 package ua.kidlearn.aipipeline;
 
+import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
 /**
- * Deterministic fake TTS: no network, no credentials, same input always
- * produces the same output. The only implementation for now — final
- * provider choice (ElevenLabs / Azure / Google / Polly) is pending the
- * blind voice test (docs/Формат_подання_уроків_та_ШІ.md §8).
- *
- * TODO: add a real provider implementation once that test picks one, and
- * make it the active TtsProvider in dev/prod (this stub would then move to
- * test-only wiring, mirroring how MinioAudioStorage/InMemoryAudioStorage
- * are split).
+ * Deterministic fake TTS: no network, no credentials, same input always produces the same output.
+ * Active whenever the real provider isn't (see {@link GoogleTtsCondition}): the default in dev and
+ * the only provider the test suite and CI ever see — mirroring how
+ * MinioAudioStorage/InMemoryAudioStorage are split between real and test wiring.
  */
 @Component
+@Conditional(GoogleTtsCondition.Inverse.class)
 class StubTtsProvider implements TtsProvider {
 
 	private static final byte[] FIXED_AUDIO_BYTES = { 0x00, 0x01, 0x02, 0x03 };
