@@ -1,0 +1,11 @@
+# Install: copy both units to /etc/systemd/system/, adjust the path below, then
+#   systemctl daemon-reload && systemctl enable --now kidlearn-backup.timer
+[Unit]
+Description=KidLearn daily backup (PostgreSQL + MinIO)
+Requires=docker.service
+After=docker.service
+
+[Service]
+Type=oneshot
+# Optional: Environment=AGE_RECIPIENT=age1...  BACKUP_DIR=/var/backups/kidlearn  BACKUP_KEEP_DAYS=14
+ExecStart=/opt/kids-learning-platform/infra/prod/backup/backup.sh

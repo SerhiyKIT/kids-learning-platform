@@ -39,6 +39,9 @@ class SmtpAuthMailSender implements AuthMailSender {
 
 	private void send(String to, String subject, String text) {
 		SimpleMailMessage message = new SimpleMailMessage();
+		if (appProperties.mailFrom() != null && !appProperties.mailFrom().isBlank()) {
+			message.setFrom(appProperties.mailFrom());
+		}
 		message.setTo(to);
 		message.setSubject(subject);
 		message.setText(text);

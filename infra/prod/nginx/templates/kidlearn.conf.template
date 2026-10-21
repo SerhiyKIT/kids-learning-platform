@@ -1,0 +1,121 @@
+# Rendered by the nginx image's entrypoint (envsubst of ${DOMAIN} only; nginx's own $variables are
+# left alone). See docs/DEPLOY.md.
+
+server_tokens off;
+
+# Extra layer in front of the backend's own per-account/per-IP limits: slows down floods of the
+# sensitive auth endpoints before they reach the JVM.
+limit_req_zone $binary_remote_addr zone=auth:10m rate=20r/m;
+limit_req_status 429;
+
+upstream backend {
+    server backend:8080;
+    keepalive 16;
+}
+
+upstream frontend {
+    server frontend:3000;
+    keepalive 16;
+}
+
+# The SPA's AJAX login/logout (X-Requested-With: XMLHttpRequest) goes straight to Spring; a normal
+# navigation to /login renders the login page. Going direct (not through the frontend's rewrite)
+# keeps exactly one proxy hop, so the backend always sees the X-Forwarded-For set below.
+map $http_x_requested_with $login_upstream {
+    XMLHttpRequest backend;
+    default frontend;
+}
+
+# Requests for any other host name (scanners hitting the bare IP): drop, don't serve the app.
+server {
+    listen 80 default_server;
+    listen [::]:80 default_server;
+    listen 443 ssl default_server;
+    listen [::]:443 ssl default_server;
+    ssl_reject_handshake on;
+    return 444;
+}
+
+server {
+    listen 80;
+    listen [::]:80;
+    server_name ${DOMAIN};
+
+    # Let's Encrypt HTTP-01 challenges (certbot webroot); everything else → HTTPS.
+    location /.well-known/acme-challenge/ {
+        root /var/www/certbot;
+    }
+
+    location / {
+        return 301 https://$host$request_uri;
+    }
+}
+
+server {
+    listen 443 ssl;
+    listen [::]:443 ssl;
+    http2 on;
+    server_name ${DOMAIN};
+
+    ssl_certificate /etc/letsencrypt/live/${DOMAIN}/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/${DOMAIN}/privkey.pem;
+    ssl_trusted_certificate /etc/letsencrypt/live/${DOMAIN}/chain.pem;
+
+    # Mozilla "intermediate" profile.
+    ssl_protocols TLSv1.2 TLSv1.3;
+    ssl_ciphers ECDHE-ECDSA-AES128-GCM-SHA256:ECDHE-RSA-AES128-GCM-SHA256:ECDHE-ECDSA-AES256-GCM-SHA384:ECDHE-RSA-AES256-GCM-SHA384:ECDHE-ECDSA-CHACHA20-POLY1305:ECDHE-RSA-CHACHA20-POLY1305:DHE-RSA-AES128-GCM-SHA256:DHE-RSA-AES256-GCM-SHA384;
+    ssl_prefer_server_ciphers off;
+    ssl_session_timeout 1d;
+    ssl_session_cache shared:SSL:10m;
+    ssl_session_tickets off;
+
+    ssl_stapling on;
+    ssl_stapling_verify on;
+    resolver 1.1.1.1 9.9.9.9 valid=300s;
+    resolver_timeout 5s;
+
+    # Nothing in the app uploads big bodies: JSON and form posts only.
+    client_max_body_size 2m;
+
+    gzip on;
+    gzip_vary on;
+    gzip_proxied any;
+    gzip_min_length 1024;
+    gzip_types text/plain text/css application/javascript application/json image/svg+xml application/manifest+json;
+
+    include /etc/nginx/snippets/proxy.conf;
+
+    # Health and info are for the container healthcheck only — never from outside.
+    location /actuator {
+        return 404;
+    }
+
+    location = /login {
+        limit_req zone=auth burst=20 nodelay;
+        proxy_pass http://$login_upstream;
+    }
+
+    location = /logout {
+        proxy_pass http://$login_upstream;
+    }
+
+    location ~ ^/api/(auth/(register|forgot-password|reset-password|verify-email|resend-verification|accept-invite|reauthenticate)|bootstrap/admin)$ {
+        limit_req zone=auth burst=20 nodelay;
+        proxy_pass http://backend;
+    }
+
+    # Admin AI lesson generation can take up to ~2 minutes (plus a retry); give it room.
+    location ~ ^/api/admin/lessons/[^/]+/generate$ {
+        proxy_read_timeout 300s;
+        proxy_send_timeout 300s;
+        proxy_pass http://backend;
+    }
+
+    location /api/ {
+        proxy_pass http://backend;
+    }
+
+    location / {
+        proxy_pass http://frontend;
+    }
+}

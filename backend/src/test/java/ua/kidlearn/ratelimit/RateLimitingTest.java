@@ -134,6 +134,16 @@ class RateLimitingTest {
 		forgotPassword(uniqueEmail(), otherIp).andExpect(status().isOk());
 	}
 
+	/** A client can prepend anything to X-Forwarded-For; only the last (proxy-written) entry counts. */
+	@Test
+	void forgedForwardedForPrefixesDoNotCreateFreshRateLimitKeys() throws Exception {
+		String realIp = uniqueIp();
+		for (int i = 0; i < 5; i++) {
+			forgotPassword(uniqueEmail(), "10.0.0." + i + ", " + realIp).andExpect(status().isOk());
+		}
+		forgotPassword(uniqueEmail(), "1.2.3.4, " + realIp).andExpect(status().isTooManyRequests());
+	}
+
 	@Test
 	void normalRegisterLoginAndForgotPasswordUnderLimitBehaveAsBefore() throws Exception {
 		String email = uniqueEmail();

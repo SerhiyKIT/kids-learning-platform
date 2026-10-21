@@ -1,0 +1,22 @@
+# LOCAL REHEARSAL ONLY — never on the server. Runs the production stack on this machine with the
+# locally built images, a self-signed certificate for "localhost" instead of Let's Encrypt, and
+# Mailpit instead of a real SMTP server:
+#   ./local/make-cert.sh
+#   docker compose --env-file local/.env.rehearsal -f docker-compose.yml -f local/docker-compose.local.yml up -d
+services:
+  nginx:
+    volumes:
+      # Same target as the letsencrypt volume, so it replaces it.
+      - ./local/letsencrypt:/etc/letsencrypt:ro
+  certbot:
+    profiles: ["disabled"]
+  frontend:
+    image: kidlearn-frontend:local
+  backend:
+    image: kidlearn-backend:local
+  mailpit:
+    image: axllent/mailpit
+    # Web UI/API for reading the rehearsal's emails — loopback only.
+    ports:
+      - "127.0.0.1:8025:8025"
+    networks: [edge]

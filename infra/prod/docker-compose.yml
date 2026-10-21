@@ -1,0 +1,162 @@
+# Production stack for ONE VPS (pilot). See docs/DEPLOY.md.
+#
+#   Internet → nginx :80 (ACME + 301) / :443 (TLS) → /api/* and AJAX /login, /logout → backend:8080
+#                                                   → everything else → frontend:3000
+#
+# Only nginx publishes ports. backend/frontend/postgres/minio have none; postgres and minio sit on
+# an internal-only network that has no route to the internet at all. Every secret comes from
+# infra/prod/.env (gitignored; template: .env.example).
+
+x-logging: &logging
+  driver: json-file
+  options:
+    max-size: "10m"
+    max-file: "5"
+
+services:
+  nginx:
+    image: nginx:1.27-alpine
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    environment:
+      DOMAIN: ${DOMAIN:?set DOMAIN in .env}
+    volumes:
+      - ./nginx/templates:/etc/nginx/templates:ro
+      # Replaces the image's stock "welcome" server.
+      - ./nginx/empty.conf:/etc/nginx/conf.d/default.conf:ro
+      - ./nginx/snippets:/etc/nginx/snippets:ro
+      - letsencrypt:/etc/letsencrypt:ro
+      - certbot-www:/var/www/certbot:ro
+    # Picks up renewed certificates: reload every 6 hours alongside the normal entrypoint.
+    command: >-
+      /bin/sh -c 'while :; do sleep 6h & wait $${!}; nginx -s reload; done &
+      exec /docker-entrypoint.sh nginx -g "daemon off;"'
+    depends_on:
+      frontend:
+        condition: service_healthy
+      backend:
+        condition: service_healthy
+    networks: [edge]
+    logging: *logging
+
+  certbot:
+    image: certbot/certbot:v2.11.0
+    restart: unless-stopped
+    volumes:
+      - letsencrypt:/etc/letsencrypt
+      - certbot-www:/var/www/certbot
+    # Renewal loop (twice a day; certbot only renews within 30 days of expiry). The first
+    # certificate is obtained once by hand: infra/prod/init-letsencrypt.sh.
+    entrypoint: >-
+      /bin/sh -c 'trap exit TERM; while :; do certbot renew --webroot -w /var/www/certbot --quiet;
+      sleep 12h & wait $${!}; done'
+    networks: [edge]
+    logging: *logging
+
+  frontend:
+    image: ghcr.io/serhiykit/kids-learning-platform-frontend:${IMAGE_TAG:?set IMAGE_TAG in .env}
+    restart: unless-stopped
+    networks: [edge]
+    logging: *logging
+
+  backend:
+    image: ghcr.io/serhiykit/kids-learning-platform-backend:${IMAGE_TAG:?set IMAGE_TAG in .env}
+    restart: unless-stopped
+    environment:
+      SPRING_PROFILES_ACTIVE: prod
+      JAVA_OPTS: ${JAVA_OPTS:--XX:MaxRAMPercentage=75 -XX:+ExitOnOutOfMemoryError}
+      DATASOURCE_URL: jdbc:postgresql://postgres:5432/${POSTGRES_DB}
+      DATASOURCE_USERNAME: ${POSTGRES_USER}
+      DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD}
+      MINIO_ENDPOINT: http://minio:9000
+      MINIO_ACCESS_KEY: ${MINIO_ROOT_USER}
+      MINIO_SECRET_KEY: ${MINIO_ROOT_PASSWORD}
+      MINIO_BUCKET: ${MINIO_BUCKET}
+      TWOFA_ENC_KEY: ${TWOFA_ENC_KEY}
+      ADMIN_BOOTSTRAP_TOKEN: ${ADMIN_BOOTSTRAP_TOKEN:-}
+      APP_BASE_URL: ${APP_BASE_URL}
+      MAIL_FROM: ${MAIL_FROM}
+      SMTP_HOST: ${SMTP_HOST}
+      SMTP_PORT: ${SMTP_PORT}
+      SMTP_USERNAME: ${SMTP_USERNAME}
+      SMTP_PASSWORD: ${SMTP_PASSWORD}
+      SMTP_STARTTLS: ${SMTP_STARTTLS}
+      SMTP_SSL: ${SMTP_SSL}
+      SMTP_AUTH: ${SMTP_AUTH:-true}
+      SESSION_TIMEOUT: ${SESSION_TIMEOUT:-60m}
+      KIDLEARN_LLM_PROVIDER: ${KIDLEARN_LLM_PROVIDER:-stub}
+      KIDLEARN_LLM_API_KEY: ${KIDLEARN_LLM_API_KEY:-}
+      KIDLEARN_LLM_MODEL: ${KIDLEARN_LLM_MODEL:-claude-sonnet-5-5}
+      LLM_MAX_ATTEMPTS: ${LLM_MAX_ATTEMPTS:-2}
+      KIDLEARN_TTS_PROVIDER: ${KIDLEARN_TTS_PROVIDER:-stub}
+      KIDLEARN_TTS_API_KEY: ${KIDLEARN_TTS_API_KEY:-}
+      KIDLEARN_TTS_LANGUAGE: ${KIDLEARN_TTS_LANGUAGE:-uk-UA}
+      KIDLEARN_TTS_VOICE: ${KIDLEARN_TTS_VOICE:-}
+      TTS_VOICE_ID: ${TTS_VOICE_ID}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      minio:
+        condition: service_healthy
+    # edge: reachable by nginx and able to call the LLM/TTS APIs; data: postgres and minio.
+    networks: [edge, data]
+    logging: *logging
+
+  postgres:
+    image: postgres:16
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    networks: [data]
+    logging: *logging
+
+  minio:
+    # MinIO no longer publishes community images on Docker Hub or quay.io (pulls are denied since
+    # late 2025). Chainguard's free MinIO build (AGPLv3, runs as non-root uid 65532) is pinned by
+    # digest so every deploy runs the same bytes; to update, pull :latest, check it, and replace
+    # the digest (docs/DEPLOY.md).
+    image: cgr.dev/chainguard/minio@sha256:ad134b2dd572ae0d989d6807c3e45516cc75a34883a8021db2ff04be5d1d496a
+    restart: unless-stopped
+    # No console: nothing but the backend ever talks to MinIO. The bucket is created lazily by the
+    # backend on the first voiced line, so an empty volume is fine.
+    command: ["server", "/data"]
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD}
+    volumes:
+      - minio-data:/data
+    healthcheck:
+      test: ["CMD", "mc", "ready", "local"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    networks: [data]
+    logging: *logging
+
+networks:
+  edge: {}
+  # No outbound route: the databases can't reach (or be reached from) the internet.
+  data:
+    internal: true
+
+# Fixed names, so backups and restores address them regardless of the compose project name.
+volumes:
+  postgres-data:
+    name: kidlearn_postgres-data
+  minio-data:
+    name: kidlearn_minio-data
+  letsencrypt:
+    name: kidlearn_letsencrypt
+  certbot-www:
+    name: kidlearn_certbot-www

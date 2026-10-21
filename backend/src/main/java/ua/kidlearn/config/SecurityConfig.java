@@ -37,7 +37,13 @@ public class SecurityConfig {
 	@Bean
 	public SecurityFilterChain securityFilterChain(HttpSecurity http, LoginAttemptService loginAttemptService,
 			ClientIpResolver clientIpResolver, RateLimiter rateLimiter, RateLimitProperties rateLimitProperties,
-			UserRepository userRepository) throws Exception {
+			UserRepository userRepository, AppProperties appProperties) throws Exception {
+		// JS-readable by design (the SPA echoes it back as X-XSRF-TOKEN), but Secure in prod and
+		// SameSite=Lax like the session cookie.
+		CookieCsrfTokenRepository csrfTokenRepository = CookieCsrfTokenRepository.withHttpOnlyFalse();
+		csrfTokenRepository.setCookieCustomizer(cookie -> cookie
+				.secure(appProperties.security().secureCookies())
+				.sameSite("Lax"));
 		http
 				.authorizeHttpRequests(auth -> auth
 						.requestMatchers("/actuator/health", "/actuator/info").permitAll()
@@ -60,7 +66,7 @@ public class SecurityConfig {
 				.csrf(csrf -> csrf
 						// Readable-by-JS cookie (SPA-friendly): the frontend reads XSRF-TOKEN and
 						// echoes it back as the X-XSRF-TOKEN header on POST/PUT/DELETE requests.
-						.csrfTokenRepository(CookieCsrfTokenRepository.withHttpOnlyFalse())
+						.csrfTokenRepository(csrfTokenRepository)
 						.csrfTokenRequestHandler(new CsrfTokenRequestAttributeHandler()))
 				// Forces the XSRF-TOKEN cookie to be written on the first response a
 				// client makes, rather than only as a side effect of rendering a form.
@@ -96,7 +102,13 @@ public class SecurityConfig {
 				// later successful login redirects to it instead of the frontend's default "/" —
 				// e.g. a client's own CSRF-cookie warm-up GET could otherwise hijack the very
 				// next login's redirect target.
-				.requestCache(cache -> cache.disable());
+				.requestCache(cache -> cache.disable())
+				// Sent on HTTPS responses only (Spring's own rule). One year, but without
+				// includeSubDomains: other subdomains of the pilot's domain may not serve HTTPS, and
+				// that flag would lock browsers out of them for a year (see docs/DEPLOY.md).
+				.headers(headers -> headers.httpStrictTransportSecurity(hsts -> hsts
+						.includeSubDomains(false)
+						.maxAgeInSeconds(31_536_000)));
 		return http.build();
 	}
 

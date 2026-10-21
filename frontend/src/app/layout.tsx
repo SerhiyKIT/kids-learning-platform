@@ -1,4 +1,5 @@
 import type { Metadata, Viewport } from "next";
+import { connection } from "next/server";
 import { Nunito, IBM_Plex_Sans, IBM_Plex_Mono } from "next/font/google";
 import { ServiceWorkerRegistration } from "@/components/ServiceWorkerRegistration";
 import "./globals.css";
@@ -34,7 +35,10 @@ export const viewport: Viewport = {
   themeColor: "#0b5560",
 };
 
-export default function RootLayout({ children }: LayoutProps<"/">) {
+export default async function RootLayout({ children }: LayoutProps<"/">) {
+  // Render every page per request: the CSP nonce (src/proxy.ts) can only be applied to pages
+  // rendered after the request arrives, never to prerendered HTML.
+  await connection();
   return (
     <html
       lang="uk"
