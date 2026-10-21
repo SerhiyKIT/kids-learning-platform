@@ -20,6 +20,10 @@ import ua.kidlearn.lessons.LessonVersionRepository;
 @Service
 public class VoicingService {
 
+	/** Only content a human moderator has signed off on gets (paid) TTS. */
+	private static final Set<String> VOICEABLE_STATUSES = Set.of(LessonVersion.STATUS_APPROVED,
+			LessonVersion.STATUS_PUBLISHED);
+
 	private final LessonVersionRepository lessonVersionRepository;
 	private final AudioAssetRepository audioAssetRepository;
 	private final TtsProvider ttsProvider;
@@ -42,6 +46,9 @@ public class VoicingService {
 	public VoicingResult voice(UUID lessonVersionId) {
 		LessonVersion version = lessonVersionRepository.findById(lessonVersionId)
 				.orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Lesson version not found"));
+		if (!VOICEABLE_STATUSES.contains(version.getStatus())) {
+			throw new VoicingNotAllowedException(version.getStatus());
+		}
 
 		Set<String> texts = new LinkedHashSet<>();
 		collectVoiceLineTexts(objectMapper.readTree(version.getScenario()), texts);

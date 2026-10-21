@@ -31,6 +31,9 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.test.web.servlet.ResultActions;
 import org.springframework.transaction.annotation.Transactional;
+import tools.jackson.databind.ObjectMapper;
+import ua.kidlearn.lessons.LessonService;
+import ua.kidlearn.lessons.LessonVersion;
 import ua.kidlearn.scenario.ScenarioFixtures;
 import ua.kidlearn.twofa.AdminTwoFactorTestSupport;
 import ua.kidlearn.users.Role;
@@ -71,6 +74,12 @@ class GoogleTtsVoicingEndpointTest {
 
 	@Autowired
 	private AudioAssetRepository audioAssetRepository;
+
+	@Autowired
+	private LessonService lessonService;
+
+	@Autowired
+	private ObjectMapper objectMapper;
 
 	private static HttpServer startFakeGoogle() {
 		try {
@@ -115,7 +124,7 @@ class GoogleTtsVoicingEndpointTest {
 		return session;
 	}
 
-	/** Version whose reality_bridge text is unique, so at least that line is never a cache hit. */
+	/** Approved version whose reality_bridge text is unique, so at least that line is never a cache hit. */
 	private UUID createVersion(MockHttpSession adminSession, String uniqueText) throws Exception {
 		MvcResult lessonResult = mockMvc.perform(post("/api/admin/lessons").with(csrf())
 						.session(adminSession)
@@ -127,13 +136,12 @@ class GoogleTtsVoicingEndpointTest {
 		String scenario = ScenarioFixtures.VALID_MINIMAL_SCENARIO.replace("Remember to look both ways", uniqueText);
 		assertThat(scenario).contains(uniqueText);
 
-		MvcResult versionResult = mockMvc.perform(post("/api/admin/lessons/" + lessonId + "/versions").with(csrf())
-						.session(adminSession)
-						.contentType(MediaType.APPLICATION_JSON)
-						.content("{\"scenario\":%s,\"generatedBy\":\"human\"}".formatted(scenario)))
-				.andExpect(status().isCreated())
-				.andReturn();
-		return UUID.fromString(JsonPath.read(versionResult.getResponse().getContentAsString(), "$.id"));
+		// Voicing only accepts moderated content: auto_validated -> approve via the real endpoint.
+		UUID versionId = lessonService.createGeneratedVersion(UUID.fromString(lessonId), objectMapper.readTree(scenario),
+				"test-fixture", LessonVersion.STATUS_AUTO_VALIDATED).getId();
+		mockMvc.perform(post("/api/admin/lesson-versions/" + versionId + "/approve").with(csrf()).session(adminSession))
+				.andExpect(status().isOk());
+		return versionId;
 	}
 
 	private ResultActions voice(String uniqueText) throws Exception {

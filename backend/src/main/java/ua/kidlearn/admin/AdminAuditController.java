@@ -23,10 +23,11 @@ public class AdminAuditController {
 	}
 
 	@GetMapping("/audit")
-	public List<AuditEntryResponse> list(@RequestParam(required = false) String targetType,
+	public List<AuditEntryResponse> list(@RequestParam(required = false) String action,
+			@RequestParam(required = false) String targetType,
 			@RequestParam(required = false) UUID targetId, @RequestParam(required = false) UUID actorId,
 			@RequestParam(defaultValue = "50") int limit, @RequestParam(defaultValue = "0") int offset) {
-		return auditService.list(targetType, targetId, actorId, limit, offset).stream()
+		return auditService.list(action, targetType, targetId, actorId, limit, offset).stream()
 				.map(AuditEntryResponse::from)
 				.toList();
 	}

@@ -1,5 +1,6 @@
 package ua.kidlearn.lessons;
 
+import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -140,6 +141,28 @@ public class LessonService {
 				.map(v -> new PendingReviewEntry(v.getId(), v.getLessonId(), lessonsById.get(v.getLessonId()).getTitle(),
 						v.getVersionNo(), v.getStatus(), v.getGeneratedBy()))
 				.toList();
+	}
+
+	/** Every (non-deleted) lesson for the admin lesson list, newest first, with its version summary. */
+	@Transactional(readOnly = true)
+	public List<AdminLessonEntry> listAllLessons() {
+		List<Lesson> lessons = lessonRepository.findByDeletedAtIsNullOrderByCreatedAtDescIdDesc();
+		Map<UUID, List<LessonVersion>> versionsByLesson = lessonVersionRepository
+				.findByLessonIdIn(lessons.stream().map(Lesson::getId).toList())
+				.stream()
+				.collect(Collectors.groupingBy(LessonVersion::getLessonId));
+		Map<UUID, Module> modulesById = moduleRepository.findAllById(lessons.stream().map(Lesson::getModuleId).toList())
+				.stream()
+				.collect(Collectors.toMap(Module::getId, m -> m));
+		return lessons.stream().map(lesson -> {
+			List<LessonVersion> versions = versionsByLesson.getOrDefault(lesson.getId(), List.of());
+			AdminLessonEntry.LatestVersion latest = versions.stream()
+					.max(Comparator.comparingInt(LessonVersion::getVersionNo))
+					.map(v -> new AdminLessonEntry.LatestVersion(v.getId(), v.getVersionNo(), v.getStatus()))
+					.orElse(null);
+			return new AdminLessonEntry(lesson.getId(), modulesById.get(lesson.getModuleId()).getCode(),
+					lesson.getTitle(), versions.size(), latest, lesson.getCurrentVersionId());
+		}).toList();
 	}
 
 	@Transactional(readOnly = true)
