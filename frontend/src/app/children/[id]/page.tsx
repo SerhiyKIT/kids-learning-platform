@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 import { apiFetch, ApiError } from "@/lib/api";
-import type { Child, Group, HistoryEntry } from "@/lib/api-types";
+import type { Child, Group, HistoryEntry, PlaySettingsRequest, PlayState } from "@/lib/api-types";
 import { AppHeader } from "@/components/ui/AppHeader";
 import { Avatar, tintFor } from "@/components/ui/Avatar";
 import { Button } from "@/components/ui/Button";
@@ -18,6 +18,14 @@ const STATUS: Record<Child["status"], { label: string; tone: "ok" | "waiting" }>
   pending_consent: { label: "Очікує згоди", tone: "waiting" },
   active: { label: "Активна", tone: "ok" },
 };
+
+const SESSION_LIMITS: { value: PlaySettingsRequest["sessionLimitMinutes"]; label: string }[] = [
+  { value: 10, label: "10 хв" },
+  { value: 15, label: "15 хв" },
+  { value: 20, label: "20 хв" },
+  { value: 30, label: "30 хв" },
+  { value: null, label: "Без ліміту" },
+];
 
 const RESULTS: Record<string, { label: string; tone: "ok" | "bad" }> = {
   completed: { label: "Завершено", tone: "ok" },
@@ -42,6 +50,11 @@ export default function ChildPage() {
   const [history, setHistory] = useState<HistoryEntry[] | null>(null);
   const [historyError, setHistoryError] = useState<ApiError | null>(null);
   const [expandedAttemptId, setExpandedAttemptId] = useState<string | null>(null);
+
+  const [playState, setPlayState] = useState<PlayState | null>(null);
+  const [playError, setPlayError] = useState<ApiError | null>(null);
+  const [savingLimit, setSavingLimit] = useState(false);
+  const [waking, setWaking] = useState(false);
 
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [confirmText, setConfirmText] = useState("");
@@ -75,11 +88,46 @@ export default function ChildPage() {
       .catch((err) => setHistoryError(err instanceof ApiError ? err : new ApiError(0, "Несподівана помилка")));
   }, [id]);
 
+  const loadPlayState = useCallback(() => {
+    apiFetch<PlayState>(`/children/${id}/play-state`)
+      .then((data) => {
+        setPlayState(data);
+        setPlayError(null);
+      })
+      .catch((err) => setPlayError(err instanceof ApiError ? err : new ApiError(0, "Несподівана помилка")));
+  }, [id]);
+
   useEffect(() => {
     loadChild();
     loadGroups();
     loadHistory();
-  }, [loadChild, loadGroups, loadHistory]);
+    loadPlayState();
+  }, [loadChild, loadGroups, loadHistory, loadPlayState]);
+
+  async function onSetLimit(sessionLimitMinutes: PlaySettingsRequest["sessionLimitMinutes"]) {
+    setSavingLimit(true);
+    setPlayError(null);
+    try {
+      const body: PlaySettingsRequest = { sessionLimitMinutes };
+      setPlayState(await apiFetch<PlayState>(`/children/${id}/play-settings`, { method: "PUT", body: JSON.stringify(body) }));
+    } catch (err) {
+      setPlayError(err instanceof ApiError ? err : new ApiError(0, "Несподівана помилка"));
+    } finally {
+      setSavingLimit(false);
+    }
+  }
+
+  async function onWake() {
+    setWaking(true);
+    setPlayError(null);
+    try {
+      setPlayState(await apiFetch<PlayState>(`/children/${id}/play-state/wake`, { method: "POST" }));
+    } catch (err) {
+      setPlayError(err instanceof ApiError ? err : new ApiError(0, "Несподівана помилка"));
+    } finally {
+      setWaking(false);
+    }
+  }
 
   async function onConsent() {
     setConsenting(true);
@@ -309,6 +357,52 @@ export default function ChildPage() {
                 Спершу надайте згоду вище, щоб приєднатися до групи.
               </p>
             )}
+          </Section>
+
+          <Section>
+            <SectionHeader
+              title="Час гри"
+              description="Скільки дитина грає за один підхід. Ліміт ніколи не перериває урок: після уроку, на якому час вичерпано, провідник прощається й «засинає», а дитина відпочиває. Таймера дитина не бачить."
+            />
+            <div className="flex flex-col gap-4 px-6 pt-1 pb-6">
+              {!playState && !playError ? <p className="text-ink-muted text-sm">Завантаження…</p> : null}
+              {playState ? (
+                <div role="radiogroup" aria-label="Ліміт часу гри" className="flex flex-wrap gap-2">
+                  {SESSION_LIMITS.map((option) => {
+                    const selected = playState.sessionLimitMinutes === option.value;
+                    return (
+                      <button
+                        key={option.label}
+                        type="button"
+                        role="radio"
+                        aria-checked={selected}
+                        disabled={savingLimit}
+                        onClick={() => onSetLimit(option.value)}
+                        className={`h-10 cursor-pointer rounded-lg border px-4 text-[15px] font-medium transition-colors duration-100 disabled:cursor-default ${
+                          selected
+                            ? "bg-brand border-brand text-white"
+                            : "bg-surface border-line-field text-ink hover:bg-row-hover"
+                        }`}
+                      >
+                        {option.label}
+                      </button>
+                    );
+                  })}
+                </div>
+              ) : null}
+              {playState?.resting && playState.restUntil ? (
+                <div className="bg-notice-surface border-notice-line flex flex-wrap items-center justify-between gap-3 rounded-lg border px-4 py-3">
+                  <span className="text-notice-title text-[15px] font-medium">
+                    Відпочиває до{" "}
+                    {new Date(playState.restUntil).toLocaleTimeString("uk-UA", { hour: "2-digit", minute: "2-digit" })}
+                  </span>
+                  <SecondaryButton type="button" onClick={onWake} disabled={waking} className="h-10 px-4 text-[15px]">
+                    {waking ? "Будимо…" : "Дозволити грати зараз"}
+                  </SecondaryButton>
+                </div>
+              ) : null}
+              {playError ? <p className="text-danger text-sm">{playError.message}</p> : null}
+            </div>
           </Section>
 
           <Section>

@@ -4,11 +4,12 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { apiFetch, ApiError, logout } from "@/lib/api";
-import type { PendingReviewEntry } from "@/lib/admin-types";
+import type { PendingReviewEntry, VoicingResult } from "@/lib/admin-types";
 import type { Me } from "@/lib/api-types";
 import { twoFactorRedirect } from "@/lib/two-factor";
 import { AppHeader } from "@/components/ui/AppHeader";
 import { Pill } from "@/components/ui/Pill";
+import { SecondaryButton } from "@/components/ui/SecondaryButton";
 
 /**
  * Admin home. Order matters: /auth/me first (non-admins go back to /dashboard; a session pending
@@ -107,6 +108,8 @@ export default function AdminHomePage() {
               description="Запрошення вчителів і керування їхніми акаунтами."
             />
           </div>
+
+          <ShellLinesVoicing />
         </div>
       </main>
     </>
@@ -122,5 +125,48 @@ function AdminCard({ href, title, description }: { href: string; title: string; 
       <h2 className="text-[17px] font-medium">{title}</h2>
       <p className="text-ink-muted text-sm leading-relaxed">{description}</p>
     </Link>
+  );
+}
+
+/**
+ * The guide's fixed child-mode lines (greeting, "turn the device", lesson end, rest) are written in
+ * the code, not generated, so they skip moderation and are voiced here directly. Audited.
+ */
+function ShellLinesVoicing() {
+  const [voicing, setVoicing] = useState(false);
+  const [result, setResult] = useState<VoicingResult | null>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  async function onVoice() {
+    setVoicing(true);
+    setError(null);
+    try {
+      setResult(await apiFetch<VoicingResult>("/admin/kid-shell-lines/voice", { method: "POST" }));
+    } catch (err) {
+      setError(err instanceof ApiError && err.status === 502 ? "Сервіс озвучення недоступний." : "Не вдалося озвучити.");
+    } finally {
+      setVoicing(false);
+    }
+  }
+
+  return (
+    <section className="bg-surface border-line shadow-card flex flex-wrap items-center justify-between gap-4 rounded-xl border p-5">
+      <div className="flex max-w-160 flex-col gap-1.5">
+        <h2 className="text-[17px] font-medium">Репліки дитячого режиму</h2>
+        <p className="text-ink-muted text-sm leading-relaxed">
+          Привітання провідника, прохання повернути пристрій, свято наприкінці уроку й «сон». Тексти
+          фіксовані в коді; вже озвучені репліки повторно не синтезуються.
+        </p>
+        {result ? (
+          <p className="text-ink-soft text-sm">
+            Реплік: {result.linesTotal}, нових: {result.synthesized}, вже озвучених: {result.cached}.
+          </p>
+        ) : null}
+        {error ? <p className="text-danger text-sm">{error}</p> : null}
+      </div>
+      <SecondaryButton type="button" onClick={onVoice} disabled={voicing}>
+        {voicing ? "Озвучуємо…" : "Озвучити репліки"}
+      </SecondaryButton>
+    </section>
   );
 }

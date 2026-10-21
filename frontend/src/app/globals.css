@@ -177,3 +177,44 @@ a:hover {
 .kid-shelf::-webkit-scrollbar { height: 14px; }
 .kid-shelf::-webkit-scrollbar-track { background: transparent; }
 .kid-shelf::-webkit-scrollbar-thumb { background: var(--color-kid-scroll); border-radius: 999px; }
+
+/* Оболонка дитячого режиму: поворот пристрою, свято, наліпка, «сон». */
+@keyframes turnphone {
+  0%, 22% { transform: rotate(0deg); }
+  50%, 78% { transform: rotate(90deg); }
+  100% { transform: rotate(0deg); }
+}
+
+@keyframes confetti {
+  0% { transform: translateY(-12vh) rotate(0deg); opacity: 1; }
+  100% { transform: translateY(110vh) rotate(540deg); opacity: 0.9; }
+}
+
+@keyframes stickerpop {
+  0% { transform: scale(0.2) rotate(-25deg); opacity: 0; }
+  60% { transform: scale(1.12) rotate(6deg); opacity: 1; }
+  100% { transform: scale(1) rotate(-6deg); opacity: 1; }
+}
+
+/* Наліпка «летить» в альбом: координати цілі задає компонент через --fly-x/--fly-y. */
+@keyframes stickerfly {
+  0% { transform: translate(0, 0) scale(1) rotate(-6deg); opacity: 1; }
+  100% { transform: translate(var(--fly-x), var(--fly-y)) scale(0.18) rotate(-30deg); opacity: 0.2; }
+}
+
+@keyframes wave {
+  0%, 100% { transform: rotate(0deg); }
+  20%, 60% { transform: rotate(-9deg); }
+  40%, 80% { transform: rotate(9deg); }
+}
+
+@keyframes sleepbreathe {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.035, 1.02); }
+}
+
+@keyframes zfloat {
+  0% { transform: translate(0, 0) scale(0.7); opacity: 0; }
+  30% { opacity: 0.85; }
+  100% { transform: translate(28px, -70px) scale(1.15); opacity: 0; }
+}

@@ -1,6 +1,7 @@
 "use client";
 
-import { useRouter } from "next/navigation";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { useKidMode } from "./kid-mode-context";
 
 /** Тепле тло дитячого режиму з двома м'якими колами. Займає весь екран. */
 export function KidStage({ children }: { children: React.ReactNode }) {
@@ -19,16 +20,89 @@ export function KidStage({ children }: { children: React.ReactNode }) {
   );
 }
 
-/** Вихід із дитячого режиму — маленький і в куті, щоб дитина не тиснула випадково. */
-export function ExitButton({ href = "/dashboard" }: { href?: string }) {
-  const router = useRouter();
+/** How long an adult holds the exit button before the password screen opens. */
+const EXIT_HOLD_MS = 2000;
+const EXIT_RING_RADIUS = 21;
+const EXIT_RING_LENGTH = 2 * Math.PI * EXIT_RING_RADIUS;
+
+/**
+ * Exit from child mode — small, muted and in the corner, and it must be HELD for ~2 s (a ring
+ * fills around it); letting go earlier does nothing, so a child's tap never leaves. Holding then
+ * opens the adult's password screen (docs/Ролі_та_приватність.md §2). Keyboard: hold Enter/Space.
+ */
+export function ExitButton() {
+  const { requestExit } = useKidMode();
+  const [progress, setProgress] = useState(0);
+  const frame = useRef<number | null>(null);
+
+  const cancel = useCallback(() => {
+    if (frame.current !== null) cancelAnimationFrame(frame.current);
+    frame.current = null;
+    setProgress(0);
+  }, []);
+
+  const begin = useCallback(() => {
+    cancel();
+    const startedAt = performance.now();
+    const tick = (now: number) => {
+      const p = Math.min(1, (now - startedAt) / EXIT_HOLD_MS);
+      if (p >= 1) {
+        frame.current = null;
+        setProgress(0);
+        requestExit();
+        return;
+      }
+      setProgress(p);
+      frame.current = requestAnimationFrame(tick);
+    };
+    frame.current = requestAnimationFrame(tick);
+  }, [cancel, requestExit]);
+
+  useEffect(() => cancel, [cancel]);
+
   return (
     <button
       type="button"
-      onClick={() => router.push(href)}
-      aria-label="Вихід для дорослих"
-      className="text-kid-ink-soft absolute top-4.5 right-4.5 z-10 flex size-11.5 cursor-pointer items-center justify-center rounded-[14px] border-[1.5px] border-[rgba(126,88,44,0.25)] bg-white/60 hover:bg-white/90"
+      aria-label="Вихід для дорослих: утримуйте 2 секунди"
+      onPointerDown={(e) => {
+        if (e.button !== 0) return;
+        e.currentTarget.setPointerCapture(e.pointerId);
+        begin();
+      }}
+      onPointerUp={cancel}
+      onPointerCancel={cancel}
+      onLostPointerCapture={cancel}
+      onKeyDown={(e) => {
+        if ((e.key === "Enter" || e.key === " ") && !e.repeat) {
+          e.preventDefault();
+          begin();
+        }
+      }}
+      onKeyUp={(e) => {
+        if (e.key === "Enter" || e.key === " ") cancel();
+      }}
+      onBlur={cancel}
+      onContextMenu={(e) => e.preventDefault()}
+      className="text-kid-ink-soft absolute top-4.5 right-4.5 z-10 flex size-11.5 cursor-pointer touch-none items-center justify-center rounded-[14px] border-[1.5px] border-[rgba(126,88,44,0.25)] bg-white/60 select-none [-webkit-touch-callout:none]"
     >
+      <svg
+        className="pointer-events-none absolute -inset-1 size-[calc(100%+8px)] -rotate-90"
+        viewBox="0 0 50 50"
+        aria-hidden="true"
+        style={{ opacity: progress > 0 ? 1 : 0 }}
+      >
+        <circle
+          cx="25"
+          cy="25"
+          r={EXIT_RING_RADIUS}
+          fill="none"
+          stroke="var(--color-kid-ink-soft)"
+          strokeWidth="3"
+          strokeLinecap="round"
+          strokeDasharray={EXIT_RING_LENGTH}
+          strokeDashoffset={EXIT_RING_LENGTH * (1 - progress)}
+        />
+      </svg>
       <svg width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden="true">
         <path d="M12 3.5H15.5V16.5H12" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" />
         <path d="M9.5 13.5 6 10l3.5-3.5M6 10h6" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" />
@@ -107,9 +181,9 @@ export function DoneStamp({ className = "" }: { className?: string }) {
   return (
     <span
       aria-hidden="true"
-      className={`bg-kid-teal flex size-23 -rotate-12 items-center justify-center rounded-full border-6 border-white shadow-[0_8px_0_var(--color-kid-teal-shadow)] ${className}`}
+      className={`bg-kid-teal flex size-[clamp(52px,14dvh,92px)] -rotate-12 items-center justify-center rounded-full border-[clamp(4px,1dvh,6px)] border-white shadow-[0_8px_0_var(--color-kid-teal-shadow)] ${className}`}
     >
-      <svg width="44" height="44" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+      <svg className="size-[48%]" viewBox="0 0 24 24" fill="none" aria-hidden="true">
         <path d="M5.5 12.8l4.2 4.2L18.5 8" stroke="#ffffff" strokeWidth="3.4" strokeLinecap="round" strokeLinejoin="round" />
       </svg>
     </span>

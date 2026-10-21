@@ -134,3 +134,41 @@ export interface HistoryEntry {
   score: number | null;
   answers: AnswerEntry[];
 }
+
+/** GET /api/children/{id}/play-state, PUT …/play-settings, POST …/play-state/wake, and the body of
+ * POST /api/attempts/{id}/complete. Child mode only looks at `resting` — the child never sees a clock. */
+export interface PlayState {
+  resting: boolean;
+  restUntil: string | null;
+  /** null = no limit */
+  sessionLimitMinutes: number | null;
+}
+
+/** PUT /api/children/{id}/play-settings body. */
+export interface PlaySettingsRequest {
+  sessionLimitMinutes: 10 | 15 | 20 | 30 | null;
+}
+
+/** GET /api/children/{id}/stickers — no score or grade, by design. */
+export interface StickersResponse {
+  stickers: Sticker[];
+  topicsCompleted: string[];
+  /** Assigned lessons without a sticker yet: grey silhouettes in the album. */
+  locked: { lessonId: string; topic: string }[];
+}
+
+export interface Sticker {
+  lessonId: string;
+  lessonVersionId: string;
+  title: string;
+  topic: string;
+  earnedAt: string;
+  bridge: { key: string; text: string; audioUrl: string | null };
+}
+
+/** GET /api/kid/shell-lines — the guide's fixed child-mode lines. */
+export interface ShellLine {
+  key: string;
+  text: string;
+  audioUrl?: string;
+}
