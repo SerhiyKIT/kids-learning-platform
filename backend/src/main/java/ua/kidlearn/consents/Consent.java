@@ -24,7 +24,8 @@ public class Consent {
 	@Column(name = "child_id", nullable = false)
 	private UUID childId;
 
-	@Column(name = "parent_id", nullable = false)
+	// NULL once that parent's account is deleted: the consent record stays, de-identified.
+	@Column(name = "parent_id")
 	private UUID parentId;
 
 	@Column(nullable = false)

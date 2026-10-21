@@ -1,5 +1,6 @@
 package ua.kidlearn.config;
 
+import java.time.Clock;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
@@ -37,7 +38,7 @@ public class SecurityConfig {
 	@Bean
 	public SecurityFilterChain securityFilterChain(HttpSecurity http, LoginAttemptService loginAttemptService,
 			ClientIpResolver clientIpResolver, RateLimiter rateLimiter, RateLimitProperties rateLimitProperties,
-			UserRepository userRepository, AppProperties appProperties) throws Exception {
+			UserRepository userRepository, AppProperties appProperties, Clock clock) throws Exception {
 		// JS-readable by design (the SPA echoes it back as X-XSRF-TOKEN), but Secure in prod and
 		// SameSite=Lax like the session cookie.
 		CookieCsrfTokenRepository csrfTokenRepository = CookieCsrfTokenRepository.withHttpOnlyFalse();
@@ -80,7 +81,7 @@ public class SecurityConfig {
 				.addFilterBefore(new LoginThrottleFilter(loginAttemptService, clientIpResolver),
 						UsernamePasswordAuthenticationFilter.class)
 				.formLogin(form -> form.permitAll()
-						.successHandler(new TwoFactorSessionAuthenticationSuccessHandler(loginAttemptService, userRepository))
+						.successHandler(new TwoFactorSessionAuthenticationSuccessHandler(loginAttemptService, userRepository, clock))
 						.failureHandler(new RateLimitingAuthenticationFailureHandler(loginAttemptService, clientIpResolver)))
 				.logout(logout -> logout.permitAll())
 				// Both need the already-authenticated session's Authentication, so they only make

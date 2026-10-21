@@ -61,6 +61,11 @@ public class User {
 	@Column(name = "totp_enabled_at")
 	private Instant totpEnabledAt;
 
+	// Sessions authenticated before this instant are rejected (sign out everywhere, password
+	// change/reset) — see ActiveAccountFilter and SessionAuthentication.
+	@Column(name = "sessions_valid_after")
+	private Instant sessionsValidAfter;
+
 	protected User() {
 		// JPA
 	}
@@ -128,6 +133,15 @@ public class User {
 
 	public boolean isDeleted() {
 		return deletedAt != null;
+	}
+
+	public Instant getSessionsValidAfter() {
+		return sessionsValidAfter;
+	}
+
+	/** Every session authenticated before {@code now} stops working on its next request. */
+	public void invalidateSessionsBefore(Instant now) {
+		this.sessionsValidAfter = now;
 	}
 
 	public void changePassword(String newPasswordHash) {

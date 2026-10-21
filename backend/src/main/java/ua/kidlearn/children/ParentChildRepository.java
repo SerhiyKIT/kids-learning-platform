@@ -12,4 +12,6 @@ public interface ParentChildRepository extends JpaRepository<ParentChild, Parent
 
 	long countById_ParentId(UUID parentId);
 
+	long countById_ChildId(UUID childId);
+
 }

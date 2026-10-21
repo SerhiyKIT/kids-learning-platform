@@ -92,7 +92,8 @@ public class AuthService {
 				.orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid or expired token"));
 		token.getUser().changePassword(passwordEncoder.encode(newPassword));
 		token.markUsed();
-		// TODO: invalidate this user's active sessions (needs a session registry).
+		// Whoever knew the old password is signed out everywhere (see ActiveAccountFilter).
+		token.getUser().invalidateSessionsBefore(clock.instant());
 	}
 
 	/**

@@ -33,7 +33,8 @@ public class Child {
 	@Column(name = "pin_code_hash")
 	private String pinCodeHash;
 
-	@Column(name = "created_by", nullable = false)
+	// NULL once the creating parent deleted their account while another parent keeps the child.
+	@Column(name = "created_by")
 	private UUID createdBy;
 
 	@Column(nullable = false)
