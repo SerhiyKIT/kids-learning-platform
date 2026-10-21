@@ -91,12 +91,33 @@ export default function AdminHomePage() {
                 Перевірка уроків, що пройшли автоматичну валідацію.
               </p>
             </Link>
-            <ComingSoonCard title="Аудит" description="Журнал дій адміністраторів і системних подій." />
+            <AdminCard
+              href="/admin/lessons"
+              title="Уроки"
+              description="Створення уроків і генерація нових версій за допомогою ШІ."
+            />
+            <AdminCard
+              href="/admin/audit"
+              title="Аудит"
+              description="Журнал генерації, модерації, озвучки та доступу до даних."
+            />
             <ComingSoonCard title="Вчителі" description="Керування акаунтами вчителів." />
           </div>
         </div>
       </main>
     </>
+  );
+}
+
+function AdminCard({ href, title, description }: { href: string; title: string; description: string }) {
+  return (
+    <Link
+      href={href}
+      className="bg-surface border-line shadow-card hover:border-brand-line text-ink flex flex-col gap-3 rounded-xl border p-5 no-underline transition-colors duration-100"
+    >
+      <h2 className="text-[17px] font-medium">{title}</h2>
+      <p className="text-ink-muted text-sm leading-relaxed">{description}</p>
+    </Link>
   );
 }
 
