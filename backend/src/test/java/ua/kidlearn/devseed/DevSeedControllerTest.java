@@ -85,7 +85,7 @@ class DevSeedControllerTest {
 
 		mockMvc.perform(get("/api/children/" + childId + "/available-lessons").session(session))
 				.andExpect(status().isOk())
-				.andExpect(jsonPath("$.length()").value(1));
+				.andExpect(jsonPath("$.length()").value(2)); // both demo lessons
 
 		// Calling again must reuse the same child and lesson assignment, not create duplicates.
 		mockMvc.perform(post("/api/dev/seed-demo").with(csrf()).session(session))
@@ -94,7 +94,7 @@ class DevSeedControllerTest {
 
 		mockMvc.perform(get("/api/children/" + childId + "/available-lessons").session(session))
 				.andExpect(status().isOk())
-				.andExpect(jsonPath("$.length()").value(1));
+				.andExpect(jsonPath("$.length()").value(2)); // both demo lessons
 	}
 
 	@Test
@@ -112,7 +112,7 @@ class DevSeedControllerTest {
 
 		mockMvc.perform(get("/api/children/" + childId + "/available-lessons").session(session))
 				.andExpect(status().isOk())
-				.andExpect(jsonPath("$.length()").value(1));
+				.andExpect(jsonPath("$.length()").value(2)); // both demo lessons
 	}
 
 	@Test

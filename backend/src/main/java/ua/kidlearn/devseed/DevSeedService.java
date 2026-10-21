@@ -44,6 +44,7 @@ public class DevSeedService {
 	private static final String SEED_PASSWORD_PLACEHOLDER = "dev-seed-placeholder-password";
 	private static final String DEMO_MODULE_CODE = "safety";
 	private static final String DEMO_LESSON_TITLE = "Демо: перехід дороги";
+	private static final String ALL_SCENES_LESSON_TITLE = "Демо: усі типи сцен";
 	private static final String DEMO_GROUP_NAME = "Демо-група";
 	private static final String DEMO_CHILD_NAME = "Демо-дитина";
 	private static final String DEMO_CHILD_RELATION = "guardian";
@@ -85,15 +86,18 @@ public class DevSeedService {
 		User admin = ensureUser(ADMIN_EMAIL, Role.ADMIN, "Демо Адмін");
 		User teacher = ensureUser(TEACHER_EMAIL, Role.TEACHER, "Демо Вчитель");
 
-		LessonVersion version = ensurePublishedDemoLessonVersion(admin.getId());
+		LessonVersion version = ensurePublishedLessonVersion(DEMO_LESSON_TITLE, ScenarioFixtures.VALID_MINIMAL_SCENARIO,
+				admin.getId());
+		LessonVersion allScenes = ensurePublishedLessonVersion(ALL_SCENES_LESSON_TITLE, DevSeedScenarios.ALL_SCENE_TYPES,
+				admin.getId());
 		Group group = ensureDemoGroup(teacher.getId());
 
 		UUID childId = null;
 		if (callerRole == Role.PARENT) {
-			childId = ensureAssignedDemoChild(callerId, teacher.getId(), version.getId());
+			childId = ensureAssignedDemoChild(callerId, teacher.getId(), List.of(version.getId(), allScenes.getId()));
 		}
 
-		return new DevSeedResponse(version.getId(), group.getId(), group.getJoinCode(), childId);
+		return new DevSeedResponse(version.getId(), group.getId(), group.getJoinCode(), childId, allScenes.getId());
 	}
 
 	private User ensureUser(String email, Role role, String displayName) {
@@ -104,22 +108,22 @@ public class DevSeedService {
 		});
 	}
 
-	private LessonVersion ensurePublishedDemoLessonVersion(UUID adminId) {
+	private LessonVersion ensurePublishedLessonVersion(String title, String scenarioJson, UUID adminId) {
 		UUID moduleId = moduleRepository.findByCode(DEMO_MODULE_CODE)
 				.orElseThrow(() -> new IllegalStateException("Unknown moduleCode: " + DEMO_MODULE_CODE))
 				.getId();
-		Lesson lesson = lessonRepository.findFirstByTitleAndModuleId(DEMO_LESSON_TITLE, moduleId)
-				.orElseGet(() -> lessonService.createLesson(DEMO_MODULE_CODE, DEMO_LESSON_TITLE));
+		Lesson lesson = lessonRepository.findFirstByTitleAndModuleId(title, moduleId)
+				.orElseGet(() -> lessonService.createLesson(DEMO_MODULE_CODE, title));
 		if (lesson.getCurrentVersionId() != null) {
 			return lessonService.getVersion(lesson.getCurrentVersionId());
 		}
-		JsonNode scenario = objectMapper.readTree(ScenarioFixtures.VALID_MINIMAL_SCENARIO);
+		JsonNode scenario = objectMapper.readTree(scenarioJson);
 		List<ScenarioProblem> problems = scenarioValidator.validate(scenario);
 		if (!problems.isEmpty()) {
-			// ScenarioFixtures.VALID_MINIMAL_SCENARIO is meant to stay schema-valid; if it ever
-			// drifts from docs/lesson-scenario.schema.json this seed step should fail loudly
-			// instead of silently leaving an unapprovable rejected_auto version behind.
-			throw new IllegalStateException("ScenarioFixtures.VALID_MINIMAL_SCENARIO failed validation: " + problems);
+			// The fixtures are meant to stay schema-valid; if one ever drifts from
+			// docs/lesson-scenario.schema.json this seed step should fail loudly instead of silently
+			// leaving an unapprovable rejected_auto version behind.
+			throw new IllegalStateException("Dev-seed fixture '" + title + "' failed validation: " + problems);
 		}
 		// createGeneratedVersion (not the manual createVersion) is what actually lands a version in
 		// auto_validated, the only status LessonService.approve accepts.
@@ -136,17 +140,20 @@ public class DevSeedService {
 
 	/** Reuses the parent's first child (if any) rather than always minting a new one, so calling
 	 * this endpoint repeatedly doesn't pile up demo children. */
-	private UUID ensureAssignedDemoChild(UUID parentId, UUID teacherId, UUID lessonVersionId) {
+	private UUID ensureAssignedDemoChild(UUID parentId, UUID teacherId, List<UUID> lessonVersionIds) {
 		ensureCallerEmailVerified(parentId);
 		Child child = childService.listForParent(parentId).stream().findFirst()
 				.orElseGet(() -> childService.create(parentId, new CreateChildRequest(DEMO_CHILD_NAME,
 						Year.now().getValue() - DEMO_CHILD_AGE_YEARS, DEMO_CHILD_RELATION, null)));
 		childService.grantAccountConsent(parentId, child.getId());
 
-		boolean alreadyAssigned = lessonAssignmentRepository.findByChildId(child.getId()).stream()
-				.anyMatch(a -> a.getLessonVersionId().equals(lessonVersionId));
-		if (!alreadyAssigned) {
-			lessonAssignmentRepository.save(new LessonAssignment(lessonVersionId, null, child.getId(), teacherId, null, null));
+		for (UUID lessonVersionId : lessonVersionIds) {
+			boolean alreadyAssigned = lessonAssignmentRepository.findByChildId(child.getId()).stream()
+					.anyMatch(a -> a.getLessonVersionId().equals(lessonVersionId));
+			if (!alreadyAssigned) {
+				lessonAssignmentRepository.save(
+						new LessonAssignment(lessonVersionId, null, child.getId(), teacherId, null, null));
+			}
 		}
 		return child.getId();
 	}

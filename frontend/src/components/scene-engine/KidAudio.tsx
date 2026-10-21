@@ -21,6 +21,19 @@ export interface KidAudioControls {
   replay: () => void;
   /** Starts downloading these lines in the background so the next scene starts without a gap. */
   preload: (urls: string[]) => void;
+  /**
+   * Plays a line from the start and resolves when it has been heard to the end: true when it
+   * ended, false if it couldn't start or was interrupted by another line. For read-aloud sequences.
+   */
+  playToEnd: (url: string) => Promise<boolean>;
+}
+
+/** What's audible right now, for animations and the "tap to listen" nudge. */
+export interface KidAudioState {
+  /** The audioUrl currently being heard, or null. */
+  speakingUrl: string | null;
+  /** The browser refused the last line (autoplay policy / muted): a tap on «послухати» is needed. */
+  blocked: boolean;
 }
 
 const NO_AUDIO: KidAudioControls = {
@@ -28,10 +41,11 @@ const NO_AUDIO: KidAudioControls = {
   unlock: () => {},
   replay: () => {},
   preload: () => {},
+  playToEnd: () => Promise.resolve(false),
 };
 
 const ControlsContext = createContext<KidAudioControls>(NO_AUDIO);
-const SpeakingContext = createContext<string | null>(null);
+const StateContext = createContext<KidAudioState>({ speakingUrl: null, blocked: false });
 
 /** Stable functions only — safe as effect dependencies (they never change identity). */
 export function useKidAudio(): KidAudioControls {
@@ -40,7 +54,12 @@ export function useKidAudio(): KidAudioControls {
 
 /** The audioUrl currently being heard, or null. Separate context so speaking changes don't re-run effects. */
 export function useSpeakingUrl(): string | null {
-  return useContext(SpeakingContext);
+  return useContext(StateContext).speakingUrl;
+}
+
+/** True while the browser is refusing to play (until a line plays again after a tap). */
+export function useAudioBlocked(): boolean {
+  return useContext(StateContext).blocked;
 }
 
 const AUDIO_PATH = /^\/api\/audio\/[0-9a-f]{64}$/;
@@ -55,12 +74,16 @@ export function KidAudioProvider({ children }: { children: ReactNode }) {
   // and iOS only counts the element as unlocked once that in-gesture play() has gone through.
   const unlockPending = useRef<Promise<void> | null>(null);
   const [speakingUrl, setSpeakingUrl] = useState<string | null>(null);
+  const [blocked, setBlocked] = useState(false);
 
   const element = useCallback((): HTMLAudioElement => {
     if (!elementRef.current) {
       const audio = new Audio();
       audio.preload = "auto";
-      audio.addEventListener("playing", () => setSpeakingUrl(currentUrl.current));
+      audio.addEventListener("playing", () => {
+        setSpeakingUrl(currentUrl.current);
+        setBlocked(false);
+      });
       for (const stop of ["pause", "ended", "error", "emptied"]) {
         audio.addEventListener(stop, () => setSpeakingUrl(null));
       }
@@ -103,7 +126,10 @@ export function KidAudioProvider({ children }: { children: ReactNode }) {
         audio.currentTime = 0;
         await audio.play();
         return true;
-      } catch {
+      } catch (err) {
+        if (err instanceof DOMException && err.name === "NotAllowedError" && lastRequested.current === url) {
+          setBlocked(true);
+        }
         return false;
       }
     },
@@ -136,6 +162,33 @@ export function KidAudioProvider({ children }: { children: ReactNode }) {
     if (lastRequested.current) void play(lastRequested.current, { restart: true });
   }, [play]);
 
+  const playToEnd = useCallback(
+    async (url: string): Promise<boolean> => {
+      if (!(await play(url, { restart: true }))) return false;
+      const audio = elementRef.current;
+      if (!audio) return false;
+      return new Promise<boolean>((resolve) => {
+        const finish = (heard: boolean) => {
+          audio.removeEventListener("ended", onEnded);
+          audio.removeEventListener("pause", onStopped);
+          audio.removeEventListener("emptied", onStopped);
+          audio.removeEventListener("error", onStopped);
+          resolve(heard);
+        };
+        const onEnded = () => finish(true);
+        // A natural end fires "pause" just before "ended" — only a pause short of the end interrupts.
+        const onStopped = () => {
+          if (!audio.ended) finish(false);
+        };
+        audio.addEventListener("ended", onEnded);
+        audio.addEventListener("pause", onStopped);
+        audio.addEventListener("emptied", onStopped);
+        audio.addEventListener("error", onStopped);
+      });
+    },
+    [play],
+  );
+
   const preload = useCallback(
     (urls: string[]) => {
       for (const url of urls) load(url).catch(() => {});
@@ -155,11 +208,15 @@ export function KidAudioProvider({ children }: { children: ReactNode }) {
     };
   }, []);
 
-  const controls = useMemo(() => ({ play, unlock, replay, preload }), [play, unlock, replay, preload]);
+  const controls = useMemo(
+    () => ({ play, unlock, replay, preload, playToEnd }),
+    [play, unlock, replay, preload, playToEnd],
+  );
+  const state = useMemo(() => ({ speakingUrl, blocked }), [speakingUrl, blocked]);
 
   return (
     <ControlsContext.Provider value={controls}>
-      <SpeakingContext.Provider value={speakingUrl}>{children}</SpeakingContext.Provider>
+      <StateContext.Provider value={state}>{children}</StateContext.Provider>
     </ControlsContext.Provider>
   );
 }
