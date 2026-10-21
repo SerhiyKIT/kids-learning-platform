@@ -9,14 +9,11 @@ import java.time.Duration;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
-import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
-import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.ResultActions;
 import org.springframework.transaction.annotation.Transactional;
+import ua.kidlearn.support.ClockedWebIntegrationTest;
 
 /**
  * Rate limiting on auth endpoints: failure-counting login throttle (per account + per IP) and
@@ -25,20 +22,13 @@ import org.springframework.transaction.annotation.Transactional;
  * in-memory RateLimiter (a shared singleton across all tests in this class) never leaks state
  * between them.
  */
-@SpringBootTest
-@AutoConfigureMockMvc
-@ActiveProfiles("dev")
-@Import(MutableClockTestConfig.class)
 @Transactional
-class RateLimitingTest {
+class RateLimitingTest extends ClockedWebIntegrationTest {
 
 	private static final String PASSWORD = "supersecret1";
 
 	@Autowired
 	private MockMvc mockMvc;
-
-	@Autowired
-	private MutableTestClock testClock;
 
 	private static String uniqueEmail() {
 		return "ratelimit-" + UUID.randomUUID() + "@example.test";

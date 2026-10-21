@@ -9,24 +9,19 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
-import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
 import org.springframework.mock.web.MockHttpSession;
-import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.transaction.annotation.Transactional;
+import ua.kidlearn.support.WebIntegrationTest;
 
 /**
  * Runs against the real dev PostgreSQL (docker compose -f infra/docker-compose.yml
  * up -d postgres must be running); each test rolls back via @Transactional.
  */
-@SpringBootTest
-@AutoConfigureMockMvc
-@ActiveProfiles("dev")
 @Transactional
-class AuthIntegrationTest {
+class AuthIntegrationTest extends WebIntegrationTest {
 
 	private static final String EMAIL = "auth-test-parent@example.test";
 	private static final String PASSWORD = "supersecret1";

@@ -10,14 +10,11 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.http.MediaType;
-import org.springframework.test.context.ActiveProfiles;
-import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.ResultActions;
 import org.springframework.transaction.annotation.Transactional;
+import ua.kidlearn.support.WebIntegrationTest;
 import ua.kidlearn.users.Role;
 import ua.kidlearn.users.UserRepository;
 
@@ -27,12 +24,8 @@ import ua.kidlearn.users.UserRepository;
  * its own unique client IP so the shared in-memory RateLimiter singleton doesn't leak counts
  * between tests; @Transactional rolls back any created users after each test.
  */
-@SpringBootTest
-@AutoConfigureMockMvc
-@ActiveProfiles("dev")
-@TestPropertySource(properties = "app.bootstrap.admin-token=correct-horse-battery-staple")
 @Transactional
-class BootstrapControllerTest {
+class BootstrapControllerTest extends WebIntegrationTest {
 
 	private static final String TOKEN = "correct-horse-battery-staple";
 	private static final String PASSWORD = "supersecret1";

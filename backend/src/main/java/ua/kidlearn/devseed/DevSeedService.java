@@ -1,5 +1,6 @@
 package ua.kidlearn.devseed;
 
+import java.time.Clock;
 import java.time.Year;
 import java.util.List;
 import java.util.UUID;
@@ -62,12 +63,13 @@ public class DevSeedService {
 	private final GroupService groupService;
 	private final ChildService childService;
 	private final LessonAssignmentRepository lessonAssignmentRepository;
+	private final Clock clock;
 
 	public DevSeedService(UserRepository userRepository, PasswordEncoder passwordEncoder,
 			LessonRepository lessonRepository, ModuleRepository moduleRepository, LessonService lessonService,
 			ScenarioValidator scenarioValidator, ObjectMapper objectMapper, GroupRepository groupRepository,
 			GroupService groupService, ChildService childService,
-			LessonAssignmentRepository lessonAssignmentRepository) {
+			LessonAssignmentRepository lessonAssignmentRepository, Clock clock) {
 		this.userRepository = userRepository;
 		this.passwordEncoder = passwordEncoder;
 		this.lessonRepository = lessonRepository;
@@ -79,6 +81,7 @@ public class DevSeedService {
 		this.groupService = groupService;
 		this.childService = childService;
 		this.lessonAssignmentRepository = lessonAssignmentRepository;
+		this.clock = clock;
 	}
 
 	@Transactional
@@ -103,7 +106,7 @@ public class DevSeedService {
 	private User ensureUser(String email, Role role, String displayName) {
 		return userRepository.findActiveByEmail(email).orElseGet(() -> {
 			User user = new User(email, passwordEncoder.encode(SEED_PASSWORD_PLACEHOLDER), role, displayName, "uk");
-			user.markEmailVerified();
+			user.markEmailVerified(clock.instant());
 			return userRepository.save(user);
 		});
 	}
@@ -144,7 +147,7 @@ public class DevSeedService {
 		ensureCallerEmailVerified(parentId);
 		Child child = childService.listForParent(parentId).stream().findFirst()
 				.orElseGet(() -> childService.create(parentId, new CreateChildRequest(DEMO_CHILD_NAME,
-						Year.now().getValue() - DEMO_CHILD_AGE_YEARS, DEMO_CHILD_RELATION, null)));
+						Year.now(clock).getValue() - DEMO_CHILD_AGE_YEARS, DEMO_CHILD_RELATION, null)));
 		childService.grantAccountConsent(parentId, child.getId());
 
 		for (UUID lessonVersionId : lessonVersionIds) {
@@ -166,7 +169,7 @@ public class DevSeedService {
 		User caller = userRepository.findById(parentId)
 				.orElseThrow(() -> new IllegalStateException("Authenticated user not found: " + parentId));
 		if (!caller.isEmailVerified()) {
-			caller.markEmailVerified();
+			caller.markEmailVerified(clock.instant());
 			userRepository.save(caller);
 		}
 	}

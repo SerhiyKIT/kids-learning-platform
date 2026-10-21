@@ -9,6 +9,16 @@ import com.tngtech.archunit.core.importer.ImportOption;
 import com.tngtech.archunit.junit.AnalyzeClasses;
 import com.tngtech.archunit.junit.ArchTest;
 import com.tngtech.archunit.lang.ArchRule;
+import java.time.Clock;
+import java.time.Instant;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
+import java.time.OffsetDateTime;
+import java.time.Year;
+import java.time.YearMonth;
+import java.time.ZonedDateTime;
+import java.util.Date;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.repository.Repository;
 import org.springframework.stereotype.Service;
@@ -76,5 +86,28 @@ class ArchUnitConventionsTest {
 			.should().dependOnClassesThat().resideInAnyPackage(FEATURE_PACKAGES)
 			.because("config and scenario are foundational — feature packages depend on them, never "
 					+ "the reverse, or every feature drags every other feature in transitively");
+
+	/**
+	 * Time comes only from the injected Clock bean (config.ClockConfig, the one place allowed to
+	 * build the system clock), so every time-based rule — token TTLs, rate-limit windows, session
+	 * limits, retention — can be driven deterministically in tests.
+	 */
+	@ArchTest
+	static final ArchRule time_comes_only_from_the_injected_clock = noClasses()
+			.that().resideInAPackage("ua.kidlearn..")
+			.and().doNotHaveFullyQualifiedName("ua.kidlearn.config.ClockConfig")
+			.should().callMethod(Instant.class, "now")
+			.orShould().callMethod(LocalDate.class, "now")
+			.orShould().callMethod(LocalDateTime.class, "now")
+			.orShould().callMethod(LocalTime.class, "now")
+			.orShould().callMethod(ZonedDateTime.class, "now")
+			.orShould().callMethod(OffsetDateTime.class, "now")
+			.orShould().callMethod(Year.class, "now")
+			.orShould().callMethod(YearMonth.class, "now")
+			.orShould().callMethod(System.class, "currentTimeMillis")
+			.orShould().callMethod(Clock.class, "systemUTC")
+			.orShould().callMethod(Clock.class, "systemDefaultZone")
+			.orShould().callConstructor(Date.class)
+			.because("tests must be able to control time (docs/CONVENTIONS.md)");
 
 }

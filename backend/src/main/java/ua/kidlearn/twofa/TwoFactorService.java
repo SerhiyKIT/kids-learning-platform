@@ -26,7 +26,7 @@ import ua.kidlearn.users.UserRepository;
 
 /**
  * TOTP setup/enable/verify for mandatory admin 2FA. No disable endpoint by design (see the
- * package javadoc) — once {@link User#enableTotp()} has run, it's permanent for that account.
+ * package javadoc) — once {@link User#enableTotp(java.time.Instant)} has run, it's permanent for that account.
  */
 @Service
 public class TwoFactorService {
@@ -43,12 +43,14 @@ public class TwoFactorService {
 	private final SecretGenerator secretGenerator = new DefaultSecretGenerator();
 	private final CodeGenerator codeGenerator = new DefaultCodeGenerator();
 	private final CodeVerifier codeVerifier;
+	private final Clock clock;
 
 	public TwoFactorService(UserRepository userRepository, AdminBackupCodeRepository backupCodeRepository,
 			TwofaEncryptionService encryptionService, Clock clock) {
 		this.userRepository = userRepository;
 		this.backupCodeRepository = backupCodeRepository;
 		this.encryptionService = encryptionService;
+		this.clock = clock;
 		// Reuses the same injected Clock as RateLimiter, so tests can drive TOTP verification
 		// and rate-limit windows off one deterministic time source (see MutableTestClock).
 		TimeProvider timeProvider = () -> clock.instant().getEpochSecond();
@@ -89,7 +91,7 @@ public class TwoFactorService {
 		if (!codeVerifier.isValidCode(encryptionService.decrypt(encryptedSecret), code)) {
 			throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "INVALID_CODE");
 		}
-		user.enableTotp();
+		user.enableTotp(clock.instant());
 		List<String> backupCodes = generateBackupCodes();
 		backupCodeRepository
 				.saveAll(backupCodes.stream().map(raw -> new AdminBackupCode(user.getId(), hash(raw))).toList());
@@ -111,7 +113,7 @@ public class TwoFactorService {
 		byte[] submittedHash = hash(code).getBytes(StandardCharsets.UTF_8);
 		for (AdminBackupCode candidate : backupCodeRepository.findByUserIdAndUsedAtIsNull(userId)) {
 			if (MessageDigest.isEqual(submittedHash, candidate.getCodeHash().getBytes(StandardCharsets.UTF_8))) {
-				candidate.markUsed();
+				candidate.markUsed(clock.instant());
 				return true;
 			}
 		}

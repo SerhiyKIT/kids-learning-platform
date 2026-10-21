@@ -15,6 +15,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import com.jayway.jsonpath.JsonPath;
 import java.time.Duration;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
@@ -23,13 +24,9 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.http.MediaType;
 import org.springframework.mock.web.MockHttpSession;
 import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.test.context.ActiveProfiles;
-import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.test.web.servlet.ResultActions;
@@ -37,9 +34,9 @@ import ua.kidlearn.audit.AuditAction;
 import ua.kidlearn.audit.AuditEvent;
 import ua.kidlearn.audit.AuditLogRepository;
 import ua.kidlearn.audit.AuditTargetType;
-import ua.kidlearn.auth.AuthMailSender;
 import ua.kidlearn.auth.UserTokenRepository;
 import ua.kidlearn.groups.GroupRepository;
+import ua.kidlearn.support.WebIntegrationTest;
 import ua.kidlearn.twofa.AdminTwoFactorTestSupport;
 import ua.kidlearn.users.Role;
 import ua.kidlearn.users.User;
@@ -53,10 +50,7 @@ import ua.kidlearn.users.UserRepository;
  * a test Clock, which doesn't mix with the system-clock TOTP helper used here). Every committed row is removed in @AfterEach; admins are soft-deleted like
  * in AuditLogTest so they never satisfy "an ADMIN exists" for later suites.
  */
-@SpringBootTest
-@AutoConfigureMockMvc
-@ActiveProfiles("dev")
-class TeacherProvisioningTest {
+class TeacherProvisioningTest extends WebIntegrationTest {
 
 	private static final String PASSWORD = "supersecret1";
 	private static final String TEACHER_PASSWORD = "teacher-chosen-pass-1";
@@ -80,9 +74,6 @@ class TeacherProvisioningTest {
 	@Autowired
 	private AuditLogRepository auditLogRepository;
 
-	@MockitoBean
-	private AuthMailSender authMailSender;
-
 	private final List<User> createdAdmins = new ArrayList<>();
 	private final List<UUID> createdUsers = new ArrayList<>();
 
@@ -95,7 +86,7 @@ class TeacherProvisioningTest {
 		// no FK, so the audit trail itself survives (by design).
 		userRepository.deleteAllById(createdUsers);
 		createdUsers.clear();
-		createdAdmins.forEach(User::markDeleted);
+		createdAdmins.forEach(user -> user.markDeleted(Instant.now()));
 		userRepository.saveAll(createdAdmins);
 		createdAdmins.clear();
 	}

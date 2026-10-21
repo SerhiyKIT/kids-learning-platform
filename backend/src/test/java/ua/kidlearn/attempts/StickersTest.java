@@ -8,17 +8,14 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import com.jayway.jsonpath.JsonPath;
+import java.time.Instant;
 import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
-import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
 import org.springframework.mock.web.MockHttpSession;
 import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.test.web.servlet.ResultActions;
@@ -27,7 +24,7 @@ import ua.kidlearn.aipipeline.AudioAsset;
 import ua.kidlearn.aipipeline.AudioAssetRepository;
 import ua.kidlearn.aipipeline.VoiceLines;
 import ua.kidlearn.config.TtsProperties;
-import ua.kidlearn.ratelimit.MutableClockTestConfig;
+import ua.kidlearn.support.ClockedWebIntegrationTest;
 import ua.kidlearn.users.Role;
 import ua.kidlearn.users.User;
 import ua.kidlearn.users.UserRepository;
@@ -38,12 +35,8 @@ import ua.kidlearn.users.UserRepository;
  * the demo child with the two dev-seed lessons, both topic road_safety. Same context configuration
  * as PlayStateTest, so the cached context is reused.
  */
-@SpringBootTest
-@AutoConfigureMockMvc
-@ActiveProfiles("dev")
-@Import(MutableClockTestConfig.class)
 @Transactional
-class StickersTest {
+class StickersTest extends ClockedWebIntegrationTest {
 
 	private static final String PASSWORD = "supersecret1";
 	// ScenarioFixtures.VALID_MINIMAL_SCENARIO's reality_bridge (the "Демо: перехід дороги" lesson).
@@ -72,7 +65,7 @@ class StickersTest {
 	private MockHttpSession verifiedParent() throws Exception {
 		String email = "stickers-" + UUID.randomUUID() + "@example.test";
 		User user = new User(email, passwordEncoder.encode(PASSWORD), Role.PARENT, "Test", "uk");
-		user.markEmailVerified();
+		user.markEmailVerified(Instant.now());
 		userRepository.save(user);
 		MvcResult result = mockMvc.perform(formLogin().user(email).password(PASSWORD))
 				.andExpect(status().is3xxRedirection())

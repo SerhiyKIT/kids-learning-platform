@@ -1,5 +1,7 @@
 package ua.kidlearn.bootstrap;
 
+import java.time.Clock;
+
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import org.springframework.dao.DataIntegrityViolationException;
@@ -23,12 +25,14 @@ public class BootstrapService {
 	private final UserRepository userRepository;
 	private final PasswordEncoder passwordEncoder;
 	private final BootstrapProperties properties;
+	private final Clock clock;
 
 	public BootstrapService(UserRepository userRepository, PasswordEncoder passwordEncoder,
-			BootstrapProperties properties) {
+			BootstrapProperties properties, Clock clock) {
 		this.userRepository = userRepository;
 		this.passwordEncoder = passwordEncoder;
 		this.properties = properties;
+		this.clock = clock;
 	}
 
 	@Transactional
@@ -50,7 +54,7 @@ public class BootstrapService {
 
 		User admin = new User(request.email(), passwordEncoder.encode(request.password()), Role.ADMIN,
 				request.displayName(), "uk");
-		admin.markEmailVerified();
+		admin.markEmailVerified(clock.instant());
 		try {
 			// Flush now so the DB's unique constraint on email fires here, not later — same
 			// reasoning as AuthService.register / DevAuthService.

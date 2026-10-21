@@ -13,12 +13,9 @@ import java.util.UUID;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.http.MediaType;
 import org.springframework.mock.web.MockHttpSession;
 import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.transaction.annotation.Transactional;
@@ -29,6 +26,7 @@ import ua.kidlearn.lessons.LessonRepository;
 import ua.kidlearn.lessons.LessonVersion;
 import ua.kidlearn.lessons.LessonVersionRepository;
 import ua.kidlearn.scenario.ScenarioFixtures;
+import ua.kidlearn.support.WebIntegrationTest;
 import ua.kidlearn.twofa.AdminTwoFactorTestSupport;
 import ua.kidlearn.users.Role;
 import ua.kidlearn.users.User;
@@ -40,11 +38,8 @@ import ua.kidlearn.users.UserRepository;
  * auto_validated -&gt; reject -&gt; archived. Only 'approved' versions may publish; only
  * 'auto_validated' versions may be approved or rejected (docs/Формат_подання_уроків_та_ШІ.md §7).
  */
-@SpringBootTest
-@AutoConfigureMockMvc
-@ActiveProfiles("dev")
 @Transactional
-class AdminModerationTest {
+class AdminModerationTest extends WebIntegrationTest {
 
 	private static final String PASSWORD = "supersecret1";
 

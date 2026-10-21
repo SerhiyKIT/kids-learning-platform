@@ -1,7 +1,6 @@
 package ua.kidlearn.children;
 
 import java.time.Clock;
-import java.time.Instant;
 import java.time.Year;
 import java.util.List;
 import java.util.Set;
@@ -57,7 +56,7 @@ public class ChildService {
 		if (!VALID_RELATIONS.contains(request.relation())) {
 			throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid relation");
 		}
-		int currentYear = Year.now().getValue();
+		int currentYear = Year.now(clock).getValue();
 		if (request.birthYear() < currentYear - MAX_CHILD_AGE_YEARS || request.birthYear() > currentYear) {
 			throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "birthYear out of range");
 		}
@@ -81,7 +80,7 @@ public class ChildService {
 		Child child = childRepository.findById(childId).orElseThrow(this::notFound);
 		if (!child.isActive()) {
 			child.activate();
-			consentRepository.save(new Consent(childId, parentId, Consent.TYPE_ACCOUNT, Instant.now()));
+			consentRepository.save(new Consent(childId, parentId, Consent.TYPE_ACCOUNT, clock.instant()));
 		}
 	}
 

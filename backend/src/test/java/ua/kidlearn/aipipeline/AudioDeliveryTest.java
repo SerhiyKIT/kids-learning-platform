@@ -9,20 +9,16 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import com.jayway.jsonpath.JsonPath;
+import java.time.Instant;
 import java.time.Year;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
-import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
 import org.springframework.mock.web.MockHttpSession;
 import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.test.context.ActiveProfiles;
-import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.transaction.annotation.Transactional;
@@ -34,6 +30,7 @@ import ua.kidlearn.lessons.LessonAssignmentRepository;
 import ua.kidlearn.lessons.LessonService;
 import ua.kidlearn.lessons.LessonVersion;
 import ua.kidlearn.scenario.ScenarioFixtures;
+import ua.kidlearn.support.InMemoryAudioWebIntegrationTest;
 import ua.kidlearn.twofa.AdminTwoFactorTestSupport;
 import ua.kidlearn.users.Role;
 import ua.kidlearn.users.User;
@@ -44,13 +41,8 @@ import ua.kidlearn.users.UserRepository;
  * of the child's scenario. Same context configuration as VoicingControllerTest (in-memory audio
  * storage, no MinIO), so the cached Spring context — and its DB pool — is shared.
  */
-@SpringBootTest
-@AutoConfigureMockMvc
-@ActiveProfiles("dev")
-@TestPropertySource(properties = "app.tts.storage=memory")
-@Import(InMemoryAudioStorageTestConfig.class)
 @Transactional
-class AudioDeliveryTest {
+class AudioDeliveryTest extends InMemoryAudioWebIntegrationTest {
 
 	private static final String PASSWORD = "supersecret1";
 
@@ -87,7 +79,7 @@ class AudioDeliveryTest {
 	private User saveUser(Role role) {
 		User user = new User(role.name().toLowerCase() + "-" + UUID.randomUUID() + "@example.test",
 				passwordEncoder.encode(PASSWORD), role, "User", "uk");
-		user.markEmailVerified();
+		user.markEmailVerified(Instant.now());
 		return userRepository.save(user);
 	}
 

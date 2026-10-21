@@ -1,6 +1,7 @@
 package ua.kidlearn.groups;
 
-import java.time.Instant;
+import java.time.Clock;
+
 import java.util.List;
 import java.util.UUID;
 import org.springframework.http.HttpStatus;
@@ -18,13 +19,15 @@ public class GroupMembershipService {
 	private final GroupMemberRepository groupMemberRepository;
 	private final ChildRepository childRepository;
 	private final ParentChildRepository parentChildRepository;
+	private final Clock clock;
 
 	public GroupMembershipService(GroupRepository groupRepository, GroupMemberRepository groupMemberRepository,
-			ChildRepository childRepository, ParentChildRepository parentChildRepository) {
+			ChildRepository childRepository, ParentChildRepository parentChildRepository, Clock clock) {
 		this.groupRepository = groupRepository;
 		this.groupMemberRepository = groupMemberRepository;
 		this.childRepository = childRepository;
 		this.parentChildRepository = parentChildRepository;
+		this.clock = clock;
 	}
 
 	@Transactional
@@ -41,7 +44,7 @@ public class GroupMembershipService {
 		}
 
 		if (!groupMemberRepository.existsById_ChildIdAndId_GroupId(childId, group.getId())) {
-			groupMemberRepository.save(new GroupMember(childId, group.getId(), Instant.now()));
+			groupMemberRepository.save(new GroupMember(childId, group.getId(), clock.instant()));
 		}
 	}
 

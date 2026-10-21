@@ -60,10 +60,10 @@ public class AuthService {
 	public void verifyEmail(String rawToken) {
 		UserToken token = userTokenRepository.findByTokenHash(tokenGenerator.hash(rawToken))
 				.filter(t -> t.getType() == TokenType.EMAIL_VERIFICATION)
-				.filter(t -> t.isUsable(Instant.now()))
+				.filter(t -> t.isUsable(clock.instant()))
 				.orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid or expired token"));
-		token.getUser().markEmailVerified();
-		token.markUsed();
+		token.getUser().markEmailVerified(clock.instant());
+		token.markUsed(clock.instant());
 	}
 
 	@Transactional
@@ -91,10 +91,10 @@ public class AuthService {
 	public void resetPassword(String rawToken, String newPassword) {
 		UserToken token = userTokenRepository.findByTokenHash(tokenGenerator.hash(rawToken))
 				.filter(t -> t.getType() == TokenType.PASSWORD_RESET)
-				.filter(t -> t.isUsable(Instant.now()))
+				.filter(t -> t.isUsable(clock.instant()))
 				.orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid or expired token"));
 		token.getUser().changePassword(passwordEncoder.encode(newPassword));
-		token.markUsed();
+		token.markUsed(clock.instant());
 		// Whoever knew the old password is signed out everywhere (see ActiveAccountFilter).
 		token.getUser().invalidateSessionsBefore(clock.instant());
 	}
@@ -173,21 +173,21 @@ public class AuthService {
 
 	private void issueEmailVerificationToken(User user) {
 		String rawToken = tokenGenerator.generateRawToken();
-		Instant expiresAt = Instant.now().plus(authProperties.emailVerificationTtl());
+		Instant expiresAt = clock.instant().plus(authProperties.emailVerificationTtl());
 		userTokenRepository.save(new UserToken(user, TokenType.EMAIL_VERIFICATION, tokenGenerator.hash(rawToken), expiresAt));
 		eventPublisher.publishEvent(new EmailVerificationRequestedEvent(user, rawToken));
 	}
 
 	private void issuePasswordResetToken(User user) {
 		String rawToken = tokenGenerator.generateRawToken();
-		Instant expiresAt = Instant.now().plus(authProperties.passwordResetTtl());
+		Instant expiresAt = clock.instant().plus(authProperties.passwordResetTtl());
 		userTokenRepository.save(new UserToken(user, TokenType.PASSWORD_RESET, tokenGenerator.hash(rawToken), expiresAt));
 		eventPublisher.publishEvent(new PasswordResetRequestedEvent(user, rawToken));
 	}
 
 	private boolean recentTokenIssued(User user, TokenType type) {
 		return userTokenRepository.findFirstByUserAndTypeOrderByCreatedAtDesc(user, type)
-				.map(t -> t.getCreatedAt().isAfter(Instant.now().minusSeconds(60)))
+				.map(t -> t.getCreatedAt().isAfter(clock.instant().minusSeconds(60)))
 				.orElse(false);
 	}
 

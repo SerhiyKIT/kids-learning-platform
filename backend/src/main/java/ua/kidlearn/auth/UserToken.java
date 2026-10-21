@@ -87,11 +87,7 @@ public class UserToken {
 		return usedAt == null && expiresAt.isAfter(now);
 	}
 
-	public void markUsed() {
-		markUsed(Instant.now());
-	}
-
-	/** Same as {@link #markUsed()}, with the time taken from the caller's injected Clock. */
+	/** {@code at} comes from the caller's injected Clock. */
 	public void markUsed(Instant at) {
 		this.usedAt = at;
 	}

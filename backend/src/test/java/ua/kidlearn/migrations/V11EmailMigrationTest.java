@@ -9,18 +9,15 @@ import org.flywaydb.core.Flyway;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.jdbc.core.JdbcTemplate;
-import org.springframework.test.context.ActiveProfiles;
+import ua.kidlearn.support.WebIntegrationTest;
 
 /**
  * V11 on a throwaway schema: migrated to V10, given rows, then V11. Accounts that collide after
  * normalization stop the migration with a clear message (merging is a human decision); otherwise
  * every email is rewritten to the canonical form.
  */
-@SpringBootTest
-@ActiveProfiles("dev")
-class V11EmailMigrationTest {
+class V11EmailMigrationTest extends WebIntegrationTest {
 
 	@Autowired
 	private DataSource dataSource;

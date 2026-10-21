@@ -11,6 +11,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import com.jayway.jsonpath.JsonPath;
 import java.time.Duration;
+import java.time.Instant;
 import java.time.Year;
 import java.util.ArrayList;
 import java.util.List;
@@ -19,14 +20,12 @@ import org.awaitility.Awaitility;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.http.MediaType;
 import org.springframework.mock.web.MockHttpSession;
 import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
+import ua.kidlearn.support.WebIntegrationTest;
 import ua.kidlearn.twofa.AdminTwoFactorTestSupport;
 import ua.kidlearn.users.Role;
 import ua.kidlearn.users.User;
@@ -38,10 +37,7 @@ import ua.kidlearn.users.UserRepository;
  * always rolls back (Spring never actually commits it). So these writes are real, and every test
  * uses fully unique identifiers to avoid cross-test collisions rather than relying on rollback.
  */
-@SpringBootTest
-@AutoConfigureMockMvc
-@ActiveProfiles("dev")
-class AuditLogTest {
+class AuditLogTest extends WebIntegrationTest {
 
 	private static final String PASSWORD = "supersecret1";
 
@@ -71,7 +67,7 @@ class AuditLogTest {
 
 	@AfterEach
 	void softDeleteCreatedAdmins() {
-		createdAdmins.forEach(User::markDeleted);
+		createdAdmins.forEach(user -> user.markDeleted(Instant.now()));
 		userRepository.saveAll(createdAdmins);
 		createdAdmins.clear();
 	}
@@ -96,8 +92,8 @@ class AuditLogTest {
 						.contentType(MediaType.APPLICATION_JSON)
 						.content(body))
 				.andExpect(status().isCreated());
-		User user = userRepository.findByEmailAndDeletedAtIsNull(email).orElseThrow();
-		user.markEmailVerified();
+		User user = userRepository.findActiveByEmail(email).orElseThrow();
+		user.markEmailVerified(Instant.now());
 		return userRepository.save(user);
 	}
 

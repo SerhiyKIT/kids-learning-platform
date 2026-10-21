@@ -10,20 +10,15 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.http.MediaType;
 import org.springframework.mock.web.MockHttpSession;
-import org.springframework.test.context.ActiveProfiles;
-import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.transaction.annotation.Transactional;
+import ua.kidlearn.support.WebIntegrationTest;
 
-@SpringBootTest
-@AutoConfigureMockMvc
-@ActiveProfiles("dev")
 @Transactional
-class DevAuthControllerTest {
+class DevAuthControllerTest extends WebIntegrationTest {
 
 	private static final String PASSWORD = "supersecret1";
 

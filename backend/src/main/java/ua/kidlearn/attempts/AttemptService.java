@@ -1,7 +1,8 @@
 package ua.kidlearn.attempts;
 
+import java.time.Clock;
+
 import java.math.BigDecimal;
-import java.time.Instant;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
@@ -52,13 +53,14 @@ public class AttemptService {
 	private final ObjectMapper objectMapper;
 	private final ScenarioAudioEnricher scenarioAudioEnricher;
 	private final PlayStateService playStateService;
+	private final Clock clock;
 
 	public AttemptService(LessonAttemptRepository lessonAttemptRepository, SceneAnswerRepository sceneAnswerRepository,
 			LessonAssignmentRepository lessonAssignmentRepository, LessonVersionRepository lessonVersionRepository,
 			LessonRepository lessonRepository, ModuleRepository moduleRepository,
 			ParentChildRepository parentChildRepository, ChildRepository childRepository,
 			GroupRepository groupRepository, GroupMemberRepository groupMemberRepository, ObjectMapper objectMapper,
-			ScenarioAudioEnricher scenarioAudioEnricher, PlayStateService playStateService) {
+			ScenarioAudioEnricher scenarioAudioEnricher, PlayStateService playStateService, Clock clock) {
 		this.lessonAttemptRepository = lessonAttemptRepository;
 		this.sceneAnswerRepository = sceneAnswerRepository;
 		this.lessonAssignmentRepository = lessonAssignmentRepository;
@@ -72,6 +74,7 @@ public class AttemptService {
 		this.objectMapper = objectMapper;
 		this.scenarioAudioEnricher = scenarioAudioEnricher;
 		this.playStateService = playStateService;
+		this.clock = clock;
 	}
 
 	@Transactional(readOnly = true)
@@ -118,14 +121,14 @@ public class AttemptService {
 		// After the ownership/assignment checks, so a stranger still gets 404, not CHILD_RESTING.
 		playStateService.onLessonStart(childId);
 		return lessonAttemptRepository.save(
-				new LessonAttempt(childId, assignment.getId(), lessonVersionId, Instant.now()));
+				new LessonAttempt(childId, assignment.getId(), lessonVersionId, clock.instant()));
 	}
 
 	@Transactional
 	public SceneAnswer recordAnswer(UUID parentId, UUID attemptId, RecordAnswerRequest request) {
 		LessonAttempt attempt = requireOwnedAttempt(parentId, attemptId);
 		return sceneAnswerRepository.save(new SceneAnswer(attempt.getId(), request.sceneKey(), request.tryNo(),
-				request.chosenOption(), request.isCorrect(), request.hintsUsed(), Instant.now()));
+				request.chosenOption(), request.isCorrect(), request.hintsUsed(), clock.instant()));
 	}
 
 	/**
@@ -138,7 +141,7 @@ public class AttemptService {
 		if (!VALID_RESULTS.contains(result)) {
 			throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid result: " + result);
 		}
-		attempt.complete(result, score);
+		attempt.complete(result, score, clock.instant());
 		return playStateService.onLessonEnd(attempt.getChildId());
 	}
 

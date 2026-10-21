@@ -8,29 +8,25 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import com.jayway.jsonpath.JsonPath;
+import java.time.Instant;
 import java.util.UUID;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.http.MediaType;
 import org.springframework.mock.web.MockHttpSession;
 import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.transaction.annotation.Transactional;
+import ua.kidlearn.support.WebIntegrationTest;
 import ua.kidlearn.twofa.AdminTwoFactorTestSupport;
 import ua.kidlearn.users.Role;
 import ua.kidlearn.users.User;
 import ua.kidlearn.users.UserRepository;
 
-@SpringBootTest
-@AutoConfigureMockMvc
-@ActiveProfiles("dev")
 @Transactional
-class DevSeedControllerTest {
+class DevSeedControllerTest extends WebIntegrationTest {
 
 	private static final String PASSWORD = "supersecret1";
 
@@ -53,7 +49,7 @@ class DevSeedControllerTest {
 						.contentType(MediaType.APPLICATION_JSON)
 						.content(body))
 				.andExpect(status().isCreated());
-		return userRepository.findByEmailAndDeletedAtIsNull(email).orElseThrow();
+		return userRepository.findActiveByEmail(email).orElseThrow();
 	}
 
 	private MockHttpSession login(String email) throws Exception {
@@ -65,7 +61,7 @@ class DevSeedControllerTest {
 
 	private MockHttpSession registerAndLoginVerifiedParent(String email) throws Exception {
 		User user = registerParent(email);
-		user.markEmailVerified();
+		user.markEmailVerified(Instant.now());
 		userRepository.save(user);
 		return login(email);
 	}
