@@ -1,0 +1,47 @@
+# End-to-end test profile (frontend/e2e, CI job "e2e"): as close to prod as a laptop/CI runner
+# allows — NOT dev: no dev-only beans or endpoints — against infra/e2e/docker-compose.yml
+# (Postgres, MinIO, Mailpit on their own ports). Stub LLM/TTS (no keys). No secret lives here:
+# TWOFA_ENC_KEY and ADMIN_BOOTSTRAP_TOKEN come from the environment (test-only values set by
+# frontend/e2e/stack.sh and ci.yml). ProfileGuard refuses "prod" together with this profile.
+spring:
+  datasource:
+    url: ${DATASOURCE_URL:jdbc:postgresql://localhost:55433/kidlearn_e2e}
+    username: ${DATASOURCE_USERNAME:kidlearn}
+    password: ${DATASOURCE_PASSWORD:kidlearn}
+  mail:
+    host: ${SMTP_HOST:localhost}
+    port: ${SMTP_PORT:51025}
+
+server:
+  port: ${SERVER_PORT:18080}
+
+app:
+  base-url: ${APP_BASE_URL:http://localhost:3100}
+  mail-from: no-reply@e2e.kidlearn.test
+  bootstrap:
+    admin-token: ${ADMIN_BOOTSTRAP_TOKEN}
+  twofa:
+    enc-key: ${TWOFA_ENC_KEY}
+  tts:
+    voice-id: e2e
+  llm:
+    max-attempts: 2
+  kid:
+    # A parent's 10-minute limit is reached in 10 seconds, and the rest lasts 2 minutes —
+    # long enough to reload the page and still see the child asleep.
+    limit-unit: 1s
+    rest-duration: 2m
+  retention:
+    enabled: false
+  ratelimit:
+    # Every spec registers its own parents from the same machine (one IP): the production 10/hour
+    # would make a second consecutive run fail. Login, 2FA and the other limits stay as in prod.
+    register-per-ip:
+      max: 1000
+      window: 1h
+
+minio:
+  endpoint: ${MINIO_ENDPOINT:http://localhost:59000}
+  access-key: ${MINIO_ACCESS_KEY:e2e-minio}
+  secret-key: ${MINIO_SECRET_KEY:e2e-minio-secret}
+  bucket: kidlearn-e2e
