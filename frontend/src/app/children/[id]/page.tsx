@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 import { apiFetch, ApiError } from "@/lib/api";
+import { downloadExport } from "@/lib/download";
 import type { Child, ConsentEntry, Group, HistoryEntry, PlaySettingsRequest, PlayState } from "@/lib/api-types";
 import { AppHeader } from "@/components/ui/AppHeader";
 import { Avatar, tintFor } from "@/components/ui/Avatar";
@@ -62,6 +63,9 @@ export default function ChildPage() {
   const [styleError, setStyleError] = useState<ApiError | null>(null);
   const [styleSaving, setStyleSaving] = useState(false);
   const [revokeOpen, setRevokeOpen] = useState(false);
+
+  const [exporting, setExporting] = useState(false);
+  const [exportError, setExportError] = useState<string | null>(null);
 
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [confirmText, setConfirmText] = useState("");
@@ -204,6 +208,18 @@ export default function ChildPage() {
     }
   }
 
+  async function onExport() {
+    setExporting(true);
+    setExportError(null);
+    try {
+      await downloadExport(`/children/${id}/export`, `kidlearn-child-${id}.json`);
+    } catch {
+      setExportError("Не вдалося підготувати файл. Спробуйте ще раз.");
+    } finally {
+      setExporting(false);
+    }
+  }
+
   async function onDelete() {
     setDeleting(true);
     setDeleteError(null);
@@ -263,7 +279,7 @@ export default function ChildPage() {
 
   return (
     <>
-      <AppHeader />
+      <AppHeader accountLink />
 
       <main className="flex flex-1 justify-center px-6 pt-7 pb-24">
         <div className="flex w-full max-w-220 flex-col gap-6">
@@ -569,13 +585,27 @@ export default function ChildPage() {
             })}
           </Section>
 
+          <Section>
+            <SectionHeader
+              title="Дані дитини"
+              description="Файл JSON з усім, що система зберігає про дитину: профіль, згоди, назви груп, усі спроби уроків з відповідями, налаштування гри та оформлення. Даних інших дітей і дорослих у ньому немає."
+            />
+            <div className="flex flex-col gap-2 px-6 pt-1 pb-6">
+              <SecondaryButton type="button" onClick={() => void onExport()} disabled={exporting} className="self-start">
+                {exporting ? "Готуємо файл…" : "Завантажити дані дитини"}
+              </SecondaryButton>
+              {exportError ? <p className="text-danger text-sm">{exportError}</p> : null}
+            </div>
+          </Section>
+
           <section className="bg-surface border-danger-line-soft flex flex-col gap-4 rounded-xl border px-6 py-5.5">
             <div className="flex flex-col gap-1.5">
               <h2 className="text-danger-title text-lg font-medium">Небезпечна зона</h2>
               <p className="text-ink-soft text-sm leading-relaxed text-pretty">
-                Видалення профілю остаточно стирає всю історію уроків, відповіді та прогрес
-                {" "}
-                {child.displayName}. Дані не можна відновити, і дитина втратить доступ до груп.
+                Видалення профілю остаточно стирає все, що система знає про {child.displayName}: профіль,
+                надані згоди, членство в групах, усю історію уроків з відповідями й оцінками, наліпки,
+                налаштування часу гри та вибір оформлення. Дані не можна відновити. Записи журналу дій
+                лишаються без даних дитини. Перед видаленням можна завантажити копію даних вище.
               </p>
             </div>
             <div className="flex flex-wrap items-center gap-3">
