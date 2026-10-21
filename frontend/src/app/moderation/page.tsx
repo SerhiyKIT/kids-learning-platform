@@ -1,5 +1,6 @@
 "use client";
 
+import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 import { apiFetch, ApiError } from "@/lib/api";
 import type { LessonVersionDetail, PendingReviewEntry } from "@/lib/admin-types";
@@ -9,6 +10,7 @@ import { AppHeader } from "@/components/ui/AppHeader";
 import { Button } from "@/components/ui/Button";
 import { Pill } from "@/components/ui/Pill";
 import { QuietButton } from "@/components/ui/SecondaryButton";
+import { twoFactorRedirect } from "@/lib/two-factor";
 
 const STATUS_LABELS: Record<string, { label: string; tone: "ok" | "waiting" | "bad" }> = {
   auto_validated: { label: "auto_validated", tone: "waiting" },
@@ -19,6 +21,7 @@ const STATUS_LABELS: Record<string, { label: string; tone: "ok" | "waiting" | "b
 };
 
 export default function ModerationPage() {
+  const router = useRouter();
   const [queue, setQueue] = useState<PendingReviewEntry[] | null>(null);
   const [queueError, setQueueError] = useState<ApiError | null>(null);
   const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -38,8 +41,15 @@ export default function ModerationPage() {
         setQueue(data);
         setSelectedId((current) => current ?? data[0]?.versionId ?? null);
       })
-      .catch((err) => setQueueError(err instanceof ApiError ? err : new ApiError(0, "Несподівана помилка")));
-  }, []);
+      .catch((err) => {
+        const twoFactorTarget = twoFactorRedirect(err);
+        if (twoFactorTarget) {
+          router.replace(twoFactorTarget);
+          return;
+        }
+        setQueueError(err instanceof ApiError ? err : new ApiError(0, "Несподівана помилка"));
+      });
+  }, [router]);
 
   useEffect(() => {
     loadQueue();
@@ -52,8 +62,15 @@ export default function ModerationPage() {
     setDetailError(null);
     apiFetch<LessonVersionDetail>(`/admin/lesson-versions/${selectedId}`)
       .then(setDetail)
-      .catch((err) => setDetailError(err instanceof ApiError ? err : new ApiError(0, "Несподівана помилка")));
-  }, [selectedId]);
+      .catch((err) => {
+        const twoFactorTarget = twoFactorRedirect(err);
+        if (twoFactorTarget) {
+          router.replace(twoFactorTarget);
+          return;
+        }
+        setDetailError(err instanceof ApiError ? err : new ApiError(0, "Несподівана помилка"));
+      });
+  }, [selectedId, router]);
 
   async function act(kind: "approve" | "publish" | "reject") {
     if (!selectedId) return;
@@ -78,6 +95,11 @@ export default function ModerationPage() {
         loadQueue();
       }
     } catch (err) {
+      const twoFactorTarget = twoFactorRedirect(err);
+      if (twoFactorTarget) {
+        router.replace(twoFactorTarget);
+        return;
+      }
       setActionError(err instanceof ApiError ? err : new ApiError(0, "Несподівана помилка"));
     } finally {
       setActing(null);

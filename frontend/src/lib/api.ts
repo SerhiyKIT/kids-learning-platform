@@ -90,7 +90,14 @@ export async function apiFetch<T>(path: string, init: RequestInit = {}): Promise
   if (response.status === 204 || response.headers.get("Content-Length") === "0") {
     return undefined as T;
   }
-  return (await response.json()) as T;
+  // Some endpoints answer with an empty 200 (POST /admin/2fa/verify) or plain text
+  // (GET /admin/ping → "pong") — only parse JSON when the body actually is JSON.
+  const text = await response.text();
+  if (text === "") {
+    return undefined as T;
+  }
+  const contentType = response.headers.get("Content-Type") ?? "";
+  return (contentType.includes("json") ? JSON.parse(text) : text) as T;
 }
 
 /**

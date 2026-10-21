@@ -9,6 +9,7 @@ import { Alert } from "@/components/ui/Alert";
 import { Button } from "@/components/ui/Button";
 import { AuthLayout, Card, CardBody, CardFooter, CardHeader, PageHeading } from "@/components/ui/Card";
 import { Field, PasswordInput, TextInput } from "@/components/ui/Field";
+import { twoFactorRedirect } from "@/lib/two-factor";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -29,6 +30,12 @@ export default function LoginPage() {
       await loginWithFormPost(email, password);
       router.push("/dashboard");
     } catch (err) {
+      // An admin with 2FA enabled is logged in but pending verification: /auth/me answers 403.
+      const twoFactorTarget = twoFactorRedirect(err);
+      if (twoFactorTarget) {
+        router.replace(twoFactorTarget);
+        return;
+      }
       setError(err instanceof ApiError ? err : new ApiError(0, "Несподівана помилка"));
     } finally {
       setSubmitting(false);
