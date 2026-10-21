@@ -11,6 +11,7 @@ import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.ResponseStatus;
@@ -46,6 +47,27 @@ public class ChildController {
 	@PostMapping("/{id}/consent")
 	public void consent(@AuthenticationPrincipal AppUserPrincipal principal, @PathVariable UUID id) {
 		childService.grantAccountConsent(principal.getId(), id);
+	}
+
+	@GetMapping("/{id}/consents")
+	public List<ConsentEntry> consents(@AuthenticationPrincipal AppUserPrincipal principal, @PathVariable UUID id) {
+		return childService.consents(principal.getId(), id);
+	}
+
+	/** Grant a consent by type (currently style_personalization; "account" uses POST /{id}/consent). */
+	@PutMapping("/{id}/consents/{type}")
+	@ResponseStatus(HttpStatus.NO_CONTENT)
+	public void grantConsent(@AuthenticationPrincipal AppUserPrincipal principal, @PathVariable UUID id,
+			@PathVariable String type) {
+		childService.grantConsent(principal.getId(), id, type);
+	}
+
+	/** Revoke: also deletes the data that consent allowed (e.g. the child's style answers). */
+	@DeleteMapping("/{id}/consents/{type}")
+	@ResponseStatus(HttpStatus.NO_CONTENT)
+	public void revokeConsent(@AuthenticationPrincipal AppUserPrincipal principal, @PathVariable UUID id,
+			@PathVariable String type) {
+		childService.revokeConsent(principal.getId(), id, type);
 	}
 
 	@GetMapping

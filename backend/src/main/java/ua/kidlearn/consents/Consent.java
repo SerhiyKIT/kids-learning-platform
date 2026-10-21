@@ -15,6 +15,7 @@ import java.util.UUID;
 public class Consent {
 
 	public static final String TYPE_ACCOUNT = "account";
+	public static final String TYPE_STYLE_PERSONALIZATION = "style_personalization";
 
 	@Id
 	@GeneratedValue(strategy = GenerationType.UUID)
@@ -68,6 +69,15 @@ public class Consent {
 
 	public Instant getRevokedAt() {
 		return revokedAt;
+	}
+
+	public boolean isActive() {
+		return revokedAt == null;
+	}
+
+	/** The row stays as the record that consent existed; only revoked_at is set. */
+	public void revoke(Instant now) {
+		this.revokedAt = now;
 	}
 
 }
