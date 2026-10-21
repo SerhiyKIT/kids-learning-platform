@@ -158,6 +158,19 @@ class AuditLogTest {
 		return auditLogRepository.findByActorIdAndTargetTypeAndTargetId(actorId, targetType, targetId);
 	}
 
+	/**
+	 * Waits for a row with this specific action. A version produced by /generate already carries a
+	 * GENERATE_VERSION row, and audit rows are written asynchronously, so "any row for the target"
+	 * can be satisfied before the action under test has been recorded.
+	 */
+	private List<AuditEvent> awaitAuditRows(UUID actorId, String targetType, UUID targetId, String action) {
+		Awaitility.await().atMost(Duration.ofSeconds(5)).pollInterval(Duration.ofMillis(50)).untilAsserted(
+				() -> assertThat(auditLogRepository.findByActorIdAndTargetTypeAndTargetId(actorId, targetType, targetId))
+						.extracting(AuditEvent::getAction)
+						.contains(action));
+		return auditLogRepository.findByActorIdAndTargetTypeAndTargetId(actorId, targetType, targetId);
+	}
+
 	@Test
 	void parentViewingChildHistoryWritesExactlyOneAuditRow() throws Exception {
 		String parentEmail = uniqueEmail("audit-parent");
@@ -221,7 +234,8 @@ class AuditLogTest {
 		mockMvc.perform(post("/api/admin/lesson-versions/" + versionId + "/approve").with(csrf())
 						.session(adminSession))
 				.andExpect(status().isOk());
-		List<AuditEvent> approveRows = awaitAuditRows(admin.getId(), AuditTargetType.LESSON_VERSION, versionId);
+		List<AuditEvent> approveRows = awaitAuditRows(admin.getId(), AuditTargetType.LESSON_VERSION, versionId,
+				AuditAction.APPROVE_VERSION);
 		assertThat(approveRows).extracting(AuditEvent::getAction).contains(AuditAction.APPROVE_VERSION);
 
 		mockMvc.perform(post("/api/admin/lesson-versions/" + versionId + "/publish").with(csrf())
@@ -245,7 +259,7 @@ class AuditLogTest {
 		mockMvc.perform(post("/api/admin/lesson-versions/" + versionId + "/approve").with(csrf())
 						.session(adminSession))
 				.andExpect(status().isOk());
-		awaitAuditRows(admin.getId(), AuditTargetType.LESSON_VERSION, versionId);
+		awaitAuditRows(admin.getId(), AuditTargetType.LESSON_VERSION, versionId, AuditAction.APPROVE_VERSION);
 
 		mockMvc.perform(get("/api/admin/audit").session(adminSession)
 						.param("targetType", AuditTargetType.LESSON_VERSION)

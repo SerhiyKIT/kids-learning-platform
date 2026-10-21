@@ -50,6 +50,14 @@ const eslintConfig = defineConfig([
       "no-restricted-syntax": "off",
     },
   },
+  {
+    // The service worker runs outside the app (no modules, no apiFetch): proxying fetch() for the
+    // one cached route (GET /api/audio/*) is its whole job.
+    files: ["public/sw.js"],
+    rules: {
+      "no-restricted-syntax": "off",
+    },
+  },
 ]);
 
 export default eslintConfig;

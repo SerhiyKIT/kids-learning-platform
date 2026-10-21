@@ -42,11 +42,11 @@ export function ExitButton({ href = "/dashboard" }: { href?: string }) {
  * штрихований силует того самого розміру, щоб композиція не «стрибнула» при заміні
  * (див. docs/Специфікація_ассетів.md).
  */
-export function Mascot({ size = "lg" }: { size?: "lg" | "sm" }) {
+export function Mascot({ size = "lg", speaking = false }: { size?: "lg" | "sm"; speaking?: boolean }) {
   const big = size === "lg";
   return (
     <div
-      className={`relative animate-[bob_4.2s_ease-in-out_infinite] ${big ? "h-60 w-50" : "h-42 w-35"}`}
+      className={`relative ${speaking ? "animate-[talk_0.45s_ease-in-out_infinite]" : "animate-[bob_4.2s_ease-in-out_infinite]"} ${big ? "h-60 w-50" : "h-42 w-35"}`}
       role="img"
       aria-label="Маскот-провідник"
     >
@@ -60,18 +60,25 @@ export function ListenButton({
   onClick,
   size = "lg",
   label = "Послухати",
+  speaking = false,
+  animation = "pulsedot",
 }: {
   onClick?: () => void;
   size?: "lg" | "sm";
   label?: string;
+  /** While the line is being heard the button "talks" instead of pulsing. */
+  speaking?: boolean;
+  /** Idle animation: a gentle pulse, or a slower "breathing" one for the lesson start. */
+  animation?: "pulsedot" | "breathe";
 }) {
   const big = size === "lg";
+  const idle = animation === "breathe" ? "animate-[breathe_2.4s_ease-in-out_infinite]" : "animate-[pulsedot_2.6s_ease-in-out_infinite]";
   return (
     <button
       type="button"
       onClick={onClick}
       aria-label={label}
-      className={`bg-kid-sun text-kid-sun-deep shadow-kid-sun-shadow flex cursor-pointer items-center justify-center rounded-full border-6 border-white shadow-[0_12px_0_var(--color-kid-sun-shadow)] animate-[pulsedot_2.6s_ease-in-out_infinite] ${
+      className={`bg-kid-sun text-kid-sun-deep shadow-kid-sun-shadow flex cursor-pointer items-center justify-center rounded-full border-6 border-white shadow-[0_12px_0_var(--color-kid-sun-shadow)] ${speaking ? "animate-[talk_0.45s_ease-in-out_infinite]" : idle} ${
         big ? "size-27" : "size-20"
       }`}
     >

@@ -101,6 +101,18 @@ export async function apiFetch<T>(path: string, init: RequestInit = {}): Promise
 }
 
 /**
+ * GET of a binary resource under /api (e.g. voice-line audio) as a Blob — same session cookie and
+ * typed ApiError as apiFetch. `path` is relative to /api, like apiFetch's.
+ */
+export async function apiFetchBlob(path: string): Promise<Blob> {
+  const response = await fetch(`${API_BASE}${path}`, { credentials: "include" });
+  if (!response.ok) {
+    throw await toApiError(response);
+  }
+  return response.blob();
+}
+
+/**
  * Spring Security's form-login endpoint responds with a redirect, not JSON, so this doesn't
  * reuse apiFetch directly. That redirect's Location is an ABSOLUTE backend-origin URL (Tomcat
  * has no idea it's sitting behind the dev proxy), so letting fetch() auto-follow it would make
