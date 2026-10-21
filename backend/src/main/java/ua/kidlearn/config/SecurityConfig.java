@@ -22,6 +22,7 @@ import ua.kidlearn.ratelimit.RateLimitingAuthenticationFailureHandler;
 import ua.kidlearn.ratelimit.TwoFactorRateLimitFilter;
 import ua.kidlearn.twofa.TwoFactorGateFilter;
 import ua.kidlearn.twofa.TwoFactorSessionAuthenticationSuccessHandler;
+import ua.kidlearn.users.ActiveAccountFilter;
 import ua.kidlearn.users.UserRepository;
 
 /**
@@ -41,7 +42,7 @@ public class SecurityConfig {
 				.authorizeHttpRequests(auth -> auth
 						.requestMatchers("/actuator/health", "/actuator/info").permitAll()
 						.requestMatchers(HttpMethod.POST, "/api/auth/register", "/api/auth/verify-email",
-								"/api/auth/forgot-password", "/api/auth/reset-password").permitAll()
+								"/api/auth/forgot-password", "/api/auth/reset-password", "/api/auth/accept-invite").permitAll()
 						// Dev-only account creation (see ua.kidlearn.devauth) — same reasoning as
 						// /api/auth/register: it must be reachable before a session exists. Under any
 						// non-dev profile the controller itself doesn't exist, so this permitAll is a
@@ -82,6 +83,9 @@ public class SecurityConfig {
 				.addFilterAfter(new TwoFactorRateLimitFilter(rateLimiter, clientIpResolver, rateLimitProperties),
 						UsernamePasswordAuthenticationFilter.class)
 				.addFilterAfter(new TwoFactorGateFilter(), TwoFactorRateLimitFilter.class)
+				// A session opened before its account was deactivated stops working on its next
+				// request (login itself is already refused for deleted accounts).
+				.addFilterBefore(new ActiveAccountFilter(userRepository), TwoFactorRateLimitFilter.class)
 				// This is a JSON API with no server-rendered pages to redirect to, so
 				// unauthenticated access must return 401, not a 302 to /login.
 				.exceptionHandling(exceptions -> exceptions

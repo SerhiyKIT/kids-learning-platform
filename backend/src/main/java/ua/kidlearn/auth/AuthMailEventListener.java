@@ -43,4 +43,14 @@ class AuthMailEventListener {
 		}
 	}
 
+	@Async
+	@TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
+	public void onTeacherInviteRequested(TeacherInviteRequestedEvent event) {
+		try {
+			authMailSender.sendTeacherInvite(event.user(), event.rawToken());
+		} catch (Exception e) {
+			log.error("Failed to send teacher invite email to {}", event.user().getEmail(), e);
+		}
+	}
+
 }

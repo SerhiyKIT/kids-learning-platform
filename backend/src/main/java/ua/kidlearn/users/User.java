@@ -118,7 +118,16 @@ public class User {
 	}
 
 	public void markEmailVerified() {
-		this.emailVerifiedAt = Instant.now();
+		markEmailVerified(Instant.now());
+	}
+
+	/** Same as {@link #markEmailVerified()}, with the time taken from the caller's injected Clock. */
+	public void markEmailVerified(Instant at) {
+		this.emailVerifiedAt = at;
+	}
+
+	public boolean isDeleted() {
+		return deletedAt != null;
 	}
 
 	public void changePassword(String newPasswordHash) {
@@ -126,7 +135,12 @@ public class User {
 	}
 
 	public void markDeleted() {
-		this.deletedAt = Instant.now();
+		markDeleted(Instant.now());
+	}
+
+	/** Same as {@link #markDeleted()}, with the time taken from the caller's injected Clock. */
+	public void markDeleted(Instant at) {
+		this.deletedAt = at;
 	}
 
 	public String getTotpSecretEnc() {
