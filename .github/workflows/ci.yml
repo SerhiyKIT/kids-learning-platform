@@ -85,3 +85,54 @@ jobs:
           push: false
           cache-from: type=gha,scope=${{ matrix.name }}
           cache-to: type=gha,mode=max,scope=${{ matrix.name }}
+
+  # End-to-end tests (frontend/e2e) on pull requests only: the production frontend build and the
+  # backend jar with the "e2e" profile (no dev endpoints, stub LLM/TTS, Mailpit for email) against
+  # Postgres + MinIO + Mailpit from infra/e2e/docker-compose.yml. Runs in parallel with the other jobs.
+  e2e:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+          cache: maven
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Start Postgres, MinIO, Mailpit
+        run: docker compose -f infra/e2e/docker-compose.yml up -d --wait
+
+      - name: Install dependencies
+        working-directory: frontend
+        run: npm ci
+
+      - name: Install Chromium
+        working-directory: frontend
+        run: npx playwright install --with-deps chromium
+
+      - name: Build backend jar and production frontend
+        working-directory: frontend
+        run: npm run e2e:build
+
+      - name: End-to-end tests
+        working-directory: frontend
+        run: npm run test:e2e
+
+      - name: Upload traces, screenshots and videos
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: e2e-results
+          path: |
+            frontend/test-results/
+            frontend/playwright-report/
+          retention-days: 7
