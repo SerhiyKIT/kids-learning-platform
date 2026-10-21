@@ -6,6 +6,7 @@ public final class AuditTargetType {
 	public static final String CHILD = "child";
 	public static final String GROUP = "group";
 	public static final String LESSON = "lesson";
+	public static final String USER = "user";
 	public static final String LESSON_VERSION = "lesson_version";
 
 	private AuditTargetType() {

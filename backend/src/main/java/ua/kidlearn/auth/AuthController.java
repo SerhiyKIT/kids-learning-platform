@@ -54,4 +54,10 @@ public class AuthController {
 		authService.resetPassword(request.token(), request.newPassword());
 	}
 
+	/** Public: an invited teacher sets their password. Doesn't log them in — they sign in next. */
+	@PostMapping("/accept-invite")
+	public void acceptInvite(@Valid @RequestBody AcceptInviteRequest request) {
+		authService.acceptTeacherInvite(request.token(), request.password());
+	}
+
 }

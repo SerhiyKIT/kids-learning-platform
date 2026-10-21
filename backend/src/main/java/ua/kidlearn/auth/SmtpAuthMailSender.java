@@ -29,6 +29,14 @@ class SmtpAuthMailSender implements AuthMailSender {
 		send(user.getEmail(), "Reset your password", "Reset your password: " + link);
 	}
 
+	@Override
+	public void sendTeacherInvite(User user, String rawToken) {
+		String link = appProperties.baseUrl() + "/accept-invite?token=" + rawToken;
+		send(user.getEmail(), "You're invited to KidLearn as a teacher",
+				"Hello " + user.getDisplayName() + ",\n\nAn administrator has invited you to KidLearn as a teacher. "
+						+ "Set your password here (the link works once): " + link);
+	}
+
 	private void send(String to, String subject, String text) {
 		SimpleMailMessage message = new SimpleMailMessage();
 		message.setTo(to);

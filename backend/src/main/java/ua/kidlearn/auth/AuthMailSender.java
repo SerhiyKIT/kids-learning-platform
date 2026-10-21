@@ -8,4 +8,6 @@ public interface AuthMailSender {
 
 	void sendPasswordReset(User user, String rawToken);
 
+	void sendTeacherInvite(User user, String rawToken);
+
 }

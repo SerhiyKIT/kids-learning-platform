@@ -11,6 +11,9 @@ public final class AuditAction {
 	public static final String PUBLISH_VERSION = "PUBLISH_VERSION";
 	public static final String GENERATE_VERSION = "GENERATE_VERSION";
 	public static final String VOICE_VERSION = "VOICE_VERSION";
+	public static final String INVITE_TEACHER = "INVITE_TEACHER";
+	public static final String RESEND_TEACHER_INVITE = "RESEND_TEACHER_INVITE";
+	public static final String DEACTIVATE_TEACHER = "DEACTIVATE_TEACHER";
 
 	private AuditAction() {
 	}

@@ -151,6 +151,9 @@ export const AUDIT_ACTION_LABELS: Record<string, string> = {
   REJECT_VERSION: "Відхилення версії",
   PUBLISH_VERSION: "Публікація версії",
   VOICE_VERSION: "Озвучення версії",
+  INVITE_TEACHER: "Запрошення вчителя",
+  RESEND_TEACHER_INVITE: "Повторне запрошення вчителя",
+  DEACTIVATE_TEACHER: "Деактивація вчителя",
 };
 
 export const AUDIT_TARGET_LABELS: Record<string, string> = {
@@ -158,6 +161,7 @@ export const AUDIT_TARGET_LABELS: Record<string, string> = {
   group: "Група",
   lesson: "Урок",
   lesson_version: "Версія уроку",
+  user: "Користувач",
 };
 
 export const ROLE_LABELS: Record<string, string> = {
@@ -185,3 +189,37 @@ export function moderationTab(status: LessonVersionStatus): "pending" | "approve
 export function moderationHref(versionId: string, status: LessonVersionStatus): string {
   return `/moderation?status=${moderationTab(status)}&version=${encodeURIComponent(versionId)}`;
 }
+
+// ---- Teachers ---------------------------------------------------------------------------------
+
+export type TeacherStatus = "invited" | "active" | "deactivated";
+
+/** GET /api/admin/teachers — mirrors ua.kidlearn.admin.TeacherEntry (no child/parent data). */
+export interface TeacherEntry {
+  id: string;
+  email: string;
+  displayName: string;
+  status: TeacherStatus;
+  groupCount: number;
+  createdAt: string;
+}
+
+/** POST /api/admin/teachers body — mirrors InviteTeacherRequest. The admin never sets a password. */
+export interface InviteTeacherRequest {
+  email: string;
+  displayName: string;
+}
+
+/** POST /api/admin/teachers response — mirrors InvitedTeacherResponse. */
+export interface InvitedTeacher {
+  id: string;
+  email: string;
+  displayName: string;
+  status: TeacherStatus;
+}
+
+export const TEACHER_STATUS_LABELS: Record<TeacherStatus, { label: string; tone: "ok" | "waiting" | "neutral" }> = {
+  invited: { label: "Запрошено", tone: "waiting" },
+  active: { label: "Активний", tone: "ok" },
+  deactivated: { label: "Деактивовано", tone: "neutral" },
+};

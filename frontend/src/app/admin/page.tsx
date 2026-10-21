@@ -101,7 +101,11 @@ export default function AdminHomePage() {
               title="Аудит"
               description="Журнал генерації, модерації, озвучки та доступу до даних."
             />
-            <ComingSoonCard title="Вчителі" description="Керування акаунтами вчителів." />
+            <AdminCard
+              href="/admin/teachers"
+              title="Вчителі"
+              description="Запрошення вчителів і керування їхніми акаунтами."
+            />
           </div>
         </div>
       </main>
@@ -118,20 +122,5 @@ function AdminCard({ href, title, description }: { href: string; title: string; 
       <h2 className="text-[17px] font-medium">{title}</h2>
       <p className="text-ink-muted text-sm leading-relaxed">{description}</p>
     </Link>
-  );
-}
-
-function ComingSoonCard({ title, description }: { title: string; description: string }) {
-  return (
-    <div
-      aria-disabled="true"
-      className="bg-canvas border-line text-ink-muted flex flex-col gap-3 rounded-xl border p-5"
-    >
-      <div className="flex items-center justify-between gap-3">
-        <h2 className="text-[17px] font-medium">{title}</h2>
-        <Pill>Незабаром</Pill>
-      </div>
-      <p className="text-sm leading-relaxed">{description}</p>
-    </div>
   );
 }

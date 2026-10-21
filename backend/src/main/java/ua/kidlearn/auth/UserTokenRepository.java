@@ -1,5 +1,6 @@
 package ua.kidlearn.auth;
 
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -12,5 +13,7 @@ public interface UserTokenRepository extends JpaRepository<UserToken, UUID> {
 	Optional<UserToken> findFirstByUserAndTypeOrderByCreatedAtDesc(User user, TokenType type);
 
 	long countByUserAndType(User user, TokenType type);
+
+	List<UserToken> findByUserAndTypeAndUsedAtIsNull(User user, TokenType type);
 
 }

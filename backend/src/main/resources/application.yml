@@ -21,6 +21,7 @@ management:
 auth:
   email-verification-ttl: 24h
   password-reset-ttl: 1h
+  teacher-invite-ttl: ${TEACHER_INVITE_TTL:72h}
 
 app:
   llm:
@@ -75,6 +76,9 @@ app:
       max: 10
       window: 15m
     reset-password-per-ip:
+      max: 10
+      window: 15m
+    accept-invite-per-ip:
       max: 10
       window: 15m
     bootstrap-admin-per-ip:

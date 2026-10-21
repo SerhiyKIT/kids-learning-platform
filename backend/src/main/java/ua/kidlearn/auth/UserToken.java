@@ -88,7 +88,12 @@ public class UserToken {
 	}
 
 	public void markUsed() {
-		this.usedAt = Instant.now();
+		markUsed(Instant.now());
+	}
+
+	/** Same as {@link #markUsed()}, with the time taken from the caller's injected Clock. */
+	public void markUsed(Instant at) {
+		this.usedAt = at;
 	}
 
 }

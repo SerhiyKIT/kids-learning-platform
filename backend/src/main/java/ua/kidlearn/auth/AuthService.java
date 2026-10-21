@@ -1,6 +1,8 @@
 package ua.kidlearn.auth;
 
+import java.time.Clock;
 import java.time.Instant;
+import java.util.Locale;
 import java.util.UUID;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.dao.DataIntegrityViolationException;
@@ -23,16 +25,18 @@ public class AuthService {
 	private final TokenGenerator tokenGenerator;
 	private final AuthProperties authProperties;
 	private final ApplicationEventPublisher eventPublisher;
+	private final Clock clock;
 
 	public AuthService(UserRepository userRepository, UserTokenRepository userTokenRepository,
 			PasswordEncoder passwordEncoder, TokenGenerator tokenGenerator, AuthProperties authProperties,
-			ApplicationEventPublisher eventPublisher) {
+			ApplicationEventPublisher eventPublisher, Clock clock) {
 		this.userRepository = userRepository;
 		this.userTokenRepository = userTokenRepository;
 		this.passwordEncoder = passwordEncoder;
 		this.tokenGenerator = tokenGenerator;
 		this.authProperties = authProperties;
 		this.eventPublisher = eventPublisher;
+		this.clock = clock;
 	}
 
 	@Transactional
@@ -89,6 +93,81 @@ public class AuthService {
 		token.getUser().changePassword(passwordEncoder.encode(newPassword));
 		token.markUsed();
 		// TODO: invalidate this user's active sessions (needs a session registry).
+	}
+
+	/**
+	 * Admin provisioning: creates a TEACHER whose password nobody knows (a random secret, hashed
+	 * and never returned) and emails them a single-use invitation link; the teacher picks their own
+	 * password in {@link #acceptTeacherInvite}. The admin never sees or sets it.
+	 */
+	@Transactional
+	public User inviteTeacher(String email, String displayName) {
+		String normalizedEmail = normalizeEmail(email);
+		if (userRepository.existsByEmailIgnoreCase(normalizedEmail)) {
+			throw new EmailTakenException();
+		}
+		User teacher = new User(normalizedEmail, passwordEncoder.encode(tokenGenerator.generateRawToken()), Role.TEACHER,
+				displayName.strip(), "uk");
+		try {
+			// Flush now so a concurrent insert of the same email trips the unique constraint here.
+			teacher = userRepository.saveAndFlush(teacher);
+		} catch (DataIntegrityViolationException e) {
+			throw new EmailTakenException();
+		}
+		issueTeacherInviteToken(teacher);
+		return teacher;
+	}
+
+	/** Re-sends a not-yet-accepted invitation; any earlier unused invitation links stop working. */
+	@Transactional
+	public User resendTeacherInvite(UUID teacherId) {
+		User teacher = userRepository.findById(teacherId)
+				.filter(u -> u.getRole() == Role.TEACHER && !u.isDeleted())
+				.orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Teacher not found"));
+		if (teacher.isEmailVerified()) {
+			throw new InviteAlreadyAcceptedException();
+		}
+		invalidateUnusedTokens(teacher, TokenType.TEACHER_INVITE);
+		issueTeacherInviteToken(teacher);
+		return teacher;
+	}
+
+	/**
+	 * Sets the invited teacher's password. Every failure — unknown, wrong type, expired, used, or
+	 * the teacher deactivated meanwhile — is the same 400, like reset-password, so the endpoint
+	 * reveals nothing about why. Following the emailed link proves the mailbox, so the email
+	 * counts as verified.
+	 */
+	@Transactional
+	public void acceptTeacherInvite(String rawToken, String password) {
+		Instant now = clock.instant();
+		UserToken token = userTokenRepository.findByTokenHash(tokenGenerator.hash(rawToken))
+				.filter(t -> t.getType() == TokenType.TEACHER_INVITE)
+				.filter(t -> t.isUsable(now))
+				.filter(t -> !t.getUser().isDeleted())
+				.orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid or expired token"));
+		User teacher = token.getUser();
+		teacher.changePassword(passwordEncoder.encode(password));
+		teacher.markEmailVerified(now);
+		token.markUsed(now);
+		invalidateUnusedTokens(teacher, TokenType.TEACHER_INVITE);
+	}
+
+	/** Same normalization for every newly provisioned email: surrounding whitespace off, lowercase. */
+	static String normalizeEmail(String email) {
+		return email.strip().toLowerCase(Locale.ROOT);
+	}
+
+	private void issueTeacherInviteToken(User teacher) {
+		String rawToken = tokenGenerator.generateRawToken();
+		Instant expiresAt = clock.instant().plus(authProperties.teacherInviteTtl());
+		userTokenRepository.save(new UserToken(teacher, TokenType.TEACHER_INVITE, tokenGenerator.hash(rawToken), expiresAt));
+		eventPublisher.publishEvent(new TeacherInviteRequestedEvent(teacher, rawToken));
+	}
+
+	private void invalidateUnusedTokens(User user, TokenType type) {
+		Instant now = clock.instant();
+		userTokenRepository.findByUserAndTypeAndUsedAtIsNull(user, type).forEach(t -> t.markUsed(now));
 	}
 
 	private void issueEmailVerificationToken(User user) {
