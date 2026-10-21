@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 /** Тепле тло дитячого режиму з двома м'якими колами. Займає весь екран. */
 export function KidStage({ children }: { children: React.ReactNode }) {
   return (
-    <div className="font-kid relative flex h-screen w-screen overflow-hidden bg-[radial-gradient(120%_90%_at_12%_20%,#fff3dd_0%,#ffe0b6_55%,#ffd39c_100%)]">
+    <div className="font-kid relative flex h-[100dvh] w-screen overflow-hidden bg-[radial-gradient(120%_90%_at_12%_20%,#fff3dd_0%,#ffe0b6_55%,#ffd39c_100%)]">
       <span
         aria-hidden="true"
         className="absolute -bottom-45 -left-30 size-130 rounded-full bg-[#ffd08a] opacity-55"
@@ -42,11 +42,20 @@ export function ExitButton({ href = "/dashboard" }: { href?: string }) {
  * штрихований силует того самого розміру, щоб композиція не «стрибнула» при заміні
  * (див. docs/Специфікація_ассетів.md).
  */
-export function Mascot({ size = "lg", speaking = false }: { size?: "lg" | "sm"; speaking?: boolean }) {
+export function Mascot({
+  size = "lg",
+  speaking = false,
+  className,
+}: {
+  size?: "lg" | "sm";
+  speaking?: boolean;
+  /** Overrides the fixed lg/sm box, e.g. viewport-relative sizing inside a scene. */
+  className?: string;
+}) {
   const big = size === "lg";
   return (
     <div
-      className={`relative ${speaking ? "animate-[talk_0.45s_ease-in-out_infinite]" : "animate-[bob_4.2s_ease-in-out_infinite]"} ${big ? "h-60 w-50" : "h-42 w-35"}`}
+      className={`relative motion-reduce:animate-none ${speaking ? "animate-[talk_0.45s_ease-in-out_infinite]" : "animate-[bob_4.2s_ease-in-out_infinite]"} ${className ?? (big ? "h-60 w-50" : "h-42 w-35")}`}
       role="img"
       aria-label="Маскот-провідник"
     >
@@ -62,6 +71,7 @@ export function ListenButton({
   label = "Послухати",
   speaking = false,
   animation = "pulsedot",
+  className,
 }: {
   onClick?: () => void;
   size?: "lg" | "sm";
@@ -70,6 +80,8 @@ export function ListenButton({
   speaking?: boolean;
   /** Idle animation: a gentle pulse, or a slower "breathing" one for the lesson start. */
   animation?: "pulsedot" | "breathe";
+  /** Overrides the fixed lg/sm size, e.g. viewport-relative sizing inside a scene (keep ≥ 64px). */
+  className?: string;
 }) {
   const big = size === "lg";
   const idle = animation === "breathe" ? "animate-[breathe_2.4s_ease-in-out_infinite]" : "animate-[pulsedot_2.6s_ease-in-out_infinite]";
@@ -78,8 +90,8 @@ export function ListenButton({
       type="button"
       onClick={onClick}
       aria-label={label}
-      className={`bg-kid-sun text-kid-sun-deep shadow-kid-sun-shadow flex cursor-pointer items-center justify-center rounded-full border-6 border-white shadow-[0_12px_0_var(--color-kid-sun-shadow)] ${speaking ? "animate-[talk_0.45s_ease-in-out_infinite]" : idle} ${
-        big ? "size-27" : "size-20"
+      className={`bg-kid-sun text-kid-sun-deep shadow-kid-sun-shadow flex cursor-pointer items-center justify-center rounded-full border-6 border-white shadow-[0_12px_0_var(--color-kid-sun-shadow)] motion-reduce:animate-none ${speaking ? "animate-[talk_0.45s_ease-in-out_infinite]" : idle} ${
+        className ?? (big ? "size-27" : "size-20")
       }`}
     >
       <svg width={big ? 46 : 40} height={big ? 46 : 40} viewBox="0 0 24 24" fill="none" aria-hidden="true">
@@ -107,7 +119,7 @@ export function DoneStamp({ className = "" }: { className?: string }) {
 /** Смужка-прогрес зі сцен: пройдені — бірюзові, поточна — жовта і більша. */
 export function StepDots({ total, current }: { total: number; current: number }) {
   return (
-    <div className="relative z-2 flex flex-none items-center justify-center gap-4.5 px-21 pt-5 pb-1.5">
+    <div className="relative z-2 flex flex-none items-center justify-center gap-[clamp(8px,2dvh,18px)] px-21 pt-[clamp(4px,2dvh,20px)] pb-1">
       {Array.from({ length: total }, (_, i) => {
         const done = i < current;
         const isCurrent = i === current;
@@ -116,10 +128,10 @@ export function StepDots({ total, current }: { total: number; current: number })
             key={i}
             className={`rounded-full border-4 border-white shadow-[0_4px_0_rgba(190,146,90,0.22)] ${
               isCurrent
-                ? "bg-kid-sun size-8.5 animate-[pulsedot_2.2s_ease-in-out_infinite]"
+                ? "bg-kid-sun size-[clamp(18px,5dvh,34px)] animate-[pulsedot_2.2s_ease-in-out_infinite] motion-reduce:animate-none"
                 : done
-                  ? "bg-kid-teal size-6.5"
-                  : "size-6.5 bg-[#f0dcb6]"
+                  ? "bg-kid-teal size-[clamp(14px,4dvh,26px)]"
+                  : "size-[clamp(14px,4dvh,26px)] bg-[#f0dcb6]"
             }`}
           />
         );

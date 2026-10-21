@@ -16,10 +16,19 @@ const NO_AUDIO_PAUSE_MS = 1200;
 export function VoiceLinePlayer({
   line,
   onReady,
+  variant = "card",
+  autoPlay = true,
 }: {
   line: VoiceLine;
   /** Fires once, after the line has had a moment to be seen/heard. */
   onReady?: () => void;
+  /**
+   * "card": text + its own replay button. "caption": the text only, for kid scenes whose single
+   * «послухати» button (and the guide) live in the scene shell — one listen button per screen.
+   */
+  variant?: "card" | "caption";
+  /** false when the scene sequences the audio itself (e.g. reading dialog answers in turn). */
+  autoPlay?: boolean;
 }) {
   const { play } = useKidAudio();
   const speakingUrl = useSpeakingUrl();
@@ -44,7 +53,7 @@ export function VoiceLinePlayer({
   }, [ready]);
 
   useEffect(() => {
-    if (!line.audioUrl) return;
+    if (!line.audioUrl || !autoPlay) return;
     let active = true;
     play(line.audioUrl).then((started) => {
       if (active && !started) setNeedsTap(true);
@@ -52,7 +61,7 @@ export function VoiceLinePlayer({
     return () => {
       active = false;
     };
-  }, [play, line.audioUrl]);
+  }, [play, line.audioUrl, autoPlay]);
 
   function onListen() {
     if (!line.audioUrl) return;
@@ -60,6 +69,15 @@ export function VoiceLinePlayer({
   }
 
   const speaking = Boolean(line.audioUrl) && speakingUrl === line.audioUrl;
+
+  if (variant === "caption") {
+    // Text for the adult beside the child; the voice carries the scene.
+    return (
+      <p className="text-kid-ink text-center text-[clamp(17px,5dvh,28px)] leading-tight font-semibold text-balance">
+        {line.text}
+      </p>
+    );
+  }
 
   return (
     <div className="flex w-full items-center gap-4 rounded-2xl bg-white/95 px-6 py-4 shadow-lg">

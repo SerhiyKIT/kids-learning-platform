@@ -125,7 +125,7 @@ export interface UnknownScene extends Partial<SceneBase> {
 export type Scene = DemoScene | ChoiceScene | SortingScene | DialogScene | UnknownScene;
 
 /** Interactive scene types that get answered via POST .../attempts/{id}/answers. */
-export type AnswerableScene = ChoiceScene | DialogScene;
+export type AnswerableScene = ChoiceScene | SortingScene | DialogScene;
 
 export function isChoiceScene(scene: Scene): scene is ChoiceScene {
   return scene.type === "choice";
@@ -135,8 +135,16 @@ export function isDemoScene(scene: Scene): scene is DemoScene {
   return scene.type === "demo";
 }
 
+export function isSortingScene(scene: Scene): scene is SortingScene {
+  return scene.type === "sorting";
+}
+
+export function isDialogScene(scene: Scene): scene is DialogScene {
+  return scene.type === "dialog";
+}
+
 export function isAnswerableScene(scene: Scene): scene is AnswerableScene {
-  return scene.type === "choice" || scene.type === "dialog";
+  return scene.type === "choice" || scene.type === "sorting" || scene.type === "dialog";
 }
 
 export interface LessonScenario {
