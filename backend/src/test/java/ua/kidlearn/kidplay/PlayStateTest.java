@@ -19,20 +19,15 @@ import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
-import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.mock.web.MockHttpSession;
 import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.test.web.servlet.ResultActions;
 import org.springframework.transaction.annotation.Transactional;
-import ua.kidlearn.ratelimit.MutableClockTestConfig;
-import ua.kidlearn.ratelimit.MutableTestClock;
+import ua.kidlearn.support.ClockedWebIntegrationTest;
 import ua.kidlearn.users.Role;
 import ua.kidlearn.users.User;
 import ua.kidlearn.users.UserRepository;
@@ -43,20 +38,13 @@ import ua.kidlearn.users.UserRepository;
  * or a parent wakes the child. Time is driven by the test Clock (defaults: rest 60m, gap 30m).
  * Fixture: a verified parent whose demo child has the two dev-seed lessons assigned.
  */
-@SpringBootTest
-@AutoConfigureMockMvc
-@ActiveProfiles("dev")
-@Import(MutableClockTestConfig.class)
 @Transactional
-class PlayStateTest {
+class PlayStateTest extends ClockedWebIntegrationTest {
 
 	private static final String PASSWORD = "supersecret1";
 
 	@Autowired
 	private MockMvc mockMvc;
-
-	@Autowired
-	private MutableTestClock testClock;
 
 	@Autowired
 	private UserRepository userRepository;
@@ -88,7 +76,7 @@ class PlayStateTest {
 	private MockHttpSession verifiedUser(Role role) throws Exception {
 		String email = uniqueEmail(role.name().toLowerCase());
 		User user = new User(email, passwordEncoder.encode(PASSWORD), role, "Test", "uk");
-		user.markEmailVerified();
+		user.markEmailVerified(Instant.now());
 		userRepository.save(user);
 		return login(email);
 	}

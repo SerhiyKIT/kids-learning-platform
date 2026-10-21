@@ -1,5 +1,7 @@
 package ua.kidlearn.devauth;
 
+import java.time.Clock;
+
 import org.springframework.context.annotation.Profile;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
@@ -25,17 +27,19 @@ public class DevAuthService {
 
 	private final UserRepository userRepository;
 	private final PasswordEncoder passwordEncoder;
+	private final Clock clock;
 
-	public DevAuthService(UserRepository userRepository, PasswordEncoder passwordEncoder) {
+	public DevAuthService(UserRepository userRepository, PasswordEncoder passwordEncoder, Clock clock) {
 		this.userRepository = userRepository;
 		this.passwordEncoder = passwordEncoder;
+		this.clock = clock;
 	}
 
 	@Transactional
 	public User registerWithRole(DevRegisterRoleRequest request) {
 		User user = new User(request.email(), passwordEncoder.encode(request.password()), request.role(),
 				request.displayName(), "uk");
-		user.markEmailVerified();
+		user.markEmailVerified(clock.instant());
 		try {
 			// Flush now so the DB's unique constraint on email fires here, not later — same
 			// reasoning as AuthService.register.

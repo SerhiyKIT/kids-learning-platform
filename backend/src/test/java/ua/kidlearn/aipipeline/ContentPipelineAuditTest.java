@@ -12,6 +12,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import com.jayway.jsonpath.JsonPath;
 import java.time.Duration;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -21,15 +22,9 @@ import org.awaitility.Awaitility;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
-import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
 import org.springframework.mock.web.MockHttpSession;
 import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.test.context.ActiveProfiles;
-import org.springframework.test.context.TestPropertySource;
-import org.springframework.test.context.bean.override.mockito.MockitoSpyBean;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 import ua.kidlearn.audit.AuditAction;
@@ -38,6 +33,7 @@ import ua.kidlearn.audit.AuditLogRepository;
 import ua.kidlearn.audit.AuditTargetType;
 import ua.kidlearn.lessons.LessonRepository;
 import ua.kidlearn.lessons.LessonVersionRepository;
+import ua.kidlearn.support.InMemoryAudioWebIntegrationTest;
 import ua.kidlearn.twofa.AdminTwoFactorTestSupport;
 import ua.kidlearn.users.Role;
 import ua.kidlearn.users.User;
@@ -50,12 +46,7 @@ import ua.kidlearn.users.UserRepository;
  * cache rows) is cleaned up in @AfterEach; audit rows themselves are kept by design (the log must
  * outlive its targets — see V5__audit_log.sql).
  */
-@SpringBootTest
-@AutoConfigureMockMvc
-@ActiveProfiles("dev")
-@TestPropertySource(properties = "app.tts.storage=memory")
-@Import(InMemoryAudioStorageTestConfig.class)
-class ContentPipelineAuditTest {
+class ContentPipelineAuditTest extends InMemoryAudioWebIntegrationTest {
 
 	private static final String PASSWORD = "supersecret1";
 	private static final Duration AUDIT_TIMEOUT = Duration.ofSeconds(10);
@@ -85,9 +76,6 @@ class ContentPipelineAuditTest {
 	@Autowired
 	private AudioAssetRepository audioAssetRepository;
 
-	@MockitoSpyBean
-	private LlmProvider llmProvider;
-
 	private final List<User> createdAdmins = new ArrayList<>();
 	private final List<UUID> createdLessons = new ArrayList<>();
 	private final Set<String> voicedTexts = new HashSet<>();
@@ -102,7 +90,7 @@ class ContentPipelineAuditTest {
 				audioAssetRepository.findAll().stream().filter(a -> voicedTexts.contains(a.getText())).toList());
 		voicedTexts.clear();
 		// Soft-deleted, not hard-deleted: approved_by references them (see AuditLogTest).
-		createdAdmins.forEach(User::markDeleted);
+		createdAdmins.forEach(user -> user.markDeleted(Instant.now()));
 		userRepository.saveAll(createdAdmins);
 		createdAdmins.clear();
 	}

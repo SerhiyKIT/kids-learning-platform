@@ -51,8 +51,8 @@ class AdminBackupCode {
 		return usedAt != null;
 	}
 
-	void markUsed() {
-		this.usedAt = Instant.now();
+	void markUsed(Instant at) {
+		this.usedAt = at;
 	}
 
 }

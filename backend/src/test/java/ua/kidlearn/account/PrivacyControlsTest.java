@@ -13,26 +13,22 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import com.jayway.jsonpath.JsonPath;
 import java.time.Duration;
+import java.time.Instant;
 import java.time.Year;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
-import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.mock.web.MockHttpSession;
 import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.test.web.servlet.ResultActions;
 import org.springframework.transaction.annotation.Transactional;
 import ua.kidlearn.children.ParentChild;
 import ua.kidlearn.children.ParentChildRepository;
-import ua.kidlearn.ratelimit.MutableClockTestConfig;
-import ua.kidlearn.ratelimit.MutableTestClock;
+import ua.kidlearn.support.ClockedWebIntegrationTest;
 import ua.kidlearn.users.Role;
 import ua.kidlearn.users.User;
 import ua.kidlearn.users.UserRepository;
@@ -44,12 +40,8 @@ import ua.kidlearn.users.UserRepository;
  * @Transactional: deletion audit entries are written inside the transaction on purpose, so they're
  * visible here; the DB's ON DELETE actions run at statement time and are checked with SQL.
  */
-@SpringBootTest
-@AutoConfigureMockMvc
-@ActiveProfiles("dev")
-@Import(MutableClockTestConfig.class)
 @Transactional
-class PrivacyControlsTest {
+class PrivacyControlsTest extends ClockedWebIntegrationTest {
 
 	private static final String PASSWORD = "supersecret1";
 
@@ -69,9 +61,6 @@ class PrivacyControlsTest {
 	private JdbcTemplate jdbc;
 
 	@Autowired
-	private MutableTestClock testClock;
-
-	@Autowired
 	private RetentionService retentionService;
 
 	private record Account(UUID id, String email) {
@@ -80,7 +69,7 @@ class PrivacyControlsTest {
 	private Account user(Role role) {
 		String email = "privacy-" + role.name().toLowerCase() + "-" + UUID.randomUUID() + "@example.test";
 		User user = new User(email, passwordEncoder.encode(PASSWORD), role, "Test", "uk");
-		user.markEmailVerified();
+		user.markEmailVerified(Instant.now());
 		return new Account(userRepository.saveAndFlush(user).getId(), email);
 	}
 

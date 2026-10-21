@@ -2,7 +2,6 @@ package ua.kidlearn.auth;
 
 import java.time.Clock;
 import java.time.Instant;
-import java.util.Locale;
 import java.util.UUID;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.dao.DataIntegrityViolationException;
@@ -12,6 +11,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 import ua.kidlearn.config.AuthProperties;
+import ua.kidlearn.users.EmailAddress;
 import ua.kidlearn.users.Role;
 import ua.kidlearn.users.User;
 import ua.kidlearn.users.UserRepository;
@@ -41,6 +41,9 @@ public class AuthService {
 
 	@Transactional
 	public User register(RegisterRequest request) {
+		if (userRepository.existsAnyByEmail(request.email())) {
+			throw new ResponseStatusException(HttpStatus.CONFLICT, "Email already registered");
+		}
 		User user = new User(request.email(), passwordEncoder.encode(request.password()), Role.PARENT,
 				request.displayName(), "uk");
 		try {
@@ -57,10 +60,10 @@ public class AuthService {
 	public void verifyEmail(String rawToken) {
 		UserToken token = userTokenRepository.findByTokenHash(tokenGenerator.hash(rawToken))
 				.filter(t -> t.getType() == TokenType.EMAIL_VERIFICATION)
-				.filter(t -> t.isUsable(Instant.now()))
+				.filter(t -> t.isUsable(clock.instant()))
 				.orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid or expired token"));
-		token.getUser().markEmailVerified();
-		token.markUsed();
+		token.getUser().markEmailVerified(clock.instant());
+		token.markUsed(clock.instant());
 	}
 
 	@Transactional
@@ -77,7 +80,7 @@ public class AuthService {
 
 	@Transactional
 	public void forgotPassword(String email) {
-		userRepository.findByEmailAndDeletedAtIsNull(email).ifPresent(user -> {
+		userRepository.findActiveByEmail(email).ifPresent(user -> {
 			if (!recentTokenIssued(user, TokenType.PASSWORD_RESET)) {
 				issuePasswordResetToken(user);
 			}
@@ -88,10 +91,10 @@ public class AuthService {
 	public void resetPassword(String rawToken, String newPassword) {
 		UserToken token = userTokenRepository.findByTokenHash(tokenGenerator.hash(rawToken))
 				.filter(t -> t.getType() == TokenType.PASSWORD_RESET)
-				.filter(t -> t.isUsable(Instant.now()))
+				.filter(t -> t.isUsable(clock.instant()))
 				.orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid or expired token"));
 		token.getUser().changePassword(passwordEncoder.encode(newPassword));
-		token.markUsed();
+		token.markUsed(clock.instant());
 		// Whoever knew the old password is signed out everywhere (see ActiveAccountFilter).
 		token.getUser().invalidateSessionsBefore(clock.instant());
 	}
@@ -103,8 +106,8 @@ public class AuthService {
 	 */
 	@Transactional
 	public User inviteTeacher(String email, String displayName) {
-		String normalizedEmail = normalizeEmail(email);
-		if (userRepository.existsByEmailIgnoreCase(normalizedEmail)) {
+		String normalizedEmail = EmailAddress.normalize(email);
+		if (userRepository.existsAnyByEmail(normalizedEmail)) {
 			throw new EmailTakenException();
 		}
 		User teacher = new User(normalizedEmail, passwordEncoder.encode(tokenGenerator.generateRawToken()), Role.TEACHER,
@@ -155,9 +158,6 @@ public class AuthService {
 	}
 
 	/** Same normalization for every newly provisioned email: surrounding whitespace off, lowercase. */
-	static String normalizeEmail(String email) {
-		return email.strip().toLowerCase(Locale.ROOT);
-	}
 
 	private void issueTeacherInviteToken(User teacher) {
 		String rawToken = tokenGenerator.generateRawToken();
@@ -173,21 +173,21 @@ public class AuthService {
 
 	private void issueEmailVerificationToken(User user) {
 		String rawToken = tokenGenerator.generateRawToken();
-		Instant expiresAt = Instant.now().plus(authProperties.emailVerificationTtl());
+		Instant expiresAt = clock.instant().plus(authProperties.emailVerificationTtl());
 		userTokenRepository.save(new UserToken(user, TokenType.EMAIL_VERIFICATION, tokenGenerator.hash(rawToken), expiresAt));
 		eventPublisher.publishEvent(new EmailVerificationRequestedEvent(user, rawToken));
 	}
 
 	private void issuePasswordResetToken(User user) {
 		String rawToken = tokenGenerator.generateRawToken();
-		Instant expiresAt = Instant.now().plus(authProperties.passwordResetTtl());
+		Instant expiresAt = clock.instant().plus(authProperties.passwordResetTtl());
 		userTokenRepository.save(new UserToken(user, TokenType.PASSWORD_RESET, tokenGenerator.hash(rawToken), expiresAt));
 		eventPublisher.publishEvent(new PasswordResetRequestedEvent(user, rawToken));
 	}
 
 	private boolean recentTokenIssued(User user, TokenType type) {
 		return userTokenRepository.findFirstByUserAndTypeOrderByCreatedAtDesc(user, type)
-				.map(t -> t.getCreatedAt().isAfter(Instant.now().minusSeconds(60)))
+				.map(t -> t.getCreatedAt().isAfter(clock.instant().minusSeconds(60)))
 				.orElse(false);
 	}
 

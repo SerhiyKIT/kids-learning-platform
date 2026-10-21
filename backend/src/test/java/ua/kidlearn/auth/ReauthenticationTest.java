@@ -8,23 +8,19 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import java.time.Duration;
+import java.time.Instant;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
-import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
 import org.springframework.mock.web.MockHttpSession;
 import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.test.web.servlet.ResultActions;
 import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder;
 import org.springframework.transaction.annotation.Transactional;
-import ua.kidlearn.ratelimit.MutableClockTestConfig;
-import ua.kidlearn.ratelimit.MutableTestClock;
+import ua.kidlearn.support.ClockedWebIntegrationTest;
 import ua.kidlearn.users.Role;
 import ua.kidlearn.users.User;
 import ua.kidlearn.users.UserRepository;
@@ -35,20 +31,13 @@ import ua.kidlearn.users.UserRepository;
  * the session is never touched. Each test uses its own account and IP, like RateLimitingTest, since
  * the in-memory RateLimiter is shared.
  */
-@SpringBootTest
-@AutoConfigureMockMvc
-@ActiveProfiles("dev")
-@Import(MutableClockTestConfig.class)
 @Transactional
-class ReauthenticationTest {
+class ReauthenticationTest extends ClockedWebIntegrationTest {
 
 	private static final String PASSWORD = "supersecret1";
 
 	@Autowired
 	private MockMvc mockMvc;
-
-	@Autowired
-	private MutableTestClock testClock;
 
 	@Autowired
 	private UserRepository userRepository;
@@ -63,7 +52,7 @@ class ReauthenticationTest {
 	private String newParent() {
 		String email = "reauth-" + UUID.randomUUID() + "@example.test";
 		User user = new User(email, passwordEncoder.encode(PASSWORD), Role.PARENT, "Test", "uk");
-		user.markEmailVerified();
+		user.markEmailVerified(Instant.now());
 		userRepository.save(user);
 		return email;
 	}

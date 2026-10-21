@@ -15,13 +15,14 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.transaction.annotation.Transactional;
 
 /**
- * app.bootstrap.admin-token is blank by default (see application.yml / application-dev.yml —
- * neither profile sets ADMIN_BOOTSTRAP_TOKEN), so this class deliberately does NOT override it:
- * the endpoint must behave as if it doesn't exist, regardless of request body.
+ * app.bootstrap.admin-token is blank by default (no profile sets ADMIN_BOOTSTRAP_TOKEN), so the
+ * endpoint must behave as if it doesn't exist, regardless of request body. Runs in the prod-like
+ * "guardtest" context (shared with DevRoutesAbsentOutsideDevProfileTest): the dev-profile tests
+ * share a context that configures a token (support.WebIntegrationTest).
  */
 @SpringBootTest
 @AutoConfigureMockMvc
-@ActiveProfiles("dev")
+@ActiveProfiles("guardtest")
 @Transactional
 class BootstrapControllerTokenNotConfiguredTest {
 

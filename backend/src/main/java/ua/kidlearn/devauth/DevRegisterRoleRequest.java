@@ -12,4 +12,10 @@ public record DevRegisterRoleRequest(
 		@NotBlank @Size(min = 10) String password,
 		@NotBlank String displayName,
 		@NotNull Role role) {
+
+	/** Surrounding whitespace dropped before bean validation (EmailAddress.normalize does the rest). */
+	public DevRegisterRoleRequest {
+		email = email == null ? null : email.strip();
+	}
+
 }

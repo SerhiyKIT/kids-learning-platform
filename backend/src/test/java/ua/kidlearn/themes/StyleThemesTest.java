@@ -12,6 +12,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import com.jayway.jsonpath.JsonPath;
 import java.time.Duration;
+import java.time.Instant;
 import java.time.Year;
 import java.util.ArrayList;
 import java.util.List;
@@ -21,16 +22,14 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.http.MediaType;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.mock.web.MockHttpSession;
 import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.test.web.servlet.ResultActions;
+import ua.kidlearn.support.WebIntegrationTest;
 import ua.kidlearn.twofa.AdminTwoFactorTestSupport;
 import ua.kidlearn.users.Role;
 import ua.kidlearn.users.User;
@@ -43,10 +42,7 @@ import ua.kidlearn.users.UserRepository;
  * would never happen inside a rolled-back test transaction. Everything created is removed in
  * {@link #cleanUp()}; the preference keys below are used by no other test.
  */
-@SpringBootTest
-@AutoConfigureMockMvc
-@ActiveProfiles("dev")
-class StyleThemesTest {
+class StyleThemesTest extends WebIntegrationTest {
 
 	private static final String PASSWORD = "supersecret1";
 	private static final List<String> TEST_KEYS = List.of("green|forest|bright", "purple|dinosaurs|calm",
@@ -81,7 +77,7 @@ class StyleThemesTest {
 		}
 		// Soft delete, like AuditLogTest: an ADMIN left behind would satisfy "an admin exists" checks
 		// elsewhere, and approved_by may still reference it.
-		createdUsers.forEach(User::markDeleted);
+		createdUsers.forEach(user -> user.markDeleted(Instant.now()));
 		userRepository.saveAll(createdUsers);
 		createdUsers.clear();
 	}
@@ -89,7 +85,7 @@ class StyleThemesTest {
 	private MockHttpSession login(Role role) throws Exception {
 		String email = "style-" + role.name().toLowerCase() + "-" + UUID.randomUUID() + "@example.test";
 		User user = new User(email, passwordEncoder.encode(PASSWORD), role, "Test", "uk");
-		user.markEmailVerified();
+		user.markEmailVerified(Instant.now());
 		createdUsers.add(userRepository.save(user));
 		MvcResult result = mockMvc.perform(formLogin().user(email).password(PASSWORD))
 				.andExpect(status().is3xxRedirection())

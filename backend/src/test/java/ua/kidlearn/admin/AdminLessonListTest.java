@@ -12,12 +12,9 @@ import java.util.UUID;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.http.MediaType;
 import org.springframework.mock.web.MockHttpSession;
 import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.transaction.annotation.Transactional;
@@ -25,6 +22,7 @@ import tools.jackson.databind.ObjectMapper;
 import ua.kidlearn.lessons.LessonService;
 import ua.kidlearn.lessons.LessonVersion;
 import ua.kidlearn.scenario.ScenarioFixtures;
+import ua.kidlearn.support.WebIntegrationTest;
 import ua.kidlearn.twofa.AdminTwoFactorTestSupport;
 import ua.kidlearn.users.Role;
 import ua.kidlearn.users.User;
@@ -34,11 +32,8 @@ import ua.kidlearn.users.UserRepository;
  * GET /api/admin/lessons: every lesson with its version summary, ADMIN only. (Newest-first order
  * isn't asserted here: inside one test transaction every row gets the same created_at = now().)
  */
-@SpringBootTest
-@AutoConfigureMockMvc
-@ActiveProfiles("dev")
 @Transactional
-class AdminLessonListTest {
+class AdminLessonListTest extends WebIntegrationTest {
 
 	private static final String PASSWORD = "supersecret1";
 

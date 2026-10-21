@@ -71,7 +71,7 @@ public class User {
 	}
 
 	public User(String email, String passwordHash, Role role, String displayName, String locale) {
-		this.email = email;
+		this.email = EmailAddress.normalize(email);
 		this.passwordHash = passwordHash;
 		this.role = role;
 		this.displayName = displayName;
@@ -122,11 +122,7 @@ public class User {
 		return emailVerifiedAt != null;
 	}
 
-	public void markEmailVerified() {
-		markEmailVerified(Instant.now());
-	}
-
-	/** Same as {@link #markEmailVerified()}, with the time taken from the caller's injected Clock. */
+	/** {@code at} comes from the caller's injected Clock. */
 	public void markEmailVerified(Instant at) {
 		this.emailVerifiedAt = at;
 	}
@@ -148,11 +144,7 @@ public class User {
 		this.passwordHash = newPasswordHash;
 	}
 
-	public void markDeleted() {
-		markDeleted(Instant.now());
-	}
-
-	/** Same as {@link #markDeleted()}, with the time taken from the caller's injected Clock. */
+	/** {@code at} comes from the caller's injected Clock. */
 	public void markDeleted(Instant at) {
 		this.deletedAt = at;
 	}
@@ -173,8 +165,8 @@ public class User {
 		this.totpSecretEnc = encryptedSecret;
 	}
 
-	public void enableTotp() {
-		this.totpEnabledAt = Instant.now();
+	public void enableTotp(Instant at) {
+		this.totpEnabledAt = at;
 	}
 
 }

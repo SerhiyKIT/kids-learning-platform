@@ -1,0 +1,9 @@
+# Test-only overrides (classpath:/config/ takes precedence over the main application.yml, which
+# still applies). Every cached Spring test context keeps its own connection pool: a few
+# connections each is plenty for MockMvc tests and keeps all cached contexts together well under
+# Postgres' max_connections (100 by default).
+spring:
+  datasource:
+    hikari:
+      maximum-pool-size: 4
+      minimum-idle: 1

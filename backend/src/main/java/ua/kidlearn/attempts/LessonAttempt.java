@@ -88,8 +88,8 @@ public class LessonAttempt {
 		return score;
 	}
 
-	public void complete(String result, BigDecimal score) {
-		this.completedAt = Instant.now();
+	public void complete(String result, BigDecimal score, Instant at) {
+		this.completedAt = at;
 		this.result = result;
 		this.score = score;
 	}

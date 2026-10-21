@@ -11,23 +11,19 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import com.jayway.jsonpath.JsonPath;
 import dev.samstevens.totp.code.DefaultCodeGenerator;
 import dev.samstevens.totp.exceptions.CodeGenerationException;
+import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
-import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
 import org.springframework.mock.web.MockHttpSession;
 import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.test.web.servlet.ResultActions;
 import org.springframework.transaction.annotation.Transactional;
-import ua.kidlearn.ratelimit.MutableClockTestConfig;
-import ua.kidlearn.ratelimit.MutableTestClock;
+import ua.kidlearn.support.ClockedWebIntegrationTest;
 import ua.kidlearn.users.Role;
 import ua.kidlearn.users.User;
 import ua.kidlearn.users.UserRepository;
@@ -39,12 +35,8 @@ import ua.kidlearn.users.UserRepository;
  * same secret + time index the server would use. Each test uses its own unique email/IP so the
  * shared in-memory RateLimiter singleton never leaks counts between tests.
  */
-@SpringBootTest
-@AutoConfigureMockMvc
-@ActiveProfiles("dev")
-@Import(MutableClockTestConfig.class)
 @Transactional
-class TwoFactorFlowTest {
+class TwoFactorFlowTest extends ClockedWebIntegrationTest {
 
 	private static final String PASSWORD = "supersecret1";
 	private static final DefaultCodeGenerator CODE_GENERATOR = new DefaultCodeGenerator();
@@ -57,9 +49,6 @@ class TwoFactorFlowTest {
 
 	@Autowired
 	private PasswordEncoder passwordEncoder;
-
-	@Autowired
-	private MutableTestClock testClock;
 
 	private static String uniqueEmail(String prefix) {
 		return prefix + "-" + UUID.randomUUID() + "@example.test";
@@ -79,7 +68,7 @@ class TwoFactorFlowTest {
 
 	private void createVerifiedParent(String email) {
 		User parent = new User(email, passwordEncoder.encode(PASSWORD), Role.PARENT, "Parent", "uk");
-		parent.markEmailVerified();
+		parent.markEmailVerified(Instant.now());
 		userRepository.save(parent);
 	}
 
@@ -142,7 +131,7 @@ class TwoFactorFlowTest {
 		List<String> backupCodes = JsonPath.read(result.getResponse().getContentAsString(), "$.backupCodes");
 		assertThat(backupCodes).hasSize(10);
 
-		User admin = userRepository.findByEmailAndDeletedAtIsNull(email).orElseThrow();
+		User admin = userRepository.findActiveByEmail(email).orElseThrow();
 		assertThat(admin.isTotpEnabled()).isTrue();
 	}
 

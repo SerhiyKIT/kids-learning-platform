@@ -12,12 +12,9 @@ import java.util.UUID;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.http.MediaType;
 import org.springframework.mock.web.MockHttpSession;
 import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.transaction.annotation.Transactional;
@@ -29,6 +26,7 @@ import ua.kidlearn.lessons.LessonRepository;
 import ua.kidlearn.lessons.LessonVersion;
 import ua.kidlearn.lessons.LessonVersionRepository;
 import ua.kidlearn.scenario.ScenarioFixtures;
+import ua.kidlearn.support.WebIntegrationTest;
 import ua.kidlearn.twofa.AdminTwoFactorTestSupport;
 import ua.kidlearn.users.Role;
 import ua.kidlearn.users.User;
@@ -38,11 +36,8 @@ import ua.kidlearn.users.UserRepository;
  * End-to-end: POST /api/admin/lessons/{id}/generate runs the generate -> validate -> bounded
  * retry -> persist pipeline (docs/Промпт_генерації_уроків.md §3), never auto-publishing.
  */
-@SpringBootTest
-@AutoConfigureMockMvc
-@ActiveProfiles("dev")
 @Transactional
-class AdminGenerationControllerTest {
+class AdminGenerationControllerTest extends WebIntegrationTest {
 
 	private static final String PASSWORD = "supersecret1";
 

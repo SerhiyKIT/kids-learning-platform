@@ -19,12 +19,9 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.http.MediaType;
-import org.springframework.test.context.ActiveProfiles;
-import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
+import ua.kidlearn.support.WebIntegrationTest;
 import ua.kidlearn.users.User;
 import ua.kidlearn.users.UserRepository;
 
@@ -33,10 +30,7 @@ import ua.kidlearn.users.UserRepository;
  * which only fires on a real commit. Each test cleans up the users it
  * creates in @AfterEach (user_tokens cascade-delete with the user).
  */
-@SpringBootTest
-@AutoConfigureMockMvc
-@ActiveProfiles("dev")
-class EmailVerificationAndPasswordResetTest {
+class EmailVerificationAndPasswordResetTest extends WebIntegrationTest {
 
 	private static final String PASSWORD = "supersecret1";
 
@@ -52,15 +46,12 @@ class EmailVerificationAndPasswordResetTest {
 	@Autowired
 	private TokenGenerator tokenGenerator;
 
-	@MockitoBean
-	private AuthMailSender authMailSender;
-
 	private final List<String> createdEmails = new ArrayList<>();
 
 	@AfterEach
 	void cleanUp() {
 		createdEmails.forEach(
-				email -> userRepository.findByEmailAndDeletedAtIsNull(email).ifPresent(userRepository::delete));
+				email -> userRepository.findActiveByEmail(email).ifPresent(userRepository::delete));
 	}
 
 	private String uniqueEmail(String prefix) {
@@ -90,7 +81,7 @@ class EmailVerificationAndPasswordResetTest {
 						.content("{\"token\":\"%s\"}".formatted(tokenCaptor.getValue())))
 				.andExpect(status().isOk());
 
-		User user = userRepository.findByEmailAndDeletedAtIsNull(email).orElseThrow();
+		User user = userRepository.findActiveByEmail(email).orElseThrow();
 		assertThat(user.isEmailVerified()).isTrue();
 	}
 
@@ -106,7 +97,7 @@ class EmailVerificationAndPasswordResetTest {
 	void verifyEmailRejectsExpiredToken() throws Exception {
 		String email = uniqueEmail("verify-expired");
 		register(email);
-		User user = userRepository.findByEmailAndDeletedAtIsNull(email).orElseThrow();
+		User user = userRepository.findActiveByEmail(email).orElseThrow();
 
 		String rawToken = tokenGenerator.generateRawToken();
 		userTokenRepository.save(new UserToken(user, TokenType.EMAIL_VERIFICATION, tokenGenerator.hash(rawToken),
@@ -153,7 +144,7 @@ class EmailVerificationAndPasswordResetTest {
 						.content("{\"email\":\"nobody-%s@example.test\"}".formatted(UUID.randomUUID())))
 				.andExpect(status().isOk());
 
-		User user = userRepository.findByEmailAndDeletedAtIsNull(email).orElseThrow();
+		User user = userRepository.findActiveByEmail(email).orElseThrow();
 		verify(authMailSender, timeout(3000)).sendPasswordReset(any(User.class), any(String.class));
 		assertThat(userTokenRepository.countByUserAndType(user, TokenType.PASSWORD_RESET)).isEqualTo(1);
 	}

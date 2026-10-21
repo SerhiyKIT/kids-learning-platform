@@ -43,7 +43,7 @@ public class TwoFactorSessionAuthenticationSuccessHandler extends SavedRequestAw
 		SessionAuthentication.markAuthenticated(request.getSession(), clock.instant());
 		boolean isAdmin = authentication.getAuthorities().stream().anyMatch(a -> ROLE_ADMIN.equals(a.getAuthority()));
 		if (isAdmin) {
-			userRepository.findByEmailAndDeletedAtIsNull(authentication.getName())
+			userRepository.findActiveByEmail(authentication.getName())
 					.ifPresent(user -> TwoFactorSession.init(request,
 							user.isTotpEnabled() ? TwoFactorStatus.PENDING_VERIFICATION : TwoFactorStatus.SETUP_REQUIRED));
 		}

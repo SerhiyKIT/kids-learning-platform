@@ -11,18 +11,16 @@ import com.jayway.jsonpath.JsonPath;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.http.MediaType;
 import org.springframework.mock.web.MockHttpSession;
 import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.test.web.servlet.ResultActions;
 import org.springframework.transaction.annotation.Transactional;
 import ua.kidlearn.lessons.LessonVersionRepository;
 import ua.kidlearn.scenario.ScenarioFixtures;
+import ua.kidlearn.support.WebIntegrationTest;
 import ua.kidlearn.twofa.AdminTwoFactorTestSupport;
 import ua.kidlearn.users.Role;
 import ua.kidlearn.users.User;
@@ -33,11 +31,8 @@ import ua.kidlearn.users.UserRepository;
  * business rules) before persisting, per docs/lesson-scenario.schema.json and
  * docs/Формат_подання_уроків_та_ШІ.md §4.2.
  */
-@SpringBootTest
-@AutoConfigureMockMvc
-@ActiveProfiles("dev")
 @Transactional
-class AdminLessonVersionValidationTest {
+class AdminLessonVersionValidationTest extends WebIntegrationTest {
 
 	private static final String PASSWORD = "supersecret1";
 

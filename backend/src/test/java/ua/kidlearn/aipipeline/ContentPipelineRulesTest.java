@@ -16,15 +16,9 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
-import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
 import org.springframework.mock.web.MockHttpSession;
 import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.test.context.ActiveProfiles;
-import org.springframework.test.context.TestPropertySource;
-import org.springframework.test.context.bean.override.mockito.MockitoSpyBean;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.transaction.annotation.Transactional;
@@ -32,6 +26,7 @@ import tools.jackson.databind.ObjectMapper;
 import ua.kidlearn.lessons.LessonService;
 import ua.kidlearn.lessons.LessonVersion;
 import ua.kidlearn.scenario.ScenarioFixtures;
+import ua.kidlearn.support.InMemoryAudioWebIntegrationTest;
 import ua.kidlearn.twofa.AdminTwoFactorTestSupport;
 import ua.kidlearn.users.Role;
 import ua.kidlearn.users.User;
@@ -42,13 +37,8 @@ import ua.kidlearn.users.UserRepository;
  * problems before any LLM call, and only moderated (approved/published) versions can be voiced.
  * In-memory audio storage, so no MinIO is needed.
  */
-@SpringBootTest
-@AutoConfigureMockMvc
-@ActiveProfiles("dev")
-@TestPropertySource(properties = "app.tts.storage=memory")
-@Import(InMemoryAudioStorageTestConfig.class)
 @Transactional
-class ContentPipelineRulesTest {
+class ContentPipelineRulesTest extends InMemoryAudioWebIntegrationTest {
 
 	private static final String PASSWORD = "supersecret1";
 
@@ -66,9 +56,6 @@ class ContentPipelineRulesTest {
 
 	@Autowired
 	private ObjectMapper objectMapper;
-
-	@MockitoSpyBean
-	private LlmProvider llmProvider;
 
 	private MockHttpSession loginAsNewAdmin() throws Exception {
 		String email = "admin-" + UUID.randomUUID() + "@example.test";

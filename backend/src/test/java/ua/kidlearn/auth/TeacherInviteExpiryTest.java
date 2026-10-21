@@ -9,18 +9,13 @@ import java.util.UUID;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
-import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
-import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.event.ApplicationEvents;
 import org.springframework.test.context.event.RecordApplicationEvents;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.ResultActions;
 import org.springframework.transaction.annotation.Transactional;
-import ua.kidlearn.ratelimit.MutableClockTestConfig;
-import ua.kidlearn.ratelimit.MutableTestClock;
+import ua.kidlearn.support.ClockedWebIntegrationTest;
 
 /**
  * Teacher invitation expiry, driven by the injected test Clock (no sleeping). The raw token is
@@ -30,13 +25,9 @@ import ua.kidlearn.ratelimit.MutableTestClock;
  * pool. Invites through AuthService directly: no admin login, so no system-clock TOTP that a
  * shifted test Clock would break. The shared Clock is shifted back in @AfterEach.
  */
-@SpringBootTest
-@AutoConfigureMockMvc
-@ActiveProfiles("dev")
-@Import(MutableClockTestConfig.class)
 @RecordApplicationEvents
 @Transactional
-class TeacherInviteExpiryTest {
+class TeacherInviteExpiryTest extends ClockedWebIntegrationTest {
 
 	private static final String TEACHER_PASSWORD = "teacher-chosen-pass-1";
 
@@ -45,9 +36,6 @@ class TeacherInviteExpiryTest {
 
 	@Autowired
 	private AuthService authService;
-
-	@Autowired
-	private MutableTestClock testClock;
 
 	@Autowired
 	private ApplicationEvents events;
