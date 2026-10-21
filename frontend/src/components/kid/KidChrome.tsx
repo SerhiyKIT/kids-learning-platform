@@ -2,21 +2,34 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useKidMode } from "./kid-mode-context";
+import { AccessoryMark, useKidTheme, WorldDecor } from "./KidTheme";
 
 /** Тепле тло дитячого режиму з двома м'якими колами. Займає весь екран. */
 export function KidStage({ children }: { children: React.ReactNode }) {
   return (
-    <div className="font-kid relative flex h-[100dvh] w-screen overflow-hidden bg-[radial-gradient(120%_90%_at_12%_20%,#fff3dd_0%,#ffe0b6_55%,#ffd39c_100%)]">
-      <span
-        aria-hidden="true"
-        className="absolute -bottom-45 -left-30 size-130 rounded-full bg-[#ffd08a] opacity-55"
-      />
-      <span
-        aria-hidden="true"
-        className="absolute -top-40 -right-35 size-115 rounded-full bg-[#ffe1a8] opacity-60"
-      />
+    <div className="font-kid relative flex h-[100dvh] w-screen overflow-hidden">
+      <StageBackdrop />
       {children}
     </div>
+  );
+}
+
+/**
+ * The stage's background, drawn only from theme tokens: the gradient, two soft circles and the
+ * current world's decor. Also used by the admin's theme preview.
+ */
+export function StageBackdrop() {
+  const { worldId } = useKidTheme();
+  return (
+    <>
+      <span
+        aria-hidden="true"
+        className="absolute inset-0 bg-[radial-gradient(120%_90%_at_12%_20%,var(--color-kid-bg-top)_0%,var(--color-kid-canvas)_55%,var(--color-kid-bg-bottom)_100%)]"
+      />
+      <span aria-hidden="true" className="bg-kid-glow absolute -bottom-45 -left-30 size-130 rounded-full opacity-55" />
+      <span aria-hidden="true" className="bg-kid-bg-top absolute -top-40 -right-35 size-115 rounded-full opacity-60" />
+      <WorldDecor worldId={worldId} />
+    </>
   );
 }
 
@@ -127,13 +140,15 @@ export function Mascot({
   className?: string;
 }) {
   const big = size === "lg";
+  const { guideAccessory } = useKidTheme();
   return (
     <div
       className={`relative motion-reduce:animate-none ${speaking ? "animate-[talk_0.45s_ease-in-out_infinite]" : "animate-[bob_4.2s_ease-in-out_infinite]"} ${className ?? (big ? "h-60 w-50" : "h-42 w-35")}`}
       role="img"
       aria-label="Маскот-провідник"
     >
-      <span className="absolute inset-0 rounded-[46%_46%_40%_40%] border-5 border-white bg-[repeating-linear-gradient(135deg,#b9e7dd_0_12px,#a9dfd4_12px_24px)] shadow-[0_16px_0_rgba(47,179,163,0.25)]" />
+      <span className="absolute inset-0 rounded-[46%_46%_40%_40%] border-5 border-white bg-[repeating-linear-gradient(135deg,var(--color-kid-guide-main)_0_12px,var(--color-kid-guide-accent)_12px_24px)] shadow-[0_16px_0_color-mix(in_srgb,var(--color-kid-teal)_25%,transparent)]" />
+      <AccessoryMark accessory={guideAccessory} />
     </div>
   );
 }
@@ -200,12 +215,12 @@ export function StepDots({ total, current }: { total: number; current: number })
         return (
           <span
             key={i}
-            className={`rounded-full border-4 border-white shadow-[0_4px_0_rgba(190,146,90,0.22)] ${
+            className={`rounded-full border-4 border-white shadow-[0_4px_0_var(--color-kid-card-shadow)] ${
               isCurrent
                 ? "bg-kid-sun size-[clamp(18px,5dvh,34px)] animate-[pulsedot_2.2s_ease-in-out_infinite] motion-reduce:animate-none"
                 : done
                   ? "bg-kid-teal size-[clamp(14px,4dvh,26px)]"
-                  : "size-[clamp(14px,4dvh,26px)] bg-[#f0dcb6]"
+                  : "bg-kid-pip size-[clamp(14px,4dvh,26px)]"
             }`}
           />
         );

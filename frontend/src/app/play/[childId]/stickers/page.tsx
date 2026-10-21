@@ -101,7 +101,7 @@ export default function StickerAlbumPage() {
               className={`flex size-[clamp(72px,24dvh,132px)] flex-none items-center justify-center rounded-[30%] border-[clamp(4px,1.2dvh,7px)] ${
                 row.completed
                   ? "bg-kid-sun border-white shadow-[0_10px_0_var(--color-kid-sun-shadow)]"
-                  : "border-[#e9dcc6] bg-[#e4d6bf]"
+                  : "border-kid-pip bg-kid-pip"
               }`}
             >
               <TopicIcon topic={row.topic} className={`size-[64%] ${row.completed ? "" : "opacity-40 grayscale"}`} />

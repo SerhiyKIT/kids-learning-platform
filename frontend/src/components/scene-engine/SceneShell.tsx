@@ -71,7 +71,7 @@ export function SceneShell({
         <div className="flex flex-none flex-col items-center gap-1 px-[clamp(8px,4vw,40px)] pt-[clamp(6px,2dvh,14px)]">
           {caption}
           {hint ? (
-            <p className="text-kid-sun-deep rounded-2xl border-2 border-white bg-[#fff0cd] px-3 py-1 text-center text-[clamp(13px,3.6dvh,20px)] font-semibold">
+            <p className="text-kid-sun-deep rounded-2xl border-2 border-white bg-kid-bg-top px-3 py-1 text-center text-[clamp(13px,3.6dvh,20px)] font-semibold">
               {hint.text}
             </p>
           ) : null}

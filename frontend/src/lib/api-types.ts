@@ -172,3 +172,10 @@ export interface ShellLine {
   text: string;
   audioUrl?: string;
 }
+
+/** GET /api/children/{id}/consents — every consent given for the child, revocations included. */
+export interface ConsentEntry {
+  type: "account" | "microphone" | "assistant_level2" | "style_personalization";
+  grantedAt: string;
+  revokedAt: string | null;
+}

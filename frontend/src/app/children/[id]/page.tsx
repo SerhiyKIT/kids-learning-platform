@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 import { apiFetch, ApiError } from "@/lib/api";
-import type { Child, Group, HistoryEntry, PlaySettingsRequest, PlayState } from "@/lib/api-types";
+import type { Child, ConsentEntry, Group, HistoryEntry, PlaySettingsRequest, PlayState } from "@/lib/api-types";
 import { AppHeader } from "@/components/ui/AppHeader";
 import { Avatar, tintFor } from "@/components/ui/Avatar";
 import { Button } from "@/components/ui/Button";
@@ -13,6 +13,7 @@ import { Pill } from "@/components/ui/Pill";
 import { Section, SectionHeader } from "@/components/ui/Card";
 import { DangerButton, QuietButton, SecondaryButton, SecondaryLink } from "@/components/ui/SecondaryButton";
 import { TextInput } from "@/components/ui/Field";
+import { COLOR_LABELS, COLOR_SPOTS, MOOD_LABELS, WORLD_LABELS, type StyleResponse } from "@/lib/theme-catalog";
 
 const STATUS: Record<Child["status"], { label: string; tone: "ok" | "waiting" }> = {
   pending_consent: { label: "Очікує згоди", tone: "waiting" },
@@ -56,6 +57,12 @@ export default function ChildPage() {
   const [savingLimit, setSavingLimit] = useState(false);
   const [waking, setWaking] = useState(false);
 
+  const [style, setStyle] = useState<StyleResponse | null>(null);
+  const [styleConsent, setStyleConsent] = useState<ConsentEntry | null>(null);
+  const [styleError, setStyleError] = useState<ApiError | null>(null);
+  const [styleSaving, setStyleSaving] = useState(false);
+  const [revokeOpen, setRevokeOpen] = useState(false);
+
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [confirmText, setConfirmText] = useState("");
   const [deleting, setDeleting] = useState(false);
@@ -97,12 +104,38 @@ export default function ChildPage() {
       .catch((err) => setPlayError(err instanceof ApiError ? err : new ApiError(0, "Несподівана помилка")));
   }, [id]);
 
+  const loadStyle = useCallback(() => {
+    Promise.all([apiFetch<StyleResponse>(`/children/${id}/style`), apiFetch<ConsentEntry[]>(`/children/${id}/consents`)])
+      .then(([styleData, consents]) => {
+        setStyle(styleData);
+        // The most recent style_personalization record: when it was given and, if so, revoked.
+        setStyleConsent(consents.filter((c) => c.type === "style_personalization").at(-1) ?? null);
+        setStyleError(null);
+      })
+      .catch((err) => setStyleError(err instanceof ApiError ? err : new ApiError(0, "Несподівана помилка")));
+  }, [id]);
+
   useEffect(() => {
     loadChild();
     loadGroups();
     loadHistory();
     loadPlayState();
-  }, [loadChild, loadGroups, loadHistory, loadPlayState]);
+    loadStyle();
+  }, [loadChild, loadGroups, loadHistory, loadPlayState, loadStyle]);
+
+  async function onStyleConsent(grant: boolean) {
+    setStyleSaving(true);
+    setStyleError(null);
+    try {
+      await apiFetch(`/children/${id}/consents/style_personalization`, { method: grant ? "PUT" : "DELETE" });
+      setRevokeOpen(false);
+      loadStyle();
+    } catch (err) {
+      setStyleError(err instanceof ApiError ? err : new ApiError(0, "Несподівана помилка"));
+    } finally {
+      setStyleSaving(false);
+    }
+  }
 
   async function onSetLimit(sessionLimitMinutes: PlaySettingsRequest["sessionLimitMinutes"]) {
     setSavingLimit(true);
@@ -405,6 +438,52 @@ export default function ChildPage() {
             </div>
           </Section>
 
+          {child.status === "active" ? (
+            <Section>
+              <SectionHeader
+                title="Оформлення"
+                description="Дитина може сама обрати улюблений колір, «світ» (космос, море, ліс…) і настрій — і дитячий режим перефарбується під її смак. Ми зберігаємо лише ці три вибори зі списку, без жодного тексту. Нові теми спершу перевіряє людина. Відкликання згоди одразу видаляє вибір дитини."
+              />
+              <div className="flex flex-col gap-4 px-6 pt-1 pb-6">
+                {!style && !styleError ? <p className="text-ink-muted text-sm">Завантаження…</p> : null}
+                {style ? (
+                  <label className="flex cursor-pointer items-start gap-3">
+                    <input
+                      type="checkbox"
+                      className="accent-brand mt-1 size-4.5 cursor-pointer"
+                      checked={style.consented}
+                      disabled={styleSaving}
+                      onChange={(e) => (e.target.checked ? void onStyleConsent(true) : setRevokeOpen(true))}
+                    />
+                    <span className="flex flex-col gap-0.5">
+                      <span className="text-[15px] font-medium">Дозволити дитині обирати оформлення</span>
+                      <span className="text-ink-soft text-[13px]">{consentHistoryText(styleConsent)}</span>
+                    </span>
+                  </label>
+                ) : null}
+                {style?.consented && style.answers ? (
+                  <div className="border-line-soft flex flex-wrap items-center gap-x-6 gap-y-3 rounded-lg border px-4 py-3">
+                    <span className="flex items-center gap-2 text-[15px]">
+                      <span
+                        aria-hidden="true"
+                        className="size-5 rounded-full border border-black/10"
+                        style={{ background: COLOR_SPOTS[style.answers.colorId] }}
+                      />
+                      {COLOR_LABELS[style.answers.colorId]}
+                    </span>
+                    <span className="text-[15px]">Світ: {WORLD_LABELS[style.answers.worldId]}</span>
+                    <span className="text-[15px]">Настрій: {MOOD_LABELS[style.answers.moodId]}</span>
+                    <Pill tone={style.pending ? "waiting" : "ok"}>{style.pending ? "Готується" : "Застосовано"}</Pill>
+                  </div>
+                ) : null}
+                {style?.consented && !style.answers ? (
+                  <p className="text-ink-muted text-sm">Дитина ще нічого не обрала — кнопка-пензлик на її полиці уроків.</p>
+                ) : null}
+                {styleError ? <p className="text-danger text-sm">{styleError.message}</p> : null}
+              </div>
+            </Section>
+          ) : null}
+
           <Section>
             <SectionHeader
               title="Історія уроків"
@@ -508,6 +587,27 @@ export default function ChildPage() {
         </div>
       </main>
 
+      {revokeOpen ? (
+        <Modal
+          title="Відкликати згоду на оформлення?"
+          onClose={() => setRevokeOpen(false)}
+          footer={
+            <>
+              <QuietButton type="button" className="h-11 px-4 text-[15px]" onClick={() => setRevokeOpen(false)}>
+                Скасувати
+              </QuietButton>
+              <DangerButton type="button" onClick={() => void onStyleConsent(false)} disabled={styleSaving}>
+                {styleSaving ? "Відкликаємо…" : "Відкликати"}
+              </DangerButton>
+            </>
+          }
+        >
+          <p className="text-ink-soft text-sm leading-relaxed text-pretty">
+            Вибір дитини буде видалено, а дитячий режим повернеться до стандартного оформлення.
+          </p>
+        </Modal>
+      ) : null}
+
       {confirmOpen ? (
         <Modal
           title="Підтвердьте видалення"
@@ -555,6 +655,14 @@ export default function ChildPage() {
       ) : null}
     </>
   );
+}
+
+function consentHistoryText(consent: ConsentEntry | null): string {
+  if (!consent) return "Згоду ще не надавали.";
+  const date = (iso: string) => new Date(iso).toLocaleString("uk-UA", { dateStyle: "medium", timeStyle: "short" });
+  return consent.revokedAt
+    ? `Згоду надано ${date(consent.grantedAt)}, відкликано ${date(consent.revokedAt)}.`
+    : `Згоду надано ${date(consent.grantedAt)}.`;
 }
 
 function joinErrorText(error: ApiError): string {
