@@ -44,8 +44,16 @@ public class VoicingService {
 			throw new VoicingNotAllowedException(version.getStatus());
 		}
 
-		Set<String> texts = VoiceLines.collectTexts(objectMapper.readTree(version.getScenario()));
+		return voiceTexts(VoiceLines.collectTexts(objectMapper.readTree(version.getScenario())));
+	}
 
+	/** Voices the guide's fixed child-mode lines (see KidShellLines); already voiced ones are skipped. */
+	@Transactional
+	public VoicingResult voiceShellLines() {
+		return voiceTexts(KidShellLines.texts());
+	}
+
+	private VoicingResult voiceTexts(Set<String> texts) {
 		String voiceId = ttsProperties.voiceId();
 		int synthesized = 0;
 		int cached = 0;

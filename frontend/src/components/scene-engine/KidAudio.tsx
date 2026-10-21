@@ -26,6 +26,11 @@ export interface KidAudioControls {
    * ended, false if it couldn't start or was interrupted by another line. For read-aloud sequences.
    */
   playToEnd: (url: string) => Promise<boolean>;
+  /**
+   * While suspended (e.g. the adult's password screen is open) the current line stops and nothing
+   * plays — idle hints included. Lifting it doesn't resume anything; the child taps «послухати».
+   */
+  suspend: (suspended: boolean) => void;
 }
 
 /** What's audible right now, for animations and the "tap to listen" nudge. */
@@ -42,6 +47,7 @@ const NO_AUDIO: KidAudioControls = {
   replay: () => {},
   preload: () => {},
   playToEnd: () => Promise.resolve(false),
+  suspend: () => {},
 };
 
 const ControlsContext = createContext<KidAudioControls>(NO_AUDIO);
@@ -73,6 +79,7 @@ export function KidAudioProvider({ children }: { children: ReactNode }) {
   // The gesture-time unlock play(); switching src before it settles would abort it (AbortError),
   // and iOS only counts the element as unlocked once that in-gesture play() has gone through.
   const unlockPending = useRef<Promise<void> | null>(null);
+  const suspended = useRef(false);
   const [speakingUrl, setSpeakingUrl] = useState<string | null>(null);
   const [blocked, setBlocked] = useState(false);
 
@@ -110,6 +117,7 @@ export function KidAudioProvider({ children }: { children: ReactNode }) {
 
   const play = useCallback(
     async (url: string, options?: { restart?: boolean }): Promise<boolean> => {
+      if (suspended.current) return false;
       lastRequested.current = url;
       const audio = element();
       if (currentUrl.current === url && !audio.paused && !options?.restart) {
@@ -118,7 +126,8 @@ export function KidAudioProvider({ children }: { children: ReactNode }) {
       try {
         const src = await load(url);
         if (unlockPending.current) await unlockPending.current;
-        if (lastRequested.current !== url) return false; // A newer line took over meanwhile.
+        // A newer line took over meanwhile, or the adult's screen opened.
+        if (lastRequested.current !== url || suspended.current) return false;
         if (currentUrl.current !== url || audio.src !== src) {
           audio.src = src;
           currentUrl.current = url;
@@ -189,6 +198,11 @@ export function KidAudioProvider({ children }: { children: ReactNode }) {
     [play],
   );
 
+  const suspend = useCallback((on: boolean) => {
+    suspended.current = on;
+    if (on) elementRef.current?.pause();
+  }, []);
+
   const preload = useCallback(
     (urls: string[]) => {
       for (const url of urls) load(url).catch(() => {});
@@ -209,8 +223,8 @@ export function KidAudioProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const controls = useMemo(
-    () => ({ play, unlock, replay, preload, playToEnd }),
-    [play, unlock, replay, preload, playToEnd],
+    () => ({ play, unlock, replay, preload, playToEnd, suspend }),
+    [play, unlock, replay, preload, playToEnd, suspend],
   );
   const state = useMemo(() => ({ speakingUrl, blocked }), [speakingUrl, blocked]);
 

@@ -8,4 +8,6 @@ public interface LessonAttemptRepository extends JpaRepository<LessonAttempt, UU
 
 	List<LessonAttempt> findByChildIdOrderByStartedAtDesc(UUID childId);
 
+	List<LessonAttempt> findByChildIdAndResultOrderByCompletedAtAsc(UUID childId, String result);
+
 }

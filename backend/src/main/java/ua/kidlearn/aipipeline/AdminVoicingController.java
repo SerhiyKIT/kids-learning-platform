@@ -50,6 +50,18 @@ public class AdminVoicingController {
 		return result;
 	}
 
+	/** Same auditing rule as a lesson version's voicing. */
+	@PostMapping("/kid-shell-lines/voice")
+	public VoicingResult voiceShellLines(@AuthenticationPrincipal AppUserPrincipal principal,
+			HttpServletRequest httpRequest) {
+		try {
+			return voicingService.voiceShellLines();
+		} finally {
+			auditService.record(principal.getId(), principal.getRole(), AuditAction.VOICE_SHELL_LINES,
+					AuditTargetType.KID_SHELL_LINES, null, clientIpResolver.resolve(httpRequest));
+		}
+	}
+
 	private void recordVoicing(UUID versionId, AppUserPrincipal principal, HttpServletRequest httpRequest) {
 		auditService.record(principal.getId(), principal.getRole(), AuditAction.VOICE_VERSION,
 				AuditTargetType.LESSON_VERSION, versionId, clientIpResolver.resolve(httpRequest));

@@ -3,10 +3,13 @@ package ua.kidlearn.aipipeline;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestBuilders.formLogin;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import com.jayway.jsonpath.JsonPath;
+import java.util.List;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -242,6 +245,39 @@ class VoicingControllerTest {
 
 		mockMvc.perform(post("/api/admin/lesson-versions/" + versionId + "/voice").with(csrf())
 						.session(teacherSession))
+				.andExpect(status().isForbidden());
+	}
+
+	@Test
+	void adminVoicesTheChildModeShellLinesOnceAndParentsGetThemWithAudioUrls() throws Exception {
+		String adminEmail = uniqueEmail("admin");
+		registerAdmin(adminEmail);
+		MockHttpSession adminSession = login(adminEmail);
+		AdminTwoFactorTestSupport.completeSetup(mockMvc, adminSession);
+
+		String parentEmail = uniqueEmail("parent");
+		userRepository.save(new User(parentEmail, passwordEncoder.encode(PASSWORD), Role.PARENT, "Parent", "uk"));
+		MockHttpSession parentSession = login(parentEmail);
+		mockMvc.perform(get("/api/kid/shell-lines").session(parentSession))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.length()").value(KidShellLines.LINES.size()))
+				.andExpect(jsonPath("$[?(@.key == 'sleep_tired')].text").value("Ми сьогодні молодці! Пограймося згодом."));
+
+		mockMvc.perform(post("/api/admin/kid-shell-lines/voice").with(csrf()).session(adminSession))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.linesTotal").value(KidShellLines.texts().size()));
+		mockMvc.perform(post("/api/admin/kid-shell-lines/voice").with(csrf()).session(adminSession))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.synthesized").value(0))
+				.andExpect(jsonPath("$.cached").value(KidShellLines.texts().size()));
+
+		MvcResult lines = mockMvc.perform(get("/api/kid/shell-lines").session(parentSession))
+				.andExpect(status().isOk())
+				.andReturn();
+		List<String> audioUrls = JsonPath.read(lines.getResponse().getContentAsString(), "$[*].audioUrl");
+		assertThat(audioUrls).hasSize(KidShellLines.LINES.size()).allMatch(url -> url.matches("/api/audio/[0-9a-f]{64}"));
+
+		mockMvc.perform(post("/api/admin/kid-shell-lines/voice").with(csrf()).session(parentSession))
 				.andExpect(status().isForbidden());
 	}
 

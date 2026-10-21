@@ -3,7 +3,10 @@ package ua.kidlearn.attempts;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import org.springframework.http.HttpStatus;
@@ -25,6 +28,8 @@ import ua.kidlearn.lessons.LessonAssignmentRepository;
 import ua.kidlearn.lessons.LessonRepository;
 import ua.kidlearn.lessons.LessonVersion;
 import ua.kidlearn.lessons.LessonVersionRepository;
+import ua.kidlearn.kidplay.PlayStateResponse;
+import ua.kidlearn.kidplay.PlayStateService;
 import ua.kidlearn.lessons.Module;
 import ua.kidlearn.lessons.ModuleRepository;
 
@@ -46,13 +51,14 @@ public class AttemptService {
 	private final GroupMemberRepository groupMemberRepository;
 	private final ObjectMapper objectMapper;
 	private final ScenarioAudioEnricher scenarioAudioEnricher;
+	private final PlayStateService playStateService;
 
 	public AttemptService(LessonAttemptRepository lessonAttemptRepository, SceneAnswerRepository sceneAnswerRepository,
 			LessonAssignmentRepository lessonAssignmentRepository, LessonVersionRepository lessonVersionRepository,
 			LessonRepository lessonRepository, ModuleRepository moduleRepository,
 			ParentChildRepository parentChildRepository, ChildRepository childRepository,
 			GroupRepository groupRepository, GroupMemberRepository groupMemberRepository, ObjectMapper objectMapper,
-			ScenarioAudioEnricher scenarioAudioEnricher) {
+			ScenarioAudioEnricher scenarioAudioEnricher, PlayStateService playStateService) {
 		this.lessonAttemptRepository = lessonAttemptRepository;
 		this.sceneAnswerRepository = sceneAnswerRepository;
 		this.lessonAssignmentRepository = lessonAssignmentRepository;
@@ -65,6 +71,7 @@ public class AttemptService {
 		this.groupMemberRepository = groupMemberRepository;
 		this.objectMapper = objectMapper;
 		this.scenarioAudioEnricher = scenarioAudioEnricher;
+		this.playStateService = playStateService;
 	}
 
 	@Transactional(readOnly = true)
@@ -108,6 +115,8 @@ public class AttemptService {
 				.filter(a -> a.getLessonVersionId().equals(lessonVersionId))
 				.findFirst()
 				.orElseThrow(this::notFound);
+		// After the ownership/assignment checks, so a stranger still gets 404, not CHILD_RESTING.
+		playStateService.onLessonStart(childId);
 		return lessonAttemptRepository.save(
 				new LessonAttempt(childId, assignment.getId(), lessonVersionId, Instant.now()));
 	}
@@ -119,14 +128,18 @@ public class AttemptService {
 				request.chosenOption(), request.isCorrect(), request.hintsUsed(), Instant.now()));
 	}
 
+	/**
+	 * Ends the attempt and, with it, applies the play-session limit — the only point where it can
+	 * send the child to rest, so a lesson is never cut short. Returns the resulting play state.
+	 */
 	@Transactional
-	public LessonAttempt complete(UUID parentId, UUID attemptId, String result, BigDecimal score) {
+	public PlayStateResponse complete(UUID parentId, UUID attemptId, String result, BigDecimal score) {
 		LessonAttempt attempt = requireOwnedAttempt(parentId, attemptId);
 		if (!VALID_RESULTS.contains(result)) {
 			throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid result: " + result);
 		}
 		attempt.complete(result, score);
-		return attempt;
+		return playStateService.onLessonEnd(attempt.getChildId());
 	}
 
 	@Transactional(readOnly = true)
@@ -143,6 +156,52 @@ public class AttemptService {
 					attempt.getCompletedAt(), attempt.getResult(), attempt.getScore(), answers));
 		}
 		return entries;
+	}
+
+	/**
+	 * One sticker per lesson the child has completed at least once, plus "topic stickers". A topic
+	 * counts as completed when every lesson of that topic the child can play — published and
+	 * assigned to them, directly or through a group (the same set the shelf shows) — has a sticker.
+	 * A sticker, once earned, stays even if the assignment is later removed.
+	 */
+	@Transactional(readOnly = true)
+	public StickersResponse stickers(UUID parentId, UUID childId) {
+		requireChildOwnership(parentId, childId);
+
+		Map<UUID, StickersResponse.Sticker> stickersByLesson = new LinkedHashMap<>();
+		for (LessonAttempt attempt : lessonAttemptRepository
+				.findByChildIdAndResultOrderByCompletedAtAsc(childId, LessonAttempt.RESULT_COMPLETED)) {
+			LessonVersion version = lessonVersionRepository.findById(attempt.getLessonVersionId()).orElseThrow();
+			if (stickersByLesson.containsKey(version.getLessonId())) {
+				continue;
+			}
+			Lesson lesson = lessonRepository.findById(version.getLessonId()).orElseThrow();
+			JsonNode scenario = objectMapper.readTree(version.getScenario());
+			JsonNode bridge = scenarioAudioEnricher.withAudioUrls(scenario.path("reality_bridge"));
+			stickersByLesson.put(lesson.getId(), new StickersResponse.Sticker(lesson.getId(), version.getId(),
+					lesson.getTitle(), scenario.path("topic").asText(), attempt.getCompletedAt(),
+					new StickersResponse.Bridge(bridge.path("key").asText(), bridge.path("text").asText(),
+							bridge.hasNonNull("audioUrl") ? bridge.get("audioUrl").asText() : null)));
+		}
+
+		Map<UUID, String> playableTopicByLesson = new LinkedHashMap<>();
+		for (LessonAssignment assignment : resolveAssignmentsForChild(childId)) {
+			LessonVersion version = lessonVersionRepository.findById(assignment.getLessonVersionId()).orElseThrow();
+			if (version.isPublished()) {
+				playableTopicByLesson.putIfAbsent(version.getLessonId(),
+						objectMapper.readTree(version.getScenario()).path("topic").asText());
+			}
+		}
+
+		List<StickersResponse.LockedSticker> locked = new ArrayList<>();
+		Set<String> topics = new LinkedHashSet<>(playableTopicByLesson.values());
+		playableTopicByLesson.forEach((lessonId, topic) -> {
+			if (!stickersByLesson.containsKey(lessonId)) {
+				locked.add(new StickersResponse.LockedSticker(lessonId, topic));
+				topics.remove(topic);
+			}
+		});
+		return new StickersResponse(List.copyOf(stickersByLesson.values()), List.copyOf(topics), locked);
 	}
 
 	@Transactional(readOnly = true)

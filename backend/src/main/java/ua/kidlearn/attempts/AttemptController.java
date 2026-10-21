@@ -18,6 +18,7 @@ import ua.kidlearn.audit.AuditAction;
 import ua.kidlearn.audit.AuditService;
 import ua.kidlearn.audit.AuditTargetType;
 import ua.kidlearn.auth.AppUserPrincipal;
+import ua.kidlearn.kidplay.PlayStateResponse;
 import ua.kidlearn.ratelimit.ClientIpResolver;
 
 @RestController
@@ -63,10 +64,16 @@ public class AttemptController {
 		return new AnswerResponse(answer.getId());
 	}
 
+	/** Answers with the play state after this lesson, so child mode knows whether it's time to rest. */
 	@PostMapping("/api/attempts/{attemptId}/complete")
-	public void complete(@AuthenticationPrincipal AppUserPrincipal principal, @PathVariable UUID attemptId,
-			@Valid @RequestBody CompleteAttemptRequest request) {
-		attemptService.complete(principal.getId(), attemptId, request.result(), request.score());
+	public PlayStateResponse complete(@AuthenticationPrincipal AppUserPrincipal principal,
+			@PathVariable UUID attemptId, @Valid @RequestBody CompleteAttemptRequest request) {
+		return attemptService.complete(principal.getId(), attemptId, request.result(), request.score());
+	}
+
+	@GetMapping("/api/children/{childId}/stickers")
+	public StickersResponse stickers(@AuthenticationPrincipal AppUserPrincipal principal, @PathVariable UUID childId) {
+		return attemptService.stickers(principal.getId(), childId);
 	}
 
 	@GetMapping("/api/children/{childId}/history")

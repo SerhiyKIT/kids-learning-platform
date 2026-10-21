@@ -51,6 +51,11 @@ app:
     # documented dev-only fallback, application-prod.yml requires TWOFA_ENC_KEY with no default
     # (the app fails to start rather than silently running with no key).
     enc-key: ${TWOFA_ENC_KEY:}
+  kid:
+    # Child-mode play session (docs/UX_гайд_дитячого_режиму.md §6): the per-child limit itself is
+    # a parent setting; these are the rest after reaching it, and the pause that starts a new session.
+    rest-duration: ${KIDLEARN_KID_REST_DURATION:60m}
+    session-gap: ${KIDLEARN_KID_SESSION_GAP:30m}
   ratelimit:
     # Safe in both profiles: nginx sits in front in prod too, and dev has no proxy so the
     # header is simply absent (falls back to the remote address). MUST only be true when every

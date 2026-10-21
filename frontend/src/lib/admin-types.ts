@@ -151,6 +151,7 @@ export const AUDIT_ACTION_LABELS: Record<string, string> = {
   REJECT_VERSION: "Відхилення версії",
   PUBLISH_VERSION: "Публікація версії",
   VOICE_VERSION: "Озвучення версії",
+  VOICE_SHELL_LINES: "Озвучення реплік дитячого режиму",
   INVITE_TEACHER: "Запрошення вчителя",
   RESEND_TEACHER_INVITE: "Повторне запрошення вчителя",
   DEACTIVATE_TEACHER: "Деактивація вчителя",
@@ -162,6 +163,7 @@ export const AUDIT_TARGET_LABELS: Record<string, string> = {
   lesson: "Урок",
   lesson_version: "Версія уроку",
   user: "Користувач",
+  kid_shell_lines: "Репліки дитячого режиму",
 };
 
 export const ROLE_LABELS: Record<string, string> = {
