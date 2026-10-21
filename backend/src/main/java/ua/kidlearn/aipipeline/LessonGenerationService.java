@@ -1,6 +1,8 @@
 package ua.kidlearn.aipipeline;
 
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -12,6 +14,7 @@ import ua.kidlearn.lessons.LessonService;
 import ua.kidlearn.lessons.LessonVersion;
 import ua.kidlearn.scenario.ScenarioProblem;
 import ua.kidlearn.scenario.ScenarioValidator;
+import ua.kidlearn.scenario.ScenarioVocabulary;
 
 /**
  * Generate -> validate -> bounded retry -> persist, per docs/Промпт_генерації_уроків.md §3 and
@@ -39,6 +42,11 @@ public class LessonGenerationService {
 
 	@Transactional
 	public GenerationOutcome generate(UUID lessonId, GenerationRequest request) {
+		// Before anything else: a malformed request must never cost an LLM call.
+		List<ScenarioProblem> requestProblems = validate(request);
+		if (!requestProblems.isEmpty()) {
+			throw new InvalidGenerationRequestException(requestProblems);
+		}
 		lessonRepository.findById(lessonId)
 				.orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Lesson not found"));
 
@@ -61,6 +69,37 @@ public class LessonGenerationService {
 		LessonVersion version = lessonService.createGeneratedVersion(lessonId, generated.scenario(), generated.modelId(),
 				status);
 		return new GenerationOutcome(version.getId(), status, attempts, problems);
+	}
+
+	/** Checks the request against the scenario schema's own topic / age_band / pattern_ids rules. */
+	List<ScenarioProblem> validate(GenerationRequest request) {
+		ScenarioVocabulary vocabulary = scenarioValidator.vocabulary();
+		List<ScenarioProblem> problems = new ArrayList<>();
+		if (request.topic() == null || !vocabulary.topics().contains(request.topic())) {
+			problems.add(new ScenarioProblem("topic", "Має бути одним із " + sorted(vocabulary.topics())));
+		}
+		if (request.ageBand() == null || !vocabulary.ageBands().contains(request.ageBand())) {
+			problems.add(new ScenarioProblem("ageBand", "Має бути одним із " + sorted(vocabulary.ageBands())));
+		}
+		List<String> patternIds = request.patternIds();
+		if (patternIds == null || patternIds.size() < vocabulary.minPatternIds()
+				|| patternIds.size() > vocabulary.maxPatternIds()) {
+			problems.add(new ScenarioProblem("patternIds", "Потрібно від " + vocabulary.minPatternIds() + " до "
+					+ vocabulary.maxPatternIds() + " патернів"));
+		} else {
+			for (int i = 0; i < patternIds.size(); i++) {
+				String id = patternIds.get(i);
+				if (id == null || !vocabulary.patternId().matcher(id).matches()) {
+					problems.add(new ScenarioProblem("patternIds/" + i,
+							"Невірний id патерна (очікується " + vocabulary.patternId().pattern() + ")"));
+				}
+			}
+		}
+		return problems;
+	}
+
+	private static List<String> sorted(Set<String> values) {
+		return values.stream().sorted().toList();
 	}
 
 }

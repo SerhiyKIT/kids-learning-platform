@@ -1,5 +1,6 @@
 package ua.kidlearn.lessons;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -10,5 +11,7 @@ public interface LessonVersionRepository extends JpaRepository<LessonVersion, UU
 	Optional<LessonVersion> findFirstByLessonIdOrderByVersionNoDesc(UUID lessonId);
 
 	List<LessonVersion> findByStatusOrderByCreatedAtAsc(String status);
+
+	List<LessonVersion> findByLessonIdIn(Collection<UUID> lessonIds);
 
 }

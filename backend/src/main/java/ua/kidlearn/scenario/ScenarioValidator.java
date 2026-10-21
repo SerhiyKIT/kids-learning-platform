@@ -34,6 +34,7 @@ public class ScenarioValidator {
 	private static final int TIER_B_MIN_SCENES = 5;
 
 	private final Schema schema;
+	private final ScenarioVocabulary vocabulary;
 
 	public ScenarioValidator(ObjectMapper objectMapper) {
 		try (InputStream in = getClass().getClassLoader().getResourceAsStream(SCHEMA_CLASSPATH_LOCATION)) {
@@ -48,9 +49,15 @@ public class ScenarioValidator {
 				schemaNode = objectNode.without("$id");
 			}
 			this.schema = SchemaRegistry.withDefaultDialect(SpecificationVersion.DRAFT_7).getSchema(schemaNode);
+			this.vocabulary = ScenarioVocabulary.fromSchema(schemaNode);
 		} catch (IOException e) {
 			throw new UncheckedIOException(e);
 		}
+	}
+
+	/** topic / age_band / pattern_ids vocabulary from the same schema this validator enforces. */
+	public ScenarioVocabulary vocabulary() {
+		return vocabulary;
 	}
 
 	/** Validates using the tier word limit implied by the scenario's own scene count (see the schema doc). */

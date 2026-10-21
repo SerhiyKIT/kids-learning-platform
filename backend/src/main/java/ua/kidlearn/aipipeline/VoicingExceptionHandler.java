@@ -16,4 +16,10 @@ class VoicingExceptionHandler {
 		return Map.of("code", "TTS_" + e.reason().name());
 	}
 
+	@ExceptionHandler(VoicingNotAllowedException.class)
+	@ResponseStatus(HttpStatus.CONFLICT)
+	Map<String, String> handleVoicingNotAllowed() {
+		return Map.of("code", "VOICING_REQUIRES_APPROVED");
+	}
+
 }

@@ -28,6 +28,19 @@ export function twoFactorRedirect(err: unknown): string | null {
   return null;
 }
 
+/**
+ * Where an admin page should send the user after `err`, or null to show the error in place:
+ * the 2FA gate first, then 401 (session gone) → /login, then a plain 403 (not an admin) →
+ * /dashboard.
+ */
+export function adminRedirect(err: unknown): string | null {
+  const twoFactorTarget = twoFactorRedirect(err);
+  if (twoFactorTarget) return twoFactorTarget;
+  if (err instanceof ApiError && err.status === 401) return "/login";
+  if (err instanceof ApiError && err.status === 403) return "/dashboard";
+  return null;
+}
+
 /** User-facing text for a failed POST /admin/2fa/enable or /admin/2fa/verify. */
 export function codeErrorText(err: unknown): string {
   if (err instanceof ApiError && err.status === 400) return "Невірний код. Перевірте його та спробуйте ще раз.";

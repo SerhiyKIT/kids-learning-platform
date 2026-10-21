@@ -20,6 +20,7 @@ import ua.kidlearn.audit.AuditAction;
 import ua.kidlearn.audit.AuditService;
 import ua.kidlearn.audit.AuditTargetType;
 import ua.kidlearn.auth.AppUserPrincipal;
+import ua.kidlearn.lessons.AdminLessonEntry;
 import ua.kidlearn.lessons.CreateLessonRequest;
 import ua.kidlearn.lessons.CreateLessonVersionRequest;
 import ua.kidlearn.lessons.Lesson;
@@ -53,6 +54,11 @@ public class AdminLessonController {
 		this.objectMapper = objectMapper;
 		this.auditService = auditService;
 		this.clientIpResolver = clientIpResolver;
+	}
+
+	@GetMapping("/lessons")
+	public List<AdminLessonEntry> listLessons() {
+		return lessonService.listAllLessons();
 	}
 
 	@PostMapping("/lessons")

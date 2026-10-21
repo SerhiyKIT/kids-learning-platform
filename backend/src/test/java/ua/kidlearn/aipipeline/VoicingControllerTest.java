@@ -21,6 +21,9 @@ import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.transaction.annotation.Transactional;
+import tools.jackson.databind.ObjectMapper;
+import ua.kidlearn.lessons.LessonService;
+import ua.kidlearn.lessons.LessonVersion;
 import ua.kidlearn.twofa.AdminTwoFactorTestSupport;
 import ua.kidlearn.users.Role;
 import ua.kidlearn.users.User;
@@ -50,6 +53,12 @@ class VoicingControllerTest {
 	@Autowired
 	private PasswordEncoder passwordEncoder;
 
+	@Autowired
+	private LessonService lessonService;
+
+	@Autowired
+	private ObjectMapper objectMapper;
+
 	private static String uniqueEmail(String prefix) {
 		return prefix + "-" + UUID.randomUUID() + "@example.test";
 	}
@@ -78,13 +87,13 @@ class VoicingControllerTest {
 				.andReturn();
 		String lessonId = JsonPath.read(lessonResult.getResponse().getContentAsString(), "$.id");
 
-		MvcResult versionResult = mockMvc.perform(post("/api/admin/lessons/" + lessonId + "/versions").with(csrf())
-						.session(adminSession)
-						.contentType(MediaType.APPLICATION_JSON)
-						.content("{\"scenario\":%s,\"generatedBy\":\"human\"}".formatted(scenarioJson)))
-				.andExpect(status().isCreated())
-				.andReturn();
-		return UUID.fromString(JsonPath.read(versionResult.getResponse().getContentAsString(), "$.id"));
+		// Voicing only accepts moderated content, so this goes auto_validated -> approve (via the
+		// real endpoint), the same path an AI-generated version takes.
+		UUID versionId = lessonService.createGeneratedVersion(UUID.fromString(lessonId),
+				objectMapper.readTree(scenarioJson), "test-fixture", LessonVersion.STATUS_AUTO_VALIDATED).getId();
+		mockMvc.perform(post("/api/admin/lesson-versions/" + versionId + "/approve").with(csrf()).session(adminSession))
+				.andExpect(status().isOk());
+		return versionId;
 	}
 
 	private VoicingResult voice(MockHttpSession adminSession, UUID versionId) throws Exception {

@@ -34,8 +34,9 @@ public class AuditService {
 	}
 
 	@Transactional(readOnly = true)
-	public List<AuditEvent> list(String targetType, UUID targetId, UUID actorId, int limit, int offset) {
-		return auditLogRepository.findFiltered(targetType, targetId, actorId, limit, offset);
+	public List<AuditEvent> list(String action, String targetType, UUID targetId, UUID actorId, int limit,
+			int offset) {
+		return auditLogRepository.findFiltered(action, targetType, targetId, actorId, limit, offset);
 	}
 
 }
