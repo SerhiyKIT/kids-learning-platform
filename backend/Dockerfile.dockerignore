@@ -1,0 +1,10 @@
+# Context is the repository root (see backend/Dockerfile): only backend/ and the two docs files.
+*
+!backend/
+!docs/lesson-scenario.schema.json
+!docs/Промпт_генерації_уроків.md
+backend/target
+backend/.idea
+backend/*.iml
+**/.env*
+**/*.log

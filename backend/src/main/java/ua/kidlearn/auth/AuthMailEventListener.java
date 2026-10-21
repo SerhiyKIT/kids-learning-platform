@@ -17,6 +17,7 @@ class AuthMailEventListener {
 
 	private static final Logger log = LoggerFactory.getLogger(AuthMailEventListener.class);
 
+	// Failures are logged by user id, never by email address (no personal data in logs).
 	private final AuthMailSender authMailSender;
 
 	AuthMailEventListener(AuthMailSender authMailSender) {
@@ -29,7 +30,7 @@ class AuthMailEventListener {
 		try {
 			authMailSender.sendVerification(event.user(), event.rawToken());
 		} catch (Exception e) {
-			log.error("Failed to send verification email to {}", event.user().getEmail(), e);
+			log.error("Failed to send verification email to user {}", event.user().getId(), e);
 		}
 	}
 
@@ -39,7 +40,7 @@ class AuthMailEventListener {
 		try {
 			authMailSender.sendPasswordReset(event.user(), event.rawToken());
 		} catch (Exception e) {
-			log.error("Failed to send password reset email to {}", event.user().getEmail(), e);
+			log.error("Failed to send password reset email to user {}", event.user().getId(), e);
 		}
 	}
 
@@ -49,7 +50,7 @@ class AuthMailEventListener {
 		try {
 			authMailSender.sendTeacherInvite(event.user(), event.rawToken());
 		} catch (Exception e) {
-			log.error("Failed to send teacher invite email to {}", event.user().getEmail(), e);
+			log.error("Failed to send teacher invite email to user {}", event.user().getId(), e);
 		}
 	}
 

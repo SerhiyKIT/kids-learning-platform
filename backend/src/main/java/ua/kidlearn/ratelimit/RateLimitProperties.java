@@ -9,9 +9,9 @@ import java.time.Duration;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
 /**
- * @param trustForwardedHeader whether to trust X-Forwarded-For for the client IP. MUST only be
- * true behind our own reverse proxy (nginx in prod) — otherwise a client can spoof the header and
- * evade per-IP limits entirely.
+ * @param trustForwardedHeader whether to take the client IP from the last X-Forwarded-For entry
+ * (see ClientIpResolver). MUST only be true behind our own reverse proxy (nginx in prod), which
+ * sets that header itself — otherwise a client can spoof it and evade per-IP limits.
  */
 @ConfigurationProperties(prefix = "app.ratelimit")
 public record RateLimitProperties(boolean trustForwardedHeader, Limit loginPerAccount, Limit loginPerIp,
