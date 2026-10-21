@@ -4,12 +4,14 @@ import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore, type ReactNode } from "react";
 import { apiFetch, ApiError } from "@/lib/api";
 import type { ShellLine } from "@/lib/api-types";
+import type { StyleResponse } from "@/lib/theme-catalog";
 import { useKidAudio } from "@/components/scene-engine/KidAudio";
 import { Button } from "@/components/ui/Button";
 import { PasswordInput } from "@/components/ui/Field";
 import { QuietButton } from "@/components/ui/SecondaryButton";
 import { ExitButton, KidStage, ListenButton, Mascot } from "./KidChrome";
 import { KidModeContext, type KidMode, type ShellLineKey } from "./kid-mode-context";
+import { KidThemeScope } from "./KidTheme";
 
 /**
  * The child-mode shell around the shelf, the album and every lesson (one per child, kept across
@@ -17,7 +19,8 @@ import { KidModeContext, type KidMode, type ShellLineKey } from "./kid-mode-cont
  * - «Почнімо!» first: the tap that unlocks sound and tries fullscreen + a landscape lock;
  * - a full-screen "turn the device" picture (voiced once) whenever the device is in portrait;
  * - the protected exit: the held ExitButton opens the adult's password screen, with child-mode
- *   sound suspended while it's open.
+ *   sound suspended while it's open;
+ * - the child's approved theme (palette, world decor, guide accessory) over all of it.
  * Must sit inside a KidAudioProvider.
  */
 export function KidModeProvider({ childId, children }: { childId: string; children: ReactNode }) {
@@ -26,6 +29,8 @@ export function KidModeProvider({ childId, children }: { childId: string; childr
   const [started, setStarted] = useState(false);
   const [lines, setLines] = useState<Map<string, ShellLine>>(new Map());
   const [exitOpen, setExitOpen] = useState(false);
+  const [style, setStyle] = useState<StyleResponse | null>(null);
+  const [styleReady, setStyleReady] = useState(false);
   const portrait = usePortrait();
   const turnVoiced = useRef(false);
 
@@ -38,6 +43,14 @@ export function KidModeProvider({ childId, children }: { childId: string; childr
       // Without the lines the guide is simply quiet around lessons — never an error for the child.
       .catch(() => {});
   }, [preload]);
+
+  useEffect(() => {
+    apiFetch<StyleResponse>(`/children/${childId}/style`)
+      .then(setStyle)
+      // No style → the default theme from globals.css; never an error for the child.
+      .catch(() => {})
+      .finally(() => setStyleReady(true));
+  }, [childId]);
 
   const line = useCallback((key: ShellLineKey) => lines.get(key), [lines]);
 
@@ -71,12 +84,17 @@ export function KidModeProvider({ childId, children }: { childId: string; childr
     setStarted(true);
   }
 
-  const value = useMemo<KidMode>(() => ({ childId, line, requestExit }), [childId, line, requestExit]);
+  const value = useMemo<KidMode>(
+    () => ({ childId, line, requestExit, style, styleReady, setStyle }),
+    [childId, line, requestExit, style, styleReady],
+  );
 
   return (
     <KidModeContext.Provider value={value}>
-      {started ? children : <StartScreen onStart={start} />}
-      {portrait ? <TurnDeviceOverlay /> : null}
+      <KidThemeScope theme={style?.theme ?? null}>
+        {started ? children : <StartScreen onStart={start} />}
+        {portrait ? <TurnDeviceOverlay /> : null}
+      </KidThemeScope>
       {exitOpen ? (
         <ExitPasswordDialog onCancel={cancelExit} onExited={exited} onSignedOut={() => router.push("/login")} />
       ) : null}
@@ -145,7 +163,7 @@ function usePortrait(): boolean {
 function TurnDeviceOverlay() {
   return (
     <div
-      className="fixed inset-0 z-40 flex items-center justify-center bg-[radial-gradient(120%_90%_at_50%_30%,#fff3dd_0%,#ffe0b6_60%,#ffd39c_100%)]"
+      className="fixed inset-0 z-40 flex items-center justify-center bg-[radial-gradient(120%_90%_at_50%_30%,var(--color-kid-bg-top)_0%,var(--color-kid-canvas)_60%,var(--color-kid-bg-bottom)_100%)]"
     >
       {/* The adult can still leave from here. */}
       <ExitButton />

@@ -75,29 +75,39 @@
   --color-avatar-ink: #48586a;
   --color-ink-invert: #eef3f5;
 
-  /* Дитячий режим — окремий світ: тепла палітра, круглий шрифт, «іграшкові» тіні.
-     Дорослі екрани цих токенів не вживають і навпаки. */
-  --color-kid-canvas: #ffe9c9;
-  --color-kid-sun: #ffc13b;
-  --color-kid-sun-deep: #7a4e0b;
-  --color-kid-sun-shadow: rgba(199, 143, 26, 0.35);
-  --color-kid-teal: #2fb3a3;
-  --color-kid-teal-shadow: rgba(30, 124, 113, 0.35);
-  --color-kid-ink: #5a4322;
-  --color-kid-ink-soft: #8a6a3c;
-  --color-kid-card-shadow: rgba(190, 146, 90, 0.24);
-  --color-kid-pip: #e8d3ae;
-  --color-kid-glow: #ffd98a;
-  --color-kid-correct: #8ede9f;
-  --color-kid-correct-surface: #eafaee;
-  --color-kid-scroll: #f0c78a;
-
   --font-sans: var(--font-plex-sans), system-ui, sans-serif;
   --font-kid: var(--font-baloo), system-ui, sans-serif;
   --font-mono: var(--font-plex-mono), ui-monospace, monospace;
 
   --shadow-card: 0 1px 2px rgba(18, 40, 61, 0.05);
 }
+
+/* Дитячий режим — окремий світ: тепла палітра, круглий шрифт, «іграшкові» тіні. Дорослі екрани цих
+   токенів не вживають і навпаки. НЕ inline (на відміну від дорослих токенів вище): утиліти
+   посилаються на var(--color-kid-*), тож тема оформлення дитини (KidModeProvider) перевизначає саме
+   ці змінні — і лише їх (docs/Специфікація_ассетів.md «Теми персоналізації»). Значення нижче —
+   theme_default; static — щоб змінні були на :root навіть ті, що вживаються лише через var(). */
+@theme static {
+  --color-kid-canvas: #ffe9c9;
+  --color-kid-bg-top: #fff3dd;
+  --color-kid-bg-bottom: #ffd39c;
+  --color-kid-sun: #ffc13b;
+  --color-kid-sun-deep: #7a4e0b;
+  --color-kid-teal: #2fb3a3;
+  --color-kid-ink: #5a4322;
+  --color-kid-ink-soft: #8a6a3c;
+  --color-kid-pip: #e8d3ae;
+  --color-kid-glow: #ffd98a;
+  --color-kid-correct: #8ede9f;
+  --color-kid-correct-surface: #eafaee;
+  --color-kid-scroll: #f0c78a;
+  --color-kid-guide-main: #b9e7dd;
+  --color-kid-guide-accent: #a9dfd4;
+  --color-kid-sun-shadow: rgba(199, 143, 26, 0.35);
+  --color-kid-teal-shadow: rgba(30, 124, 113, 0.35);
+  --color-kid-card-shadow: rgba(190, 146, 90, 0.24);
+}
+
 
 /* Дизайн світлий — темної схеми в макетах немає, тому й медіазапиту тут немає. */
 body {

@@ -12,6 +12,9 @@ public final class AuditAction {
 	public static final String GENERATE_VERSION = "GENERATE_VERSION";
 	public static final String VOICE_VERSION = "VOICE_VERSION";
 	public static final String VOICE_SHELL_LINES = "VOICE_SHELL_LINES";
+	public static final String GENERATE_THEME = "GENERATE_THEME";
+	public static final String APPROVE_THEME = "APPROVE_THEME";
+	public static final String REJECT_THEME = "REJECT_THEME";
 	public static final String INVITE_TEACHER = "INVITE_TEACHER";
 	public static final String RESEND_TEACHER_INVITE = "RESEND_TEACHER_INVITE";
 	public static final String DEACTIVATE_TEACHER = "DEACTIVATE_TEACHER";

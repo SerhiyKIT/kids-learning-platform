@@ -7,7 +7,7 @@ import { apiFetch, ApiError } from "@/lib/api";
 import type { PlayState, StickersResponse } from "@/lib/api-types";
 import { DoneStamp, ExitButton, KidStage, ListenButton, Mascot, stripeFor } from "@/components/kid/KidChrome";
 import { SleepScreen } from "@/components/kid/SleepScreen";
-import { AlbumLink } from "@/components/kid/Stickers";
+import { AlbumLink, StyleLink } from "@/components/kid/Stickers";
 import { useKidMode, type ShellLineKey } from "@/components/kid/kid-mode-context";
 import { useKidAudio, useSpeakingUrl } from "@/components/scene-engine/KidAudio";
 
@@ -37,7 +37,7 @@ function pickGreeting(): ShellLineKey {
  */
 export default function ShelfPage() {
   const { childId } = useParams<{ childId: string }>();
-  const { line } = useKidMode();
+  const { line, style, styleReady, setStyle } = useKidMode();
   const { play, replay } = useKidAudio();
   const speaking = useSpeakingUrl() !== null;
   const [lessons, setLessons] = useState<AvailableLesson[] | null>(null);
@@ -67,13 +67,23 @@ export default function ShelfPage() {
   }, [load]);
 
   const greetingUrl = line(greeting)?.audioUrl;
+  const announceUrl = line("theme_ready")?.audioUrl;
   useEffect(() => {
-    if (resting === false && greetingUrl && !greeted.current) {
+    if (resting !== false || !styleReady || greeted.current) return;
+    // A newly approved theme: the guide happily announces it (once) instead of the greeting.
+    if (style?.announce) {
+      greeted.current = true;
+      if (announceUrl) void play(announceUrl);
+      setStyle({ ...style, announce: false });
+      void apiFetch(`/children/${childId}/style/seen`, { method: "POST" }).catch(() => {});
+      return;
+    }
+    if (greetingUrl) {
       greeted.current = true;
       lastGreeting = greeting;
       void play(greetingUrl);
     }
-  }, [resting, greeting, greetingUrl, play]);
+  }, [resting, styleReady, style, setStyle, announceUrl, childId, greeting, greetingUrl, play]);
 
   // The child doesn't hunt for where to continue — the next lesson centres itself.
   const centerNext = useCallback(() => {
@@ -111,6 +121,7 @@ export default function ShelfPage() {
         <div className="flex items-center gap-[clamp(10px,2.5dvh,20px)] [@media(min-height:560px)]:flex-col">
           <ListenButton label="Послухати ще раз" onClick={onGuideTap} speaking={speaking} className="size-[clamp(68px,16dvh,96px)]" />
           <AlbumLink href={`/play/${childId}/stickers`} />
+          {style?.consented ? <StyleLink href={`/play/${childId}/style`} /> : null}
         </div>
       </aside>
 

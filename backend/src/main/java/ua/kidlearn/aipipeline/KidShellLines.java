@@ -28,6 +28,26 @@ public final class KidShellLines {
 		lines.put("album_intro", "Ось твої наліпки! Торкнись — і я нагадаю.");
 		lines.put("sleep_tired", "Ми сьогодні молодці! Пограймося згодом.");
 		lines.put("sleep_again", "Ш-ш-ш… Тоша спить. Пограймося згодом.");
+		// Style picker (ua.kidlearn.themes): the three questions, each choice said out loud, the wait.
+		lines.put("style_color", "Який колір тобі найбільше подобається?");
+		lines.put("style_world", "А в якому світі тобі цікаво?");
+		lines.put("style_mood", "Хочеш спокійно чи яскраво?");
+		lines.put("style_drawing", "Я вже малюю тобі кімнату!");
+		lines.put("theme_ready", "Дивись! Твоя нова кімната вже готова!");
+		lines.put("color_red", "Червоний!");
+		lines.put("color_orange", "Помаранчевий!");
+		lines.put("color_yellow", "Жовтий!");
+		lines.put("color_green", "Зелений!");
+		lines.put("color_blue", "Синій!");
+		lines.put("color_purple", "Фіолетовий!");
+		lines.put("world_space", "Космос!");
+		lines.put("world_sea", "Море!");
+		lines.put("world_forest", "Ліс!");
+		lines.put("world_dinosaurs", "Динозаври!");
+		lines.put("world_flowers", "Квіти!");
+		lines.put("world_cars", "Машинки!");
+		lines.put("mood_calm", "Спокійно.");
+		lines.put("mood_bright", "Яскраво!");
 		LINES = Collections.unmodifiableMap(lines);
 	}
 

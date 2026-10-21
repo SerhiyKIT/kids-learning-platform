@@ -152,6 +152,9 @@ export const AUDIT_ACTION_LABELS: Record<string, string> = {
   PUBLISH_VERSION: "Публікація версії",
   VOICE_VERSION: "Озвучення версії",
   VOICE_SHELL_LINES: "Озвучення реплік дитячого режиму",
+  GENERATE_THEME: "Генерація теми",
+  APPROVE_THEME: "Схвалення теми",
+  REJECT_THEME: "Відхилення теми",
   INVITE_TEACHER: "Запрошення вчителя",
   RESEND_TEACHER_INVITE: "Повторне запрошення вчителя",
   DEACTIVATE_TEACHER: "Деактивація вчителя",
@@ -164,6 +167,7 @@ export const AUDIT_TARGET_LABELS: Record<string, string> = {
   lesson_version: "Версія уроку",
   user: "Користувач",
   kid_shell_lines: "Репліки дитячого режиму",
+  theme: "Тема оформлення",
 };
 
 export const ROLE_LABELS: Record<string, string> = {

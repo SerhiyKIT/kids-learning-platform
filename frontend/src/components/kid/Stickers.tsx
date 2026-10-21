@@ -24,7 +24,7 @@ export function StickerArt({
       aria-hidden="true"
       className={`relative flex items-center justify-center rounded-full border-[clamp(4px,1.2dvh,7px)] ${
         locked
-          ? "border-[#e9dcc6] bg-[#e4d6bf]"
+          ? "border-kid-pip bg-kid-pip"
           : "border-white shadow-[0_8px_0_var(--color-kid-card-shadow)]"
       } ${className}`}
       style={locked ? undefined : { background: stripeFor(seed) }}
@@ -85,5 +85,22 @@ export function AlbumIcon({ className = "" }: { className?: string }) {
       <circle cx="16" cy="9" r="1.6" fill="currentColor" />
       <circle cx="8.4" cy="15.6" r="1.6" fill="currentColor" />
     </svg>
+  );
+}
+
+/** «Обрати оформлення»: a brush icon, ≥ 64px. Only shown with the parent's style consent. */
+export function StyleLink({ href }: { href: string }) {
+  return (
+    <Link
+      href={href}
+      aria-label="Обрати оформлення"
+      className="bg-kid-sun text-kid-sun-deep flex size-[clamp(68px,16dvh,92px)] flex-none items-center justify-center rounded-[28%] border-[clamp(4px,1dvh,6px)] border-white no-underline shadow-[0_10px_0_var(--color-kid-sun-shadow)]"
+    >
+      <svg viewBox="0 0 24 24" fill="none" className="size-[58%]" aria-hidden="true">
+        <path d="M14.5 4.5 19.5 9.5 11 18l-5-5z" fill="currentColor" />
+        <path d="M6 13l5 5c-1 2.5-3.5 3.5-6.5 2.5C3.5 17.5 4 15 6 13Z" fill="currentColor" opacity="0.7" />
+        <path d="M16 3l5 5" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" />
+      </svg>
+    </Link>
   );
 }

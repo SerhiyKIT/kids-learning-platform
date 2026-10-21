@@ -10,6 +10,7 @@ public final class AuditTargetType {
 	public static final String LESSON_VERSION = "lesson_version";
 	/** The fixed child-mode guide lines (no target id). */
 	public static final String KID_SHELL_LINES = "kid_shell_lines";
+	public static final String THEME = "theme";
 
 	private AuditTargetType() {
 	}

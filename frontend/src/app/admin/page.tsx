@@ -103,6 +103,11 @@ export default function AdminHomePage() {
               description="Журнал генерації, модерації, озвучки та доступу до даних."
             />
             <AdminCard
+              href="/admin/themes"
+              title="Теми"
+              description="Модерація тем оформлення, які ШІ підбирає під вибір дітей."
+            />
+            <AdminCard
               href="/admin/teachers"
               title="Вчителі"
               description="Запрошення вчителів і керування їхніми акаунтами."
@@ -154,7 +159,7 @@ function ShellLinesVoicing() {
       <div className="flex max-w-160 flex-col gap-1.5">
         <h2 className="text-[17px] font-medium">Репліки дитячого режиму</h2>
         <p className="text-ink-muted text-sm leading-relaxed">
-          Привітання провідника, прохання повернути пристрій, свято наприкінці уроку й «сон». Тексти
+          Привітання провідника, прохання повернути пристрій, свято наприкінці уроку, «сон» і вибір оформлення. Тексти
           фіксовані в коді; вже озвучені репліки повторно не синтезуються.
         </p>
         {result ? (

@@ -1,16 +1,19 @@
 package ua.kidlearn.children;
 
+import java.time.Clock;
 import java.time.Instant;
 import java.time.Year;
 import java.util.List;
 import java.util.Set;
 import java.util.UUID;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 import ua.kidlearn.consents.Consent;
 import ua.kidlearn.consents.ConsentRepository;
+import ua.kidlearn.consents.ConsentRevokedEvent;
 import ua.kidlearn.users.User;
 import ua.kidlearn.users.UserRepository;
 
@@ -22,18 +25,26 @@ public class ChildService {
 	private static final String DEFAULT_AVATAR_ID = "default";
 	private static final Set<String> VALID_RELATIONS = Set.of("mother", "father", "guardian");
 	private static final int MAX_CHILD_AGE_YEARS = 8;
+	// Consents a parent grants and revokes from the cabinet. "account" has its own flow (POST
+	// /consent activates the child; withdrawing it means deleting the child), the rest don't exist yet.
+	private static final Set<String> TOGGLEABLE_CONSENTS = Set.of(Consent.TYPE_STYLE_PERSONALIZATION);
 
 	private final ChildRepository childRepository;
 	private final ParentChildRepository parentChildRepository;
 	private final ConsentRepository consentRepository;
 	private final UserRepository userRepository;
+	private final ApplicationEventPublisher eventPublisher;
+	private final Clock clock;
 
 	public ChildService(ChildRepository childRepository, ParentChildRepository parentChildRepository,
-			ConsentRepository consentRepository, UserRepository userRepository) {
+			ConsentRepository consentRepository, UserRepository userRepository, ApplicationEventPublisher eventPublisher,
+			Clock clock) {
 		this.childRepository = childRepository;
 		this.parentChildRepository = parentChildRepository;
 		this.consentRepository = consentRepository;
 		this.userRepository = userRepository;
+		this.eventPublisher = eventPublisher;
+		this.clock = clock;
 	}
 
 	@Transactional
@@ -71,6 +82,42 @@ public class ChildService {
 		if (!child.isActive()) {
 			child.activate();
 			consentRepository.save(new Consent(childId, parentId, Consent.TYPE_ACCOUNT, Instant.now()));
+		}
+	}
+
+	@Transactional(readOnly = true)
+	public List<ConsentEntry> consents(UUID parentId, UUID childId) {
+		requireOwnership(parentId, childId);
+		return consentRepository.findByChildIdOrderByGrantedAtAsc(childId).stream().map(ConsentEntry::from).toList();
+	}
+
+	/** Idempotent: an already active consent stays as it is. */
+	@Transactional
+	public void grantConsent(UUID parentId, UUID childId, String type) {
+		requireOwnership(parentId, childId);
+		requireToggleable(type);
+		if (!consentRepository.existsByChildIdAndTypeAndRevokedAtIsNull(childId, type)) {
+			consentRepository.save(new Consent(childId, parentId, type, clock.instant()));
+		}
+	}
+
+	/**
+	 * Marks the active consent revoked and, in the same transaction, deletes the data it allowed
+	 * (ConsentRevokedEvent listeners — e.g. style preferences). Idempotent.
+	 */
+	@Transactional
+	public void revokeConsent(UUID parentId, UUID childId, String type) {
+		requireOwnership(parentId, childId);
+		requireToggleable(type);
+		consentRepository.findFirstByChildIdAndTypeAndRevokedAtIsNull(childId, type).ifPresent(consent -> {
+			consent.revoke(clock.instant());
+			eventPublisher.publishEvent(new ConsentRevokedEvent(childId, type));
+		});
+	}
+
+	private static void requireToggleable(String type) {
+		if (!TOGGLEABLE_CONSENTS.contains(type)) {
+			throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Consent type can't be changed here: " + type);
 		}
 	}
 
