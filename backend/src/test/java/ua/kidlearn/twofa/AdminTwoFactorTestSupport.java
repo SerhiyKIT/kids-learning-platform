@@ -31,13 +31,21 @@ public final class AdminTwoFactorTestSupport {
 	}
 
 	public static void completeSetup(MockMvc mockMvc, MockHttpSession session) throws Exception {
+		completeSetup(mockMvc, session, Instant.now());
+	}
+
+	/**
+	 * For contexts whose Clock is a MutableTestClock (shared with other test classes that advance
+	 * it): the TOTP code must come from the same time the server checks it against.
+	 */
+	public static void completeSetup(MockMvc mockMvc, MockHttpSession session, Instant now) throws Exception {
 		String ip = "ip-" + UUID.randomUUID();
 		MvcResult setupResult = mockMvc.perform(post("/api/admin/2fa/setup").with(csrf()).session(session)
 						.header("X-Forwarded-For", ip))
 				.andExpect(status().isOk())
 				.andReturn();
 		String secret = JsonPath.read(setupResult.getResponse().getContentAsString(), "$.secretBase32");
-		String code = CODE_GENERATOR.generate(secret, Instant.now().getEpochSecond() / 30);
+		String code = CODE_GENERATOR.generate(secret, now.getEpochSecond() / 30);
 		mockMvc.perform(post("/api/admin/2fa/enable").with(csrf()).session(session)
 						.header("X-Forwarded-For", ip)
 						.contentType(MediaType.APPLICATION_JSON)

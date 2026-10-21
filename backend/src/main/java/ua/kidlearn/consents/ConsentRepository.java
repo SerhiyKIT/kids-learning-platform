@@ -15,4 +15,6 @@ public interface ConsentRepository extends JpaRepository<Consent, UUID> {
 
 	List<Consent> findByChildIdOrderByGrantedAtAsc(UUID childId);
 
+	List<Consent> findByParentIdOrderByGrantedAtAsc(UUID parentId);
+
 }

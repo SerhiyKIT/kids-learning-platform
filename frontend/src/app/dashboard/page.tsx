@@ -121,7 +121,7 @@ export default function DashboardPage() {
 
   return (
     <>
-      <AppHeader context={ROLE_LABELS[me.role]} userName={me.displayName} onLogout={onLogout} />
+      <AppHeader context={ROLE_LABELS[me.role]} userName={me.displayName} onLogout={onLogout} accountLink />
 
       <main className="flex flex-1 justify-center px-6 pt-10 pb-24">
         <div className="flex w-full max-w-260 flex-col gap-7">

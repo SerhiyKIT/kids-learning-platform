@@ -33,6 +33,19 @@ public class AuditService {
 				clientIp));
 	}
 
+	/**
+	 * Writes the entry inside the CURRENT transaction instead of after commit. For actions that
+	 * delete their own actor (account deletion): the after-commit insert would reference a user
+	 * row that no longer exists. Written first, the row survives and its actor_id becomes NULL via
+	 * ON DELETE SET NULL — the audit trail outlives the account, de-identified.
+	 */
+	@Transactional
+	public void recordWithinTransaction(UUID actorId, Role actorRole, String action, String targetType,
+			UUID targetId, String clientIp) {
+		auditLogRepository.saveAndFlush(new AuditEvent(actorId, actorRole.name(), action, targetType, targetId,
+				clientIp));
+	}
+
 	@Transactional(readOnly = true)
 	public List<AuditEvent> list(String action, String targetType, UUID targetId, UUID actorId, int limit,
 			int offset) {

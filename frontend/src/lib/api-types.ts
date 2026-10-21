@@ -179,3 +179,8 @@ export interface ConsentEntry {
   grantedAt: string;
   revokedAt: string | null;
 }
+
+/** GET /api/me/deletion-preview — what deleting the account does to each child. */
+export interface DeletionPreview {
+  children: { childId: string; displayName: string; deletedCompletely: boolean }[];
+}

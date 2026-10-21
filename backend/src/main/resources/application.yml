@@ -29,6 +29,12 @@ auth:
   teacher-invite-ttl: ${TEACHER_INVITE_TTL:72h}
 
 app:
+  retention:
+    # docs/Ролі_та_приватність.md: detailed history 2 years (aggregates stay), see RetentionService.
+    detailed-history: ${RETENTION_DETAILED_HISTORY:P2Y}
+    spent-tokens: 30d
+    unverified-accounts: 30d
+    cron: ${RETENTION_CRON:0 30 3 * * *}
   # Sender of auth emails (verification, password reset, teacher invites). Unset = the SMTP
   # server's default; prod requires MAIL_FROM.
   mail-from: ${MAIL_FROM:}

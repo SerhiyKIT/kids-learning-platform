@@ -20,6 +20,9 @@ import org.springframework.web.filter.OncePerRequestFilter;
  * registry, and it also catches sessions on other nodes. Looks the user up by the principal's
  * name (the email) rather than the app's principal type, so this package doesn't depend on
  * ua.kidlearn.auth (which depends on it).
+ *
+ * <p>The same lookup ends sessions authenticated before the account's sessions_valid_after
+ * ("sign out everywhere", password change or reset; see SessionAuthentication).
  */
 public class ActiveAccountFilter extends OncePerRequestFilter {
 
@@ -35,7 +38,7 @@ public class ActiveAccountFilter extends OncePerRequestFilter {
 		Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
 		boolean authenticated = authentication != null && authentication.isAuthenticated()
 				&& !(authentication instanceof AnonymousAuthenticationToken);
-		if (authenticated && userRepository.findByEmailAndDeletedAtIsNull(authentication.getName()).isEmpty()) {
+		if (authenticated && !isStillValid(authentication.getName(), request.getSession(false))) {
 			HttpSession session = request.getSession(false);
 			if (session != null) {
 				session.invalidate();
@@ -45,6 +48,12 @@ public class ActiveAccountFilter extends OncePerRequestFilter {
 			return;
 		}
 		filterChain.doFilter(request, response);
+	}
+
+	private boolean isStillValid(String email, HttpSession session) {
+		return userRepository.findByEmailAndDeletedAtIsNull(email)
+				.map(user -> session == null || !SessionAuthentication.isStale(session, user.getSessionsValidAfter()))
+				.orElse(false);
 	}
 
 }

@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { Avatar } from "./Avatar";
 import { Badge } from "./Badge";
 
@@ -6,10 +7,13 @@ export function AppHeader({
   context = "Кабінет дорослого",
   userName,
   onLogout,
+  accountLink = false,
 }: {
   context?: string;
   userName?: string;
   onLogout?: () => void;
+  /** Show «Мій акаунт» (/account): password, sessions, data export, account deletion. */
+  accountLink?: boolean;
 }) {
   return (
     <header className="bg-surface border-line flex items-center justify-between gap-4 border-b px-8 py-4">
@@ -21,6 +25,14 @@ export function AppHeader({
       </div>
       <div className="flex items-center gap-3.5">
         <Badge>{context}</Badge>
+        {accountLink ? (
+          <Link
+            href="/account"
+            className="text-ink-muted hover:bg-hover-soft hover:text-ink rounded-lg px-2.5 py-1.5 text-sm no-underline"
+          >
+            Мій акаунт
+          </Link>
+        ) : null}
         {onLogout ? (
           <button
             type="button"

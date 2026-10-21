@@ -4,9 +4,11 @@ import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
+import java.time.Clock;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.web.authentication.SavedRequestAwareAuthenticationSuccessHandler;
 import ua.kidlearn.ratelimit.LoginAttemptService;
+import ua.kidlearn.users.SessionAuthentication;
 import ua.kidlearn.users.UserRepository;
 
 /**
@@ -24,17 +26,21 @@ public class TwoFactorSessionAuthenticationSuccessHandler extends SavedRequestAw
 
 	private final LoginAttemptService loginAttemptService;
 	private final UserRepository userRepository;
+	private final Clock clock;
 
 	public TwoFactorSessionAuthenticationSuccessHandler(LoginAttemptService loginAttemptService,
-			UserRepository userRepository) {
+			UserRepository userRepository, Clock clock) {
 		this.loginAttemptService = loginAttemptService;
 		this.userRepository = userRepository;
+		this.clock = clock;
 	}
 
 	@Override
 	public void onAuthenticationSuccess(HttpServletRequest request, HttpServletResponse response,
 			Authentication authentication) throws IOException, ServletException {
 		loginAttemptService.recordSuccess(authentication.getName());
+		// Same clock as sessions_valid_after, so "sign out everywhere" compares like with like.
+		SessionAuthentication.markAuthenticated(request.getSession(), clock.instant());
 		boolean isAdmin = authentication.getAuthorities().stream().anyMatch(a -> ROLE_ADMIN.equals(a.getAuthority()));
 		if (isAdmin) {
 			userRepository.findByEmailAndDeletedAtIsNull(authentication.getName())

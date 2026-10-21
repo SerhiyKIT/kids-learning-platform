@@ -108,7 +108,8 @@ export default function LoginPage() {
         </Card>
 
         <p className="text-ink-faint text-[13px] leading-relaxed">
-          Дитячі профілі доступні лише після входу дорослого.
+          Дитячі профілі доступні лише після входу дорослого.{" "}
+          <Link href="/privacy">Політика конфіденційності</Link>
         </p>
       </AuthLayout>
     </>
