@@ -101,7 +101,7 @@ public class DevSeedService {
 	}
 
 	private User ensureUser(String email, Role role, String displayName) {
-		return userRepository.findByEmailAndDeletedAtIsNull(email).orElseGet(() -> {
+		return userRepository.findActiveByEmail(email).orElseGet(() -> {
 			User user = new User(email, passwordEncoder.encode(SEED_PASSWORD_PLACEHOLDER), role, displayName, "uk");
 			user.markEmailVerified();
 			return userRepository.save(user);

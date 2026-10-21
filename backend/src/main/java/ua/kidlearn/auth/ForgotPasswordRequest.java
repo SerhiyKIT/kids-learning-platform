@@ -4,4 +4,10 @@ import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 
 public record ForgotPasswordRequest(@NotBlank @Email String email) {
+
+	/** Surrounding whitespace dropped before bean validation (EmailAddress.normalize does the rest). */
+	public ForgotPasswordRequest {
+		email = email == null ? null : email.strip();
+	}
+
 }

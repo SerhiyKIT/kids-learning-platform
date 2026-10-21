@@ -51,7 +51,7 @@ public class ActiveAccountFilter extends OncePerRequestFilter {
 	}
 
 	private boolean isStillValid(String email, HttpSession session) {
-		return userRepository.findByEmailAndDeletedAtIsNull(email)
+		return userRepository.findActiveByEmail(email)
 				.map(user -> session == null || !SessionAuthentication.isStale(session, user.getSessionsValidAfter()))
 				.orElse(false);
 	}

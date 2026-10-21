@@ -196,7 +196,28 @@ AGE_IDENTITY=/шлях/до/kidlearn-backup.key ./backup/restore.sh /var/backups
 
 Щоночі (`RETENTION_CRON`, за замовчуванням `0 30 3 * * *`) бекенд видаляє: відповіді по сценах старші за 2 роки (`RETENTION_DETAILED_HISTORY`, `P2Y`; підсумки уроків з оцінками лишаються), використані/прострочені посилання з листів старші за 30 днів, акаунти батьків без підтвердженого email старші за 30 днів (у них не може бути дітей). У лог пишуться лише кількості. Розподіленого локу немає — пілот працює **одним** екземпляром бекенда; перед масштабуванням на кілька екземплярів додати лок (напр. ShedLock).
 
-## 14. Відомі обмеження пілота
+## 14. Дублікати email (міграція V11)
+
+З версії з V11 email зберігається нормалізованим (без пробілів по краях, у нижньому регістрі), тож `Mama@Gmail.com` і `mama@gmail.com` — один акаунт. Якщо в базі вже є акаунти, що відрізняються лише регістром/пробілами, **бекенд не стартує** з повідомленням `V11: emails that differ only by case/whitespace must be merged by hand first: …` — автоматично нічого не зливається, бо це рішення людини (чиї діти, згоди, історія).
+
+Як злити вручну (перед оновленням, з бекапом!):
+
+1. `./backup/backup.sh`.
+2. Знайти пари: `docker compose exec postgres psql -U $POSTGRES_USER -d $POSTGRES_DB -c "SELECT id, email, role, created_at, email_verified_at FROM users WHERE lower(btrim(email)) IN (SELECT lower(btrim(email)) FROM users GROUP BY 1 HAVING count(*) > 1) ORDER BY lower(btrim(email)), created_at;"`
+3. Для кожної пари вирішити з власником, який акаунт лишається (зазвичай той, з дітьми / підтверджений). Перенести зв'язки з другого на перший і видалити другий, напр. у транзакції:
+   ```sql
+   BEGIN;
+   UPDATE parent_child SET parent_id = '<лишається>' WHERE parent_id = '<зайвий>'
+     AND child_id NOT IN (SELECT child_id FROM parent_child WHERE parent_id = '<лишається>');
+   UPDATE consents SET parent_id = '<лишається>' WHERE parent_id = '<зайвий>';
+   UPDATE children SET created_by = '<лишається>' WHERE created_by = '<зайвий>';
+   DELETE FROM users WHERE id = '<зайвий>';
+   COMMIT;
+   ```
+   Для вчителів (групи, призначення) — так само з `groups.teacher_id`, `lesson_assignments.assigned_by`.
+4. Запустити нову версію знову — V11 нормалізує решту адрес.
+
+## 15. Відомі обмеження пілота
 
 - **Немає сторінок `/verify-email` і `/reset-password` на фронтенді.** Листи ведуть на ці адреси, і бекенд їх обслуговує (`POST /api/auth/verify-email`, `/reset-password`), але UI відсутній. Без підтвердження email батько не може створити профіль дитини. **Потрібно додати ці сторінки до запуску пілота.**
 - Один сервер = одна точка відмови; RPO — до доби (щоденний бекап).

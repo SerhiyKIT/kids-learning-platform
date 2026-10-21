@@ -125,7 +125,7 @@ public class TwoFactorService {
 	}
 
 	private User getUser(String email) {
-		return userRepository.findByEmailAndDeletedAtIsNull(email).orElseThrow();
+		return userRepository.findActiveByEmail(email).orElseThrow();
 	}
 
 	private static List<String> generateBackupCodes() {

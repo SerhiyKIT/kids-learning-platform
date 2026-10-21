@@ -18,7 +18,7 @@ public class AppUserDetailsService implements UserDetailsService {
 
 	@Override
 	public UserDetails loadUserByUsername(String email) {
-		User user = userRepository.findByEmailAndDeletedAtIsNull(email)
+		User user = userRepository.findActiveByEmail(email)
 				.orElseThrow(() -> new UsernameNotFoundException("No user with email: " + email));
 		if (user.getPasswordHash() == null) {
 			// External-only account (e.g. future OAuth2 login): no password credentials.

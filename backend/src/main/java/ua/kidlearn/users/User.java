@@ -71,7 +71,7 @@ public class User {
 	}
 
 	public User(String email, String passwordHash, Role role, String displayName, String locale) {
-		this.email = email;
+		this.email = EmailAddress.normalize(email);
 		this.passwordHash = passwordHash;
 		this.role = role;
 		this.displayName = displayName;

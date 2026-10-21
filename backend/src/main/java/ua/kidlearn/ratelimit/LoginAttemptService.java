@@ -2,6 +2,7 @@ package ua.kidlearn.ratelimit;
 
 import org.springframework.stereotype.Service;
 import ua.kidlearn.ratelimit.RateLimitProperties.Limit;
+import ua.kidlearn.users.EmailAddress;
 
 /**
  * Failure-counting login throttle: tracks failed logins per account and per client IP, and resets
@@ -45,8 +46,10 @@ public class LoginAttemptService {
 		return Math.max(accountRetry, ipRetry);
 	}
 
+	// Normalized like every stored email: "Mama@x.org" and "mama@x.org " share one counter, so
+	// varying the case can't dodge the per-account limit.
 	private static String accountKey(String username) {
-		return "login:account:" + username;
+		return "login:account:" + EmailAddress.normalize(username);
 	}
 
 	private static String ipKey(String clientIp) {
