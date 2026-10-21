@@ -1,8 +1,9 @@
 "use client";
 
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { apiFetch } from "@/lib/api";
-import type { LessonScenario } from "@/lib/scenario-types";
+import { voiceLineAudioUrls, type LessonScenario } from "@/lib/scenario-types";
+import { useKidAudio } from "./KidAudio";
 import { type AnswerEvent, SceneRenderer } from "./SceneRenderer";
 
 /**
@@ -25,6 +26,13 @@ export function PlaythroughEngine({
 
   const scene = scenario.scenes[sceneIndex];
   const isLastScene = sceneIndex === scenario.scenes.length - 1;
+  const { preload } = useKidAudio();
+
+  // While the child is in this scene, fetch the next scene's lines so it starts without silence.
+  useEffect(() => {
+    const next = scenario.scenes[sceneIndex + 1];
+    if (next) preload(voiceLineAudioUrls(next));
+  }, [scenario, sceneIndex, preload]);
 
   const recordAnswer = useCallback(
     (event: AnswerEvent) => {

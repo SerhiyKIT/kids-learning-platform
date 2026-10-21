@@ -4,6 +4,8 @@ import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { apiFetch, ApiError } from "@/lib/api";
+import { KidAudioProvider } from "@/components/scene-engine/KidAudio";
+import { LessonStartScreen } from "@/components/scene-engine/LessonStartScreen";
 import { PlaythroughEngine } from "@/components/scene-engine/PlaythroughEngine";
 import type { LessonScenario } from "@/lib/scenario-types";
 
@@ -14,10 +16,19 @@ interface StartAttemptResponse {
 type LoadState =
   | { status: "loading" }
   | { status: "error"; error: ApiError }
-  | { status: "ready"; attemptId: string; scenario: LessonScenario }
+  | { status: "ready"; attemptId: string; scenario: LessonScenario; started: boolean }
   | { status: "done"; score: number };
 
 export default function PlaythroughPage() {
+  // One audio element for the whole lesson: unlocked on «Почнімо!», reused by every line.
+  return (
+    <KidAudioProvider>
+      <Playthrough />
+    </KidAudioProvider>
+  );
+}
+
+function Playthrough() {
   const { childId, lessonVersionId } = useParams<{ childId: string; lessonVersionId: string }>();
   const [state, setState] = useState<LoadState>({ status: "loading" });
   // Starting an attempt is a real POST with a side effect, so it must run at most once — even
@@ -37,7 +48,7 @@ export default function PlaythroughPage() {
           body: JSON.stringify({ lessonVersionId }),
         });
         const scenario = await apiFetch<LessonScenario>(`/children/${childId}/lessons/${lessonVersionId}/scenario`);
-        setState({ status: "ready", attemptId, scenario });
+        setState({ status: "ready", attemptId, scenario, started: false });
       } catch (err) {
         setState({ status: "error", error: err instanceof ApiError ? err : new ApiError(0, "Unexpected error") });
       }
@@ -81,11 +92,15 @@ export default function PlaythroughPage() {
 
   return (
     <main className="flex flex-1 flex-col">
-      <PlaythroughEngine
-        scenario={state.scenario}
-        attemptId={state.attemptId}
-        onComplete={(score) => setState({ status: "done", score })}
-      />
+      {state.started ? (
+        <PlaythroughEngine
+          scenario={state.scenario}
+          attemptId={state.attemptId}
+          onComplete={(score) => setState({ status: "done", score })}
+        />
+      ) : (
+        <LessonStartScreen scenario={state.scenario} onStart={() => setState({ ...state, started: true })} />
+      )}
     </main>
   );
 }

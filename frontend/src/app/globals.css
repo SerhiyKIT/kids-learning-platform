@@ -153,6 +153,12 @@ a:hover {
   100% { transform: translateY(0) scale(1); }
 }
 
+/* «Говорить»: короткі ритмічні стискання, поки звучить репліка. */
+@keyframes talk {
+  0%, 100% { transform: scale(1, 1); }
+  50% { transform: scale(1.04, 0.95); }
+}
+
 @keyframes yay {
   0% { transform: scale(1); }
   45% { transform: scale(1.09) rotate(1deg); }

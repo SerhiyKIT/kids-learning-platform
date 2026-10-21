@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import type { ChoiceOption, ChoiceScene } from "@/lib/scenario-types";
 import { ExitButton, KidStage, ListenButton, Mascot, StepDots, stripeFor } from "@/components/kid/KidChrome";
+import { useKidAudio, useSpeakingUrl } from "./KidAudio";
 import type { AnswerEvent } from "./SceneRenderer";
 import { VoiceLinePlayer } from "./VoiceLinePlayer";
 
@@ -40,6 +41,8 @@ export function ChoiceSceneView({
   // Хибний вибір «відскакує» карткою замість того, щоб блокувати екран.
   const [nudged, setNudged] = useState<{ id: string; n: number } | null>(null);
   const nudgeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const { replay } = useKidAudio();
+  const speaking = useSpeakingUrl() !== null;
 
   useEffect(() => () => {
     if (nudgeTimer.current) clearTimeout(nudgeTimer.current);
@@ -103,8 +106,11 @@ export function ChoiceSceneView({
             aria-label={`Ілюстрація сцени: ${scene.background}`}
           />
           <div className="flex w-39 flex-none flex-col items-center gap-3.5">
-            <Mascot size="sm" />
-            <ListenButton size="sm" label="Послухати ще раз" />
+            {/* Тап по маскоту — так само повтор репліки, як і кнопка «послухати». */}
+            <button type="button" onClick={replay} aria-label="Повторити" className="cursor-pointer">
+              <Mascot size="sm" speaking={speaking} />
+            </button>
+            <ListenButton size="sm" label="Послухати ще раз" onClick={replay} speaking={speaking} />
           </div>
         </div>
 

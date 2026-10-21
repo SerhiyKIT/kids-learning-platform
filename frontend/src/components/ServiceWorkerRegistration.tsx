@@ -2,7 +2,7 @@
 
 import { useEffect } from "react";
 
-/** Registers public/sw.js (no-op for now — see that file) so the app is PWA-installable. */
+/** Registers public/sw.js: PWA-installable, and caches voice-line audio only (see that file). */
 export function ServiceWorkerRegistration() {
   useEffect(() => {
     if ("serviceWorker" in navigator) {

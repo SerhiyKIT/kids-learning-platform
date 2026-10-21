@@ -1,15 +1,19 @@
 package ua.kidlearn.aipipeline;
 
 import java.net.URI;
+import java.util.Optional;
 import java.util.concurrent.atomic.AtomicBoolean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
 import software.amazon.awssdk.auth.credentials.AwsBasicCredentials;
 import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
+import software.amazon.awssdk.core.ResponseBytes;
 import software.amazon.awssdk.core.sync.RequestBody;
 import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.model.CreateBucketRequest;
+import software.amazon.awssdk.services.s3.model.GetObjectRequest;
+import software.amazon.awssdk.services.s3.model.GetObjectResponse;
 import software.amazon.awssdk.services.s3.model.HeadBucketRequest;
 import software.amazon.awssdk.services.s3.model.PutObjectRequest;
 import software.amazon.awssdk.services.s3.model.S3Exception;
@@ -60,6 +64,25 @@ class MinioAudioStorage implements AudioStorage {
 				PutObjectRequest.builder().bucket(properties.bucket()).key(objectKey).contentType(contentType).build(),
 				RequestBody.fromBytes(data));
 		return properties.endpoint() + "/" + properties.bucket() + "/" + objectKey;
+	}
+
+	/**
+	 * Plain getObject, no bucket bootstrapping: a bucket that doesn't exist yet simply holds no
+	 * audio. Like store(), this is the first and only place MinIO is contacted — never at startup.
+	 */
+	@Override
+	public Optional<StoredAudio> load(String objectKey) {
+		try {
+			ResponseBytes<GetObjectResponse> object = s3Client.getObjectAsBytes(
+					GetObjectRequest.builder().bucket(properties.bucket()).key(objectKey).build());
+			return Optional.of(new StoredAudio(object.asByteArray(), object.response().contentType()));
+		} catch (S3Exception e) {
+			// NoSuchKey / NoSuchBucket are both 404s.
+			if (e.statusCode() == 404) {
+				return Optional.empty();
+			}
+			throw e;
+		}
 	}
 
 }

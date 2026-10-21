@@ -5,10 +5,9 @@ export interface VoiceLine {
   key: string;
   text: string;
   /**
-   * Not present yet: the backend returns the scenario's raw jsonb as-is, and the schema has no
-   * audio field. Once real TTS lands, GET .../scenario is expected to enrich each voice line
-   * with its audio_assets.file_url (see the TODO on AttemptService.scenario) — this field is
-   * here so the player already knows what to do with it when that happens.
+   * Only in the child's GET .../scenario response (never in the stored schema): the same-origin
+   * "/api/audio/{textHash}" URL of this line's synthesized audio, when it has been voiced. Absent
+   * for lines without audio — the player then shows the text with a short pause instead.
    */
   audioUrl?: string;
 }
@@ -150,4 +149,24 @@ export interface LessonScenario {
   learning_goal: string;
   reality_bridge: VoiceLine;
   scenes: Scene[];
+}
+
+/** Every voice line's audioUrl anywhere under `node` (a scene or a whole scenario), in order, deduplicated. */
+export function voiceLineAudioUrls(node: unknown): string[] {
+  const urls = new Set<string>();
+  const walk = (value: unknown): void => {
+    if (Array.isArray(value)) {
+      value.forEach(walk);
+      return;
+    }
+    if (value && typeof value === "object") {
+      const record = value as Record<string, unknown>;
+      if (typeof record.key === "string" && typeof record.text === "string" && typeof record.audioUrl === "string") {
+        urls.add(record.audioUrl);
+      }
+      Object.values(record).forEach(walk);
+    }
+  };
+  walk(node);
+  return [...urls];
 }
