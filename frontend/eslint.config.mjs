@@ -17,6 +17,8 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    "playwright-report/**",
+    "test-results/**",
   ]),
   {
     rules: {
@@ -46,6 +48,14 @@ const eslintConfig = defineConfig([
   {
     // The one file allowed to touch fetch() directly — everything else routes through it.
     files: ["src/lib/api.ts"],
+    rules: {
+      "no-restricted-syntax": "off",
+    },
+  },
+  {
+    // End-to-end tests are not app code: they read Mailpit's HTTP API and call the backend the way
+    // a browser would, outside apiFetch.
+    files: ["e2e/**"],
     rules: {
       "no-restricted-syntax": "off",
     },

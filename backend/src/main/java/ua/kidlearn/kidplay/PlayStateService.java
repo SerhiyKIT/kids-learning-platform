@@ -94,7 +94,7 @@ public class PlayStateService {
 		Short limit = state.getSessionLimitMinutes();
 		Instant sessionStart = state.getSessionStartedAt();
 		if (limit != null && sessionStart != null
-				&& Duration.between(sessionStart, now).compareTo(Duration.ofMinutes(limit)) >= 0) {
+				&& Duration.between(sessionStart, now).compareTo(properties.limitUnit().multipliedBy(limit)) >= 0) {
 			state.rest(now.plus(properties.restDuration()));
 		}
 		return toResponse(state);

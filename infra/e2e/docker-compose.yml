@@ -1,0 +1,39 @@
+# Dependencies of the end-to-end tests (frontend/e2e) — locally and in CI. Own ports and volumes
+# so it can run next to the dev stack (infra/docker-compose.yml). Test-only credentials.
+name: kidlearn-e2e
+
+services:
+  postgres:
+    image: postgres:16
+    environment:
+      POSTGRES_DB: kidlearn_e2e
+      POSTGRES_USER: kidlearn
+      POSTGRES_PASSWORD: kidlearn
+    ports:
+      - "127.0.0.1:55433:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U kidlearn -d kidlearn_e2e"]
+      interval: 2s
+      timeout: 3s
+      retries: 30
+
+  minio:
+    # Same pinned image as infra/prod (MinIO no longer publishes community images).
+    image: cgr.dev/chainguard/minio@sha256:ad134b2dd572ae0d989d6807c3e45516cc75a34883a8021db2ff04be5d1d496a
+    command: ["server", "/data"]
+    environment:
+      MINIO_ROOT_USER: e2e-minio
+      MINIO_ROOT_PASSWORD: e2e-minio-secret
+    ports:
+      - "127.0.0.1:59000:9000"
+    healthcheck:
+      test: ["CMD", "mc", "ready", "local"]
+      interval: 2s
+      timeout: 3s
+      retries: 30
+
+  mailpit:
+    image: axllent/mailpit:v1.27
+    ports:
+      - "127.0.0.1:51025:1025"
+      - "127.0.0.1:58025:8025"

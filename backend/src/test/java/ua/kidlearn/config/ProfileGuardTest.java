@@ -17,6 +17,7 @@ class ProfileGuardTest {
 				.hasMessageContaining("[dev]");
 		assertThatThrownBy(() -> ProfileGuard.check("dev", "prod")).isInstanceOf(IllegalStateException.class);
 		assertThatThrownBy(() -> ProfileGuard.check("prod", "guardtest")).isInstanceOf(IllegalStateException.class);
+		assertThatThrownBy(() -> ProfileGuard.check("prod", "e2e")).isInstanceOf(IllegalStateException.class);
 	}
 
 	@Test

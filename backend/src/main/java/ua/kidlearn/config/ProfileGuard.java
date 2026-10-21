@@ -19,7 +19,7 @@ import org.springframework.stereotype.Component;
 public class ProfileGuard implements BeanFactoryPostProcessor, EnvironmentAware {
 
 	/** Profiles that must never be active alongside "prod". */
-	static final Set<String> DEV_ONLY_PROFILES = Set.of("dev", "guardtest");
+	static final Set<String> DEV_ONLY_PROFILES = Set.of("dev", "guardtest", "e2e");
 
 	private Environment environment;
 
