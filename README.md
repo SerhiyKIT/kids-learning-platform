@@ -57,6 +57,25 @@ non-blank; any other combination silently keeps the stub. Its output still goes 
 return `502` (`LLM_UPSTREAM_ERROR`, `LLM_UNAVAILABLE`, `LLM_NO_SCENARIO`, `LLM_TRUNCATED`) or
 `422` (`LLM_REFUSED`), never `500`. `./mvnw test` forces the stub even if these are exported.
 
+## TTS voicing (optional real provider)
+
+`POST /api/admin/lesson-versions/{id}/voice` uses a deterministic stub by default — no network,
+no key, which is what CI and the test suite always run against. To voice lessons with Google
+Cloud Text-to-Speech, set in `infra/.env` (gitignored; see `infra/.env.example`):
+
+| Variable | Default | Meaning |
+|---|---|---|
+| `KIDLEARN_TTS_PROVIDER` | `stub` | `google` enables the real provider |
+| `KIDLEARN_TTS_API_KEY` | _(empty)_ | Google Cloud API key (sent as `x-goog-api-key`) — env only, never committed |
+| `KIDLEARN_TTS_LANGUAGE` | `uk-UA` | BCP-47 language code |
+| `KIDLEARN_TTS_VOICE` | _(empty)_ | Voice name from `GET /v1/voices?languageCode=uk-UA`; empty lets Google pick one |
+
+The real provider is wired **only** when the provider is `google` **and** the key is non-blank;
+any other combination silently keeps the stub. Audio is MP3 (`audio/mpeg`) and goes through the
+existing `text_hash` cache and MinIO storage unchanged. Provider failures return `502`
+(`TTS_UPSTREAM_ERROR`, `TTS_UNAVAILABLE`, `TTS_EMPTY_AUDIO`), never `500`. `./mvnw test` forces
+the stub even if these are exported.
+
 ## Creating the first admin account (production)
 
 There's no default/seeded admin login. `POST /api/bootstrap/admin` creates exactly one — the

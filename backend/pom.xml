@@ -176,15 +176,17 @@
 					</execution>
 				</executions>
 			</plugin>
-			<!-- The test suite always runs against StubLlmProvider, even if a developer's shell exports
-			     KIDLEARN_LLM_PROVIDER=anthropic plus a real key: a system property outranks env vars and
-			     application.yml. Tests that exercise the real wiring override it via their own properties. -->
+			<!-- The test suite always runs against StubLlmProvider/StubTtsProvider, even if a developer's
+			     shell exports KIDLEARN_LLM_PROVIDER=anthropic / KIDLEARN_TTS_PROVIDER=google plus real keys:
+			     a system property outranks env vars and application.yml. Tests that exercise the real
+			     wiring override it via their own properties. -->
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-surefire-plugin</artifactId>
 				<configuration>
 					<systemPropertyVariables>
 						<app.llm.provider>stub</app.llm.provider>
+						<app.tts.provider>stub</app.tts.provider>
 					</systemPropertyVariables>
 				</configuration>
 			</plugin>
