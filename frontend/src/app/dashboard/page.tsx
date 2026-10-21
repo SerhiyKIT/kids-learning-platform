@@ -12,6 +12,7 @@ import { Notice, NoticeButton } from "@/components/ui/Notice";
 import { Pill } from "@/components/ui/Pill";
 import { SecondaryLink } from "@/components/ui/SecondaryButton";
 import { Tooltip } from "@/components/ui/Tooltip";
+import { twoFactorRedirect } from "@/lib/two-factor";
 
 const ROLE_LABELS: Record<Me["role"], string> = {
   PARENT: "Батьки",
@@ -30,6 +31,9 @@ export default function DashboardPage() {
   const [children, setChildren] = useState<Child[] | null>(null);
   const [groups, setGroups] = useState<Group[] | null>(null);
   const [loading, setLoading] = useState(true);
+  // Set right before a router.replace() away from here, so the page keeps showing "loading"
+  // instead of flashing the "couldn't load" state while the navigation is in flight.
+  const [redirecting, setRedirecting] = useState(false);
   const [loadError, setLoadError] = useState<ApiError | null>(null);
   const [resendState, setResendState] = useState<"idle" | "sending" | "sent">("idle");
   const [resendError, setResendError] = useState<ApiError | null>(null);
@@ -40,6 +44,13 @@ export default function DashboardPage() {
   const load = useCallback(() => {
     apiFetch<Me>("/auth/me")
       .then((meData) => {
+        // Admins have nothing here — their home is /admin, which also routes them through the
+        // 2FA gate (setup/verify) before anything else.
+        if (meData.role === "ADMIN") {
+          setRedirecting(true);
+          router.replace("/admin");
+          return;
+        }
         // /api/children is parent-only, /api/groups is teacher-only — admins see just the header.
         const childrenPromise = meData.role === "PARENT" ? apiFetch<Child[]>("/children") : Promise.resolve([]);
         const groupsPromise = meData.role === "TEACHER" ? apiFetch<Group[]>("/groups") : Promise.resolve([]);
@@ -52,6 +63,12 @@ export default function DashboardPage() {
       .catch((err) => {
         if (err instanceof ApiError && err.status === 401) {
           router.replace("/login");
+          return;
+        }
+        const twoFactorTarget = twoFactorRedirect(err);
+        if (twoFactorTarget) {
+          setRedirecting(true);
+          router.replace(twoFactorTarget);
           return;
         }
         setLoadError(err instanceof ApiError ? err : new ApiError(0, "Несподівана помилка"));
@@ -80,7 +97,7 @@ export default function DashboardPage() {
     router.push("/login");
   }
 
-  if (loading) {
+  if (loading || redirecting) {
     return (
       <>
         <AppHeader />
