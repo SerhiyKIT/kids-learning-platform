@@ -37,6 +37,8 @@ export interface KidMode {
   styleReady: boolean;
   /** Replaces the style (after the child chose, or the guide announced the theme) — re-themes at once. */
   setStyle: (style: StyleResponse) => void;
+  /** POSTs the child's results through the outbox (see outbox.ts): kept and retried while offline. */
+  sendResult: <T>(path: string, body: unknown) => Promise<T>;
 }
 
 export const KidModeContext = createContext<KidMode>({
@@ -46,6 +48,7 @@ export const KidModeContext = createContext<KidMode>({
   style: null,
   styleReady: false,
   setStyle: () => {},
+  sendResult: () => Promise.reject(new Error("No child mode")),
 });
 
 export function useKidMode(): KidMode {

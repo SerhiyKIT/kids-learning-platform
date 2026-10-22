@@ -12,6 +12,7 @@ import { QuietButton } from "@/components/ui/SecondaryButton";
 import { ExitButton, KidStage, ListenButton, Mascot } from "./KidChrome";
 import { KidModeContext, type KidMode, type ShellLineKey } from "./kid-mode-context";
 import { KidThemeScope } from "./KidTheme";
+import { useOutbox } from "./outbox";
 
 /**
  * The child-mode shell around the shelf, the album and every lesson (one per child, kept across
@@ -33,6 +34,8 @@ export function KidModeProvider({ childId, children }: { childId: string; childr
   const [styleReady, setStyleReady] = useState(false);
   const portrait = usePortrait();
   const turnVoiced = useRef(false);
+  const outbox = useOutbox();
+  const sendResult = useCallback(<T,>(path: string, body: unknown) => outbox.send<T>(path, body), [outbox]);
 
   useEffect(() => {
     apiFetch<ShellLine[]>("/kid/shell-lines")
@@ -85,8 +88,8 @@ export function KidModeProvider({ childId, children }: { childId: string; childr
   }
 
   const value = useMemo<KidMode>(
-    () => ({ childId, line, requestExit, style, styleReady, setStyle }),
-    [childId, line, requestExit, style, styleReady],
+    () => ({ childId, line, requestExit, style, styleReady, setStyle, sendResult }),
+    [childId, line, requestExit, style, styleReady, sendResult],
   );
 
   return (
