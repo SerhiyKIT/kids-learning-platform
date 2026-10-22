@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 import { apiFetch, ApiError } from "@/lib/api";
+import { errorText, useApiErrors } from "@/lib/errors";
 import type {
   Assignment,
   CatalogEntry,
@@ -28,6 +29,7 @@ const RESULTS: Record<string, { label: string; tone: "ok" | "bad" }> = {
 };
 
 export default function GroupPage() {
+  const handleError = useApiErrors();
   const { id } = useParams<{ id: string }>();
 
   const [group, setGroup] = useState<Group | null>(null);
@@ -70,33 +72,33 @@ export default function GroupPage() {
         setGroup(found);
         setGroupError(null);
       })
-      .catch((err) => setGroupError(err instanceof ApiError ? err : new ApiError(0, "Несподівана помилка")))
+      .catch((err) => setGroupError(handleError(err)))
       .finally(() => setGroupLoading(false));
-  }, [id]);
+  }, [id, handleError]);
 
   const loadMembers = useCallback(() => {
     apiFetch<GroupMemberInfo[]>(`/groups/${id}/members`)
       .then(setMembers)
-      .catch((err) => setMembersError(err instanceof ApiError ? err : new ApiError(0, "Несподівана помилка")));
-  }, [id]);
+      .catch((err) => setMembersError(handleError(err)));
+  }, [id, handleError]);
 
   const loadAssignments = useCallback(() => {
     apiFetch<Assignment[]>(`/assignments?groupId=${id}`)
       .then(setAssignments)
-      .catch((err) => setAssignmentsError(err instanceof ApiError ? err : new ApiError(0, "Несподівана помилка")));
-  }, [id]);
+      .catch((err) => setAssignmentsError(handleError(err)));
+  }, [id, handleError]);
 
   const loadResults = useCallback(() => {
     apiFetch<TeacherResultChild[]>(`/groups/${id}/results`)
       .then(setResults)
-      .catch((err) => setResultsError(err instanceof ApiError ? err : new ApiError(0, "Несподівана помилка")));
-  }, [id]);
+      .catch((err) => setResultsError(handleError(err)));
+  }, [id, handleError]);
 
   const loadCatalog = useCallback(() => {
     apiFetch<CatalogEntry[]>("/catalog/lessons")
       .then(setCatalog)
-      .catch((err) => setCatalogError(err instanceof ApiError ? err : new ApiError(0, "Несподівана помилка")));
-  }, []);
+      .catch((err) => setCatalogError(handleError(err)));
+  }, [handleError]);
 
   useEffect(() => {
     loadGroup();
@@ -123,7 +125,7 @@ export default function GroupPage() {
       const updated = await apiFetch<Group>(`/groups/${id}/regenerate-code`, { method: "POST" });
       setGroup(updated);
     } catch (err) {
-      setGroupError(err instanceof ApiError ? err : new ApiError(0, "Несподівана помилка"));
+      setGroupError(handleError(err));
     } finally {
       setRegenerating(false);
     }
@@ -135,7 +137,7 @@ export default function GroupPage() {
       await apiFetch(`/groups/${id}/members/${childId}`, { method: "DELETE" });
       loadMembers();
     } catch (err) {
-      setMembersError(err instanceof ApiError ? err : new ApiError(0, "Несподівана помилка"));
+      setMembersError(handleError(err));
     } finally {
       setRemovingChildId(null);
     }
@@ -152,7 +154,7 @@ export default function GroupPage() {
       setSelectedVersionId("");
       loadAssignments();
     } catch (err) {
-      setAssignError(err instanceof ApiError ? err : new ApiError(0, "Несподівана помилка"));
+      setAssignError(handleError(err));
     } finally {
       setAssigning(false);
     }
@@ -164,7 +166,7 @@ export default function GroupPage() {
       await apiFetch(`/assignments/${assignmentId}`, { method: "DELETE" });
       loadAssignments();
     } catch (err) {
-      setAssignmentsError(err instanceof ApiError ? err : new ApiError(0, "Несподівана помилка"));
+      setAssignmentsError(handleError(err));
     } finally {
       setRemovingAssignmentId(null);
     }
@@ -178,7 +180,7 @@ export default function GroupPage() {
       setConfirmArchiveOpen(false);
       loadGroup();
     } catch (err) {
-      setArchiveError(err instanceof ApiError ? err : new ApiError(0, "Несподівана помилка"));
+      setArchiveError(handleError(err));
     } finally {
       setArchiving(false);
     }
@@ -210,7 +212,7 @@ export default function GroupPage() {
         <AppHeader context="Кабінет вчителя" />
         <main className="flex flex-1 flex-col items-center justify-center gap-3 p-8">
           <p className="text-danger">
-            {groupError?.status === 404 ? "Групу не знайдено." : (groupError?.message ?? "Групу не знайдено.")}
+            {groupError?.status === 404 ? "Групу не знайдено." : (groupError ? errorText(groupError) : "Групу не знайдено.")}
           </p>
           <Link href="/groups" className="text-sm">
             ← До груп
@@ -287,7 +289,7 @@ export default function GroupPage() {
               aside={members ? membersLabel(members.length) : undefined}
             />
 
-            {membersError ? <p className="text-danger px-6 py-4 text-sm">{membersError.message}</p> : null}
+            {membersError ? <p className="text-danger px-6 py-4 text-sm">{errorText(membersError)}</p> : null}
             {!members && !membersError ? (
               <p className="text-ink-muted px-6 py-4 text-sm">Завантаження…</p>
             ) : null}
@@ -361,7 +363,7 @@ export default function GroupPage() {
               </Button>
             </form>
 
-            {catalogError ? <p className="text-danger px-6 py-3 text-sm">{catalogError.message}</p> : null}
+            {catalogError ? <p className="text-danger px-6 py-3 text-sm">{errorText(catalogError)}</p> : null}
             {assignError ? (
               <p className="text-danger px-6 py-3 text-sm">{assignErrorText(assignError)}</p>
             ) : null}
@@ -370,7 +372,7 @@ export default function GroupPage() {
             ) : null}
 
             {assignmentsError ? (
-              <p className="text-danger px-6 py-4 text-sm">{assignmentsError.message}</p>
+              <p className="text-danger px-6 py-4 text-sm">{errorText(assignmentsError)}</p>
             ) : null}
             {!assignments && !assignmentsError ? (
               <p className="text-ink-muted px-6 py-4 text-sm">Завантаження…</p>
@@ -410,7 +412,7 @@ export default function GroupPage() {
               description="Останні спроби учнів за призначеними уроками."
             />
 
-            {resultsError ? <p className="text-danger px-6 py-4 text-sm">{resultsError.message}</p> : null}
+            {resultsError ? <p className="text-danger px-6 py-4 text-sm">{errorText(resultsError)}</p> : null}
             {!results && !resultsError ? (
               <p className="text-ink-muted px-6 py-4 text-sm">Завантаження…</p>
             ) : null}
@@ -506,7 +508,7 @@ export default function GroupPage() {
             Нові діти не зможуть приєднатися за поточним кодом. Це не видаляє групу чи її
             результати.
           </p>
-          {archiveError ? <p className="text-danger text-sm">{archiveError.message}</p> : null}
+          {archiveError ? <p className="text-danger text-sm">{errorText(archiveError)}</p> : null}
         </Modal>
       ) : null}
     </>
@@ -515,7 +517,7 @@ export default function GroupPage() {
 
 function assignErrorText(error: ApiError): string {
   if (error.code === "NOT_PUBLISHED") return "Цей урок ще не опубліковано.";
-  return error.message;
+  return errorText(error);
 }
 
 function membersLabel(n: number): string {

@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 import { apiFetch, ApiError } from "@/lib/api";
+import { errorText, useApiErrors } from "@/lib/errors";
 import { downloadExport } from "@/lib/download";
 import type { Child, ConsentEntry, Group, HistoryEntry, PlaySettingsRequest, PlayState } from "@/lib/api-types";
 import { AppHeader } from "@/components/ui/AppHeader";
@@ -35,6 +36,7 @@ const RESULTS: Record<string, { label: string; tone: "ok" | "bad" }> = {
 };
 
 export default function ChildPage() {
+  const handleError = useApiErrors();
   const { id } = useParams<{ id: string }>();
 
   const [child, setChild] = useState<Child | null>(null);
@@ -83,21 +85,21 @@ export default function ChildPage() {
         setChild(data);
         setChildError(null);
       })
-      .catch((err) => setChildError(err instanceof ApiError ? err : new ApiError(0, "Несподівана помилка")))
+      .catch((err) => setChildError(handleError(err)))
       .finally(() => setChildLoading(false));
-  }, [id]);
+  }, [id, handleError]);
 
   const loadGroups = useCallback(() => {
     apiFetch<Group[]>(`/children/${id}/groups`)
       .then(setGroups)
-      .catch((err) => setGroupsError(err instanceof ApiError ? err : new ApiError(0, "Несподівана помилка")));
-  }, [id]);
+      .catch((err) => setGroupsError(handleError(err)));
+  }, [id, handleError]);
 
   const loadHistory = useCallback(() => {
     apiFetch<HistoryEntry[]>(`/children/${id}/history`)
       .then(setHistory)
-      .catch((err) => setHistoryError(err instanceof ApiError ? err : new ApiError(0, "Несподівана помилка")));
-  }, [id]);
+      .catch((err) => setHistoryError(handleError(err)));
+  }, [id, handleError]);
 
   const loadPlayState = useCallback(() => {
     apiFetch<PlayState>(`/children/${id}/play-state`)
@@ -105,8 +107,8 @@ export default function ChildPage() {
         setPlayState(data);
         setPlayError(null);
       })
-      .catch((err) => setPlayError(err instanceof ApiError ? err : new ApiError(0, "Несподівана помилка")));
-  }, [id]);
+      .catch((err) => setPlayError(handleError(err)));
+  }, [id, handleError]);
 
   const loadStyle = useCallback(() => {
     Promise.all([apiFetch<StyleResponse>(`/children/${id}/style`), apiFetch<ConsentEntry[]>(`/children/${id}/consents`)])
@@ -116,8 +118,8 @@ export default function ChildPage() {
         setStyleConsent(consents.filter((c) => c.type === "style_personalization").at(-1) ?? null);
         setStyleError(null);
       })
-      .catch((err) => setStyleError(err instanceof ApiError ? err : new ApiError(0, "Несподівана помилка")));
-  }, [id]);
+      .catch((err) => setStyleError(handleError(err)));
+  }, [id, handleError]);
 
   useEffect(() => {
     loadChild();
@@ -135,7 +137,7 @@ export default function ChildPage() {
       setRevokeOpen(false);
       loadStyle();
     } catch (err) {
-      setStyleError(err instanceof ApiError ? err : new ApiError(0, "Несподівана помилка"));
+      setStyleError(handleError(err));
     } finally {
       setStyleSaving(false);
     }
@@ -148,7 +150,7 @@ export default function ChildPage() {
       const body: PlaySettingsRequest = { sessionLimitMinutes };
       setPlayState(await apiFetch<PlayState>(`/children/${id}/play-settings`, { method: "PUT", body: JSON.stringify(body) }));
     } catch (err) {
-      setPlayError(err instanceof ApiError ? err : new ApiError(0, "Несподівана помилка"));
+      setPlayError(handleError(err));
     } finally {
       setSavingLimit(false);
     }
@@ -160,7 +162,7 @@ export default function ChildPage() {
     try {
       setPlayState(await apiFetch<PlayState>(`/children/${id}/play-state/wake`, { method: "POST" }));
     } catch (err) {
-      setPlayError(err instanceof ApiError ? err : new ApiError(0, "Несподівана помилка"));
+      setPlayError(handleError(err));
     } finally {
       setWaking(false);
     }
@@ -172,7 +174,7 @@ export default function ChildPage() {
       await apiFetch(`/children/${id}/consent`, { method: "POST" });
       loadChild();
     } catch (err) {
-      setChildError(err instanceof ApiError ? err : new ApiError(0, "Несподівана помилка"));
+      setChildError(handleError(err));
     } finally {
       setConsenting(false);
     }
@@ -190,7 +192,7 @@ export default function ChildPage() {
       setJoinCode("");
       loadGroups();
     } catch (err) {
-      setJoinError(err instanceof ApiError ? err : new ApiError(0, "Несподівана помилка"));
+      setJoinError(handleError(err));
     } finally {
       setJoining(false);
     }
@@ -202,7 +204,7 @@ export default function ChildPage() {
       await apiFetch(`/children/${id}/groups/${groupId}`, { method: "DELETE" });
       loadGroups();
     } catch (err) {
-      setGroupsError(err instanceof ApiError ? err : new ApiError(0, "Несподівана помилка"));
+      setGroupsError(handleError(err));
     } finally {
       setLeavingGroupId(null);
     }
@@ -227,7 +229,7 @@ export default function ChildPage() {
       await apiFetch(`/children/${id}`, { method: "DELETE" });
       setDeleted(true);
     } catch (err) {
-      setDeleteError(err instanceof ApiError ? err : new ApiError(0, "Несподівана помилка"));
+      setDeleteError(handleError(err));
       setDeleting(false);
     }
   }
@@ -265,7 +267,7 @@ export default function ChildPage() {
         <AppHeader />
         <main className="flex flex-1 flex-col items-center justify-center gap-3 p-8">
           <p className="text-danger">
-            {childError?.status === 404 ? "Дитину не знайдено." : (childError?.message ?? "Дитину не знайдено.")}
+            {childError?.status === 404 ? "Дитину не знайдено." : (childError ? errorText(childError) : "Дитину не знайдено.")}
           </p>
           <Link href="/dashboard" className="text-sm">
             ← До кабінету
@@ -341,7 +343,7 @@ export default function ChildPage() {
             <SectionHeader title="Групи" description="Клас або гурток, у якому дитина проходить уроки." />
 
             {groupsError ? (
-              <p className="text-danger border-line-soft border-b px-6 py-4 text-sm">{groupsError.message}</p>
+              <p className="text-danger border-line-soft border-b px-6 py-4 text-sm">{errorText(groupsError)}</p>
             ) : null}
             {!groups && !groupsError ? (
               <p className="text-ink-muted border-line-soft border-b px-6 py-4 text-sm">Завантаження…</p>
@@ -450,7 +452,7 @@ export default function ChildPage() {
                   </SecondaryButton>
                 </div>
               ) : null}
-              {playError ? <p className="text-danger text-sm">{playError.message}</p> : null}
+              {playError ? <p className="text-danger text-sm">{errorText(playError)}</p> : null}
             </div>
           </Section>
 
@@ -495,7 +497,7 @@ export default function ChildPage() {
                 {style?.consented && !style.answers ? (
                   <p className="text-ink-muted text-sm">Дитина ще нічого не обрала — кнопка-пензлик на її полиці уроків.</p>
                 ) : null}
-                {styleError ? <p className="text-danger text-sm">{styleError.message}</p> : null}
+                {styleError ? <p className="text-danger text-sm">{errorText(styleError)}</p> : null}
               </div>
             </Section>
           ) : null}
@@ -508,7 +510,7 @@ export default function ChildPage() {
             />
 
             {historyError ? (
-              <p className="text-danger px-6 py-4 text-sm">{historyError.message}</p>
+              <p className="text-danger px-6 py-4 text-sm">{errorText(historyError)}</p>
             ) : null}
             {!history && !historyError ? (
               <p className="text-ink-muted px-6 py-4 text-sm">Завантаження…</p>
@@ -680,7 +682,7 @@ export default function ChildPage() {
             placeholder={child.displayName}
             aria-label="Ім'я дитини для підтвердження"
           />
-          {deleteError ? <p className="text-danger text-sm">{deleteError.message}</p> : null}
+          {deleteError ? <p className="text-danger text-sm">{errorText(deleteError)}</p> : null}
         </Modal>
       ) : null}
     </>
@@ -698,7 +700,7 @@ function consentHistoryText(consent: ConsentEntry | null): string {
 function joinErrorText(error: ApiError): string {
   if (error.code === "CHILD_NOT_ACTIVE") return "Спершу надайте згоду для цієї дитини.";
   if (error.code === "GROUP_INACTIVE") return "Ця група більше не активна.";
-  return error.message;
+  return errorText(error);
 }
 
 function attemptsLabel(n: number): string {

@@ -50,17 +50,39 @@ export function ensureCsrfCookie(): void {
   void fetch("/login", { credentials: "include", headers: { "X-Requested-With": "XMLHttpRequest" } }).catch(() => {});
 }
 
+const STATUS_MESSAGES: Record<number, string> = {
+  0: "Немає зв'язку із сервером. Перевірте інтернет і спробуйте ще раз.",
+  400: "Дані введено неправильно. Перевірте поля й спробуйте ще раз.",
+  401: "Сесія завершилась. Увійдіть ще раз.",
+  403: "Недостатньо прав для цієї дії.",
+  404: "Не знайдено.",
+  409: "Цю дію зараз виконати не можна: дані вже змінились.",
+  413: "Завеликий запит.",
+  422: "Не вдалося обробити запит.",
+};
+
+/**
+ * A Ukrainian sentence for an HTTP status — the default message of every ApiError. The response's
+ * own status text ("Not Found", "Unauthorized") and the server's free-form detail are English and
+ * technical, so they never become the message (QA1-017); lib/errors.ts refines it by error code.
+ */
+export function statusMessage(status: number): string {
+  return (
+    STATUS_MESSAGES[status] ??
+    (status >= 500 ? "Помилка на сервері. Спробуйте трохи пізніше." : "Не вдалося виконати дію. Спробуйте ще раз.")
+  );
+}
+
 async function toApiError(response: Response): Promise<ApiError> {
   const retryAfterHeader = response.headers.get("Retry-After");
   const retryAfterSeconds = retryAfterHeader ? Number(retryAfterHeader) : undefined;
-  let message = response.statusText || `Request failed with status ${response.status}`;
+  const message = statusMessage(response.status);
   let code: string | undefined;
   let problems: ApiProblem[] | undefined;
   try {
     const data: unknown = await response.json();
     if (data && typeof data === "object") {
       const record = data as Record<string, unknown>;
-      if (typeof record.detail === "string") message = record.detail;
       if (typeof record.code === "string") code = record.code;
       if (Array.isArray(record.problems)) problems = record.problems as ApiProblem[];
     }

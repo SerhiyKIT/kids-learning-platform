@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { apiFetch, ApiError, ensureCsrfCookie } from "@/lib/api";
 import type { DevRegisterRoleRequest, DevRegisterRoleResponse, Role } from "@/lib/api-types";
+import { errorText } from "@/lib/errors";
 import { PASSWORD_TOO_LONG_TEXT, passwordTooLong } from "@/lib/password";
 import { AppHeader } from "@/components/ui/AppHeader";
 import { Alert } from "@/components/ui/Alert";
@@ -223,14 +224,3 @@ function fieldError(error: ApiError | null, path: string): string | undefined {
   return error?.problems?.find((p) => p.path === path)?.message;
 }
 
-function errorText(error: ApiError): string {
-  if (error.status === 429) {
-    return error.retryAfterSeconds
-      ? `Занадто багато спроб. Спробуйте за ${error.retryAfterSeconds} с.`
-      : "Занадто багато спроб. Спробуйте пізніше.";
-  }
-  if (error.problems && error.problems.length > 0) {
-    return error.problems.map((p) => p.message).join(" ");
-  }
-  return error.message;
-}

@@ -5,6 +5,7 @@
 // showing the 403 — the transport (api.ts) deliberately knows nothing about this.
 
 import { ApiError } from "./api";
+import { loginHref } from "./errors";
 
 export const TWO_FACTOR_SETUP_PATH = "/admin/2fa/setup";
 export const TWO_FACTOR_VERIFY_PATH = "/admin/2fa/verify";
@@ -36,7 +37,7 @@ export function twoFactorRedirect(err: unknown): string | null {
 export function adminRedirect(err: unknown): string | null {
   const twoFactorTarget = twoFactorRedirect(err);
   if (twoFactorTarget) return twoFactorTarget;
-  if (err instanceof ApiError && err.status === 401) return "/login";
+  if (err instanceof ApiError && err.status === 401) return loginHref(window.location.pathname + window.location.search);
   if (err instanceof ApiError && err.status === 403) return "/dashboard";
   return null;
 }

@@ -6,6 +6,7 @@ import { useEffect, useState } from "react";
 import { apiFetch, ApiError, logout } from "@/lib/api";
 import type { DeletionPreview, Me } from "@/lib/api-types";
 import { downloadExport } from "@/lib/download";
+import { loginHref, useApiErrors } from "@/lib/errors";
 import { PASSWORD_TOO_LONG_TEXT, passwordTooLong } from "@/lib/password";
 import { AppHeader } from "@/components/ui/AppHeader";
 import { Button } from "@/components/ui/Button";
@@ -31,7 +32,7 @@ export default function AccountPage() {
       .then(setMe)
       .catch((err) => {
         if (err instanceof ApiError && err.status === 401) {
-          router.replace("/login");
+          router.replace(loginHref("/account"));
           return;
         }
         setLoadError("Не вдалося завантажити акаунт.");
@@ -121,6 +122,7 @@ function passwordErrorText(err: unknown, wrongPasswordText: string): string {
 }
 
 function PasswordSection() {
+  const handleError = useApiErrors();
   const [current, setCurrent] = useState("");
   const [next, setNext] = useState("");
   const [repeat, setRepeat] = useState("");
@@ -148,7 +150,8 @@ function PasswordSection() {
       setRepeat("");
       setDone(true);
     } catch (err) {
-      setError(passwordErrorText(err, "Невірний поточний пароль."));
+      const failure = handleError(err);
+      if (failure) setError(passwordErrorText(failure, "Невірний поточний пароль."));
     } finally {
       setSaving(false);
     }
@@ -187,6 +190,7 @@ function PasswordSection() {
 }
 
 function SessionsSection({ onDone }: { onDone: () => void }) {
+  const handleError = useApiErrors();
   const [open, setOpen] = useState(false);
   const [working, setWorking] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -197,7 +201,8 @@ function SessionsSection({ onDone }: { onDone: () => void }) {
     try {
       await apiFetch("/me/logout-everywhere", { method: "POST" });
       onDone();
-    } catch {
+    } catch (err) {
+      if (!handleError(err)) return;
       setError("Не вдалося вийти на всіх пристроях. Спробуйте ще раз.");
       setWorking(false);
     }
@@ -240,6 +245,7 @@ function SessionsSection({ onDone }: { onDone: () => void }) {
 }
 
 function ExportSection() {
+  const handleError = useApiErrors();
   const [working, setWorking] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -248,7 +254,8 @@ function ExportSection() {
     setError(null);
     try {
       await downloadExport("/me/export", "kidlearn-account.json");
-    } catch {
+    } catch (err) {
+      if (!handleError(err)) return;
       setError("Не вдалося підготувати файл. Спробуйте ще раз.");
     } finally {
       setWorking(false);
@@ -272,6 +279,7 @@ function ExportSection() {
 }
 
 function DeleteSection({ onDeleted }: { onDeleted: () => void }) {
+  const handleError = useApiErrors();
   const [preview, setPreview] = useState<DeletionPreview | null>(null);
   const [open, setOpen] = useState(false);
   const [password, setPassword] = useState("");
@@ -295,7 +303,9 @@ function DeleteSection({ onDeleted }: { onDeleted: () => void }) {
       await apiFetch("/me", { method: "DELETE", body: JSON.stringify({ password }) });
       onDeleted();
     } catch (err) {
-      setError(passwordErrorText(err, "Невірний пароль."));
+      const failure = handleError(err);
+      if (!failure) return;
+      setError(passwordErrorText(failure, "Невірний пароль."));
       setPassword("");
       setWorking(false);
     }

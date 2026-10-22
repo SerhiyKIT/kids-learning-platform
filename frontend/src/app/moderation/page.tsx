@@ -13,6 +13,7 @@ import {
 } from "@/lib/admin-types";
 import type { Scene } from "@/lib/scenario-types";
 import { isChoiceScene, isDemoScene } from "@/lib/scenario-types";
+import { errorText } from "@/lib/errors";
 import { adminRedirect } from "@/lib/two-factor";
 import { AppHeader } from "@/components/ui/AppHeader";
 import { Button } from "@/components/ui/Button";
@@ -58,7 +59,7 @@ function actionErrorText(action: Action, err: unknown): string {
       return "Сервіс озвучки зараз недоступний. Спробуйте пізніше.";
     }
     if (err.status === 409) return "Стан версії вже змінився. Оновіть сторінку.";
-    return err.message;
+    return errorText(err);
   }
   return "Несподівана помилка";
 }

@@ -9,6 +9,7 @@ import { Alert } from "@/components/ui/Alert";
 import { Button } from "@/components/ui/Button";
 import { AuthLayout, Card, CardBody, CardFooter, CardHeader, PageHeading } from "@/components/ui/Card";
 import { Field, PasswordInput, TextInput } from "@/components/ui/Field";
+import { errorText as apiErrorText, safeNext } from "@/lib/errors";
 import { twoFactorRedirect } from "@/lib/two-factor";
 
 export default function LoginPage() {
@@ -28,7 +29,8 @@ export default function LoginPage() {
     setError(null);
     try {
       await loginWithFormPost(email, password);
-      router.push("/dashboard");
+      // Back to the page the expired session interrupted (lib/errors.ts) — only one of our own.
+      router.push(safeNext(new URLSearchParams(window.location.search).get("next")) ?? "/dashboard");
     } catch (err) {
       // An admin with 2FA enabled is logged in but pending verification: /auth/me answers 403.
       const twoFactorTarget = twoFactorRedirect(err);
@@ -125,5 +127,5 @@ function errorText(error: ApiError): string {
   if (error.status === 401) {
     return "Невірний email або пароль. Перевірте дані та спробуйте ще раз.";
   }
-  return error.message;
+  return apiErrorText(error);
 }

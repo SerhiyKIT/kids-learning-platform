@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 import { apiFetch, ApiError } from "@/lib/api";
+import { errorText, useApiErrors } from "@/lib/errors";
 import type { CreateGroupRequest, Group } from "@/lib/api-types";
 
 const STATUS_BADGE = {
@@ -11,6 +12,7 @@ const STATUS_BADGE = {
 };
 
 export default function GroupsPage() {
+  const handleError = useApiErrors();
   const [groups, setGroups] = useState<Group[] | null>(null);
   const [error, setError] = useState<ApiError | null>(null);
   const [copiedId, setCopiedId] = useState<string | null>(null);
@@ -23,8 +25,8 @@ export default function GroupsPage() {
   const load = useCallback(() => {
     apiFetch<Group[]>("/groups")
       .then(setGroups)
-      .catch((err) => setError(err instanceof ApiError ? err : new ApiError(0, "Unexpected error")));
-  }, []);
+      .catch((err) => setError(handleError(err)));
+  }, [handleError]);
 
   useEffect(() => {
     load();
@@ -41,7 +43,7 @@ export default function GroupsPage() {
       setCreating(false);
       load();
     } catch (err) {
-      setCreateError(err instanceof ApiError ? err : new ApiError(0, "Unexpected error"));
+      setCreateError(handleError(err));
     } finally {
       setSubmitting(false);
     }
@@ -98,9 +100,9 @@ export default function GroupsPage() {
           </button>
         </form>
       ) : null}
-      {createError ? <p className="text-red-600">{createError.message}</p> : null}
+      {createError ? <p className="text-red-600">{errorText(createError)}</p> : null}
 
-      {error ? <p className="text-red-600">{error.message}</p> : null}
+      {error ? <p className="text-red-600">{errorText(error)}</p> : null}
       {!groups && !error ? <p>Завантаження…</p> : null}
       {groups && groups.length === 0 ? (
         <p className="text-black/60 dark:text-white/60">Ще немає жодної групи.</p>

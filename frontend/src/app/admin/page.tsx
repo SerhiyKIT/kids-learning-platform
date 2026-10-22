@@ -6,6 +6,7 @@ import { useEffect, useState } from "react";
 import { apiFetch, ApiError, logout } from "@/lib/api";
 import type { PendingReviewEntry, VoicingResult } from "@/lib/admin-types";
 import type { Me } from "@/lib/api-types";
+import { loginHref } from "@/lib/errors";
 import { twoFactorRedirect } from "@/lib/two-factor";
 import { AppHeader } from "@/components/ui/AppHeader";
 import { Pill } from "@/components/ui/Pill";
@@ -44,7 +45,7 @@ export default function AdminHomePage() {
           return;
         }
         if (err instanceof ApiError && err.status === 401) {
-          router.replace("/login");
+          router.replace(loginHref("/admin"));
           return;
         }
         setLoadError("Не вдалося завантажити адмін-кабінет.");

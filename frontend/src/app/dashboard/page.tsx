@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 import { apiFetch, ApiError, logout } from "@/lib/api";
+import { errorText, loginHref, useApiErrors } from "@/lib/errors";
 import type { Child, Group, Me } from "@/lib/api-types";
 import { AppHeader } from "@/components/ui/AppHeader";
 import { Avatar, tintFor } from "@/components/ui/Avatar";
@@ -26,6 +27,7 @@ const CHILD_STATUS: Record<Child["status"], { label: string; tone: "ok" | "waiti
 };
 
 export default function DashboardPage() {
+  const handleError = useApiErrors();
   const router = useRouter();
   const [me, setMe] = useState<Me | null>(null);
   const [children, setChildren] = useState<Child[] | null>(null);
@@ -62,7 +64,7 @@ export default function DashboardPage() {
       })
       .catch((err) => {
         if (err instanceof ApiError && err.status === 401) {
-          router.replace("/login");
+          router.replace(loginHref("/dashboard"));
           return;
         }
         const twoFactorTarget = twoFactorRedirect(err);
@@ -71,10 +73,10 @@ export default function DashboardPage() {
           router.replace(twoFactorTarget);
           return;
         }
-        setLoadError(err instanceof ApiError ? err : new ApiError(0, "Несподівана помилка"));
+        setLoadError(handleError(err));
       })
       .finally(() => setLoading(false));
-  }, [router]);
+  }, [router, handleError]);
 
   useEffect(() => {
     load();
@@ -88,7 +90,7 @@ export default function DashboardPage() {
       setResendState("sent");
     } catch (err) {
       setResendState("idle");
-      setResendError(err instanceof ApiError ? err : new ApiError(0, "Несподівана помилка"));
+      setResendError(handleError(err));
     }
   }
 
@@ -113,7 +115,7 @@ export default function DashboardPage() {
       <>
         <AppHeader />
         <main className="flex flex-1 items-center justify-center p-8">
-          <p className="text-danger">{loadError?.message ?? "Не вдалося завантажити кабінет."}</p>
+          <p className="text-danger">{loadError ? errorText(loadError) : "Не вдалося завантажити кабінет."}</p>
         </main>
       </>
     );
@@ -147,7 +149,7 @@ export default function DashboardPage() {
                         ? resendError.retryAfterSeconds
                           ? `Занадто часто. Спробуйте через ${resendError.retryAfterSeconds} с.`
                           : "Занадто часто. Спробуйте пізніше."
-                        : resendError.message}
+                        : errorText(resendError)}
                     </span>
                   ) : null}
                 </>

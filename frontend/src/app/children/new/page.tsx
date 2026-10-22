@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { apiFetch, ApiError } from "@/lib/api";
+import { errorText, useApiErrors } from "@/lib/errors";
 import type { Child, CreateChildRequest, ParentRelation } from "@/lib/api-types";
 
 const CURRENT_YEAR = new Date().getFullYear();
@@ -18,6 +19,7 @@ const RELATION_LABELS: Record<ParentRelation, string> = {
 };
 
 export default function NewChildPage() {
+  const handleError = useApiErrors();
   const router = useRouter();
   const [displayName, setDisplayName] = useState("");
   const [age, setAge] = useState(AGE_OPTIONS[2]);
@@ -41,7 +43,7 @@ export default function NewChildPage() {
       });
       router.push(`/children/${child.id}`);
     } catch (err) {
-      setError(err instanceof ApiError ? err : new ApiError(0, "Unexpected error"));
+      setError(handleError(err));
       setSubmitting(false);
     }
   }
@@ -124,11 +126,11 @@ function ErrorMessage({ error }: { error: ApiError }) {
       <ul className="text-red-600">
         {error.problems.map((p, i) => (
           <li key={i}>
-            {p.path}: {p.message}
+            {p.path}: {errorText(p)}
           </li>
         ))}
       </ul>
     );
   }
-  return <p className="text-red-600">{error.message}</p>;
+  return <p className="text-red-600">{errorText(error)}</p>;
 }
