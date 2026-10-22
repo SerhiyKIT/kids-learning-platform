@@ -112,7 +112,7 @@ public class AttemptService {
 	}
 
 	@Transactional
-	public LessonAttempt startAttempt(UUID parentId, UUID childId, UUID lessonVersionId) {
+	public StartAttemptResponse startAttempt(UUID parentId, UUID childId, UUID lessonVersionId) {
 		requireChildOwnership(parentId, childId);
 		LessonAssignment assignment = resolveAssignmentsForChild(childId).stream()
 				.filter(a -> a.getLessonVersionId().equals(lessonVersionId))
@@ -120,8 +120,10 @@ public class AttemptService {
 				.orElseThrow(this::notFound);
 		// After the ownership/assignment checks, so a stranger still gets 404, not CHILD_RESTING.
 		playStateService.onLessonStart(childId);
-		return lessonAttemptRepository.save(
+		LessonAttempt attempt = lessonAttemptRepository.save(
 				new LessonAttempt(childId, assignment.getId(), lessonVersionId, clock.instant()));
+		UUID lessonId = lessonVersionRepository.findById(lessonVersionId).orElseThrow(this::notFound).getLessonId();
+		return new StartAttemptResponse(attempt.getId(), lessonId);
 	}
 
 	@Transactional

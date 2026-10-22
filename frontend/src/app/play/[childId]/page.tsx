@@ -37,7 +37,7 @@ function pickGreeting(): ShellLineKey {
  */
 export default function ShelfPage() {
   const { childId } = useParams<{ childId: string }>();
-  const { line, style, styleReady, setStyle } = useKidMode();
+  const { line, style, styleReady, setStyle, prepareLesson } = useKidMode();
   const { play, replay } = useKidAudio();
   const speaking = useSpeakingUrl() !== null;
   const [lessons, setLessons] = useState<AvailableLesson[] | null>(null);
@@ -167,6 +167,10 @@ export default function ShelfPage() {
                     ) : null}
                     <Link
                       href={`/play/${childId}/${lesson.lessonVersionId}`}
+                      // The lesson screen is fetched while the shelf is on display, so a tap starts
+                      // the lesson's own requests straight away (QA1-036).
+                      prefetch
+                      onClick={() => prepareLesson(lesson.lessonVersionId)}
                       aria-label={done ? `${lesson.title} — пройдено` : `Грати урок ${lesson.title}`}
                       className={`relative block h-[clamp(140px,56dvh,344px)] w-[clamp(108px,43dvh,264px)] overflow-hidden rounded-[clamp(24px,7dvh,40px)] border-[clamp(4px,1.3dvh,7px)] border-white no-underline shadow-[0_14px_0_var(--color-kid-card-shadow)] ${
                         isNext ? "animate-[breathe_2.4s_ease-in-out_infinite] motion-reduce:animate-none" : ""

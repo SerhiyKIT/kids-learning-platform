@@ -14,6 +14,7 @@ import { ExitButton, KidStage, ListenButton, Mascot } from "./KidChrome";
 import { KidModeContext, type KidMode, type ShellLineKey } from "./kid-mode-context";
 import { KidThemeScope } from "./KidTheme";
 import { useDialogFocus } from "@/components/ui/use-dialog-focus";
+import { fetchLessonStart, type LessonStart } from "./lesson-start";
 import { useOutbox } from "./outbox";
 
 /**
@@ -37,6 +38,26 @@ export function KidModeProvider({ childId, children }: { childId: string; childr
   const portrait = usePortrait();
   const turnVoiced = useRef(false);
   const outbox = useOutbox();
+  // Started on the shelf's tap, taken by the lesson screen (startLesson below).
+  const lessonStarts = useRef(new Map<string, Promise<LessonStart>>());
+  const prepareLesson = useCallback(
+    (lessonVersionId: string) => {
+      const start = fetchLessonStart(childId, lessonVersionId);
+      start.catch(() => {}); // the lesson screen reports it; never an unhandled rejection
+      lessonStarts.current.set(lessonVersionId, start);
+    },
+    [childId],
+  );
+
+  const startLesson = useCallback(
+    (lessonVersionId: string) => {
+      const prepared = lessonStarts.current.get(lessonVersionId);
+      lessonStarts.current.delete(lessonVersionId);
+      return prepared ?? fetchLessonStart(childId, lessonVersionId);
+    },
+    [childId],
+  );
+
   const sendResult = useCallback(<T,>(path: string, body: unknown) => outbox.send<T>(path, body), [outbox]);
 
   useEffect(() => {
@@ -90,8 +111,8 @@ export function KidModeProvider({ childId, children }: { childId: string; childr
   }
 
   const value = useMemo<KidMode>(
-    () => ({ childId, line, requestExit, style, styleReady, setStyle, sendResult }),
-    [childId, line, requestExit, style, styleReady, sendResult],
+    () => ({ childId, line, requestExit, style, styleReady, setStyle, sendResult, prepareLesson, startLesson }),
+    [childId, line, requestExit, style, styleReady, sendResult, prepareLesson, startLesson],
   );
 
   return (

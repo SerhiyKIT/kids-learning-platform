@@ -15,6 +15,7 @@ import java.util.UUID;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.mock.web.MockHttpSession;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.web.servlet.MockMvc;
@@ -39,6 +40,9 @@ class PlaythroughControllerTest extends WebIntegrationTest {
 
 	@Autowired
 	private PasswordEncoder passwordEncoder;
+
+	@Autowired
+	private JdbcTemplate jdbc;
 
 	private record Fixture(UUID versionId, MockHttpSession teacherSession, UUID groupId, String joinCode,
 			MockHttpSession parentSession, UUID childId) {
@@ -184,6 +188,20 @@ class PlaythroughControllerTest extends WebIntegrationTest {
 				.andExpect(status().isCreated())
 				.andReturn();
 		return UUID.fromString(JsonPath.read(result.getResponse().getContentAsString(), "$.attemptId"));
+	}
+
+	@Test
+	void startingAnAttemptAlsoTellsWhichLessonItIs() throws Exception {
+		Fixture fixture = buildAssignedFixture();
+		UUID lessonId = jdbc.queryForObject("SELECT lesson_id FROM lesson_versions WHERE id = ?", UUID.class, fixture.versionId());
+
+		mockMvc.perform(post("/api/children/" + fixture.childId() + "/attempts").with(csrf())
+						.session(fixture.parentSession())
+						.contentType(MediaType.APPLICATION_JSON)
+						.content("{\"lessonVersionId\":\"%s\"}".formatted(fixture.versionId())))
+				.andExpect(status().isCreated())
+				.andExpect(jsonPath("$.attemptId").isNotEmpty())
+				.andExpect(jsonPath("$.lessonId").value(lessonId.toString()));
 	}
 
 	@Test

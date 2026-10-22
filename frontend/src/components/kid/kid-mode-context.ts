@@ -3,6 +3,7 @@
 import { createContext, useContext } from "react";
 import type { ShellLine } from "@/lib/api-types";
 import type { StyleResponse } from "@/lib/theme-catalog";
+import type { LessonStart } from "./lesson-start";
 
 /** Keys of the guide's fixed child-mode lines (backend: ua.kidlearn.aipipeline.KidShellLines). */
 export type ShellLineKey =
@@ -39,6 +40,13 @@ export interface KidMode {
   setStyle: (style: StyleResponse) => void;
   /** POSTs the child's results through the outbox (see outbox.ts): kept and retried while offline. */
   sendResult: <T>(path: string, body: unknown) => Promise<T>;
+  /**
+   * The shelf's tap: starts the lesson (attempt + scenario + album, see lesson-start.ts) right
+   * away, so its requests run alongside the navigation to the lesson screen.
+   */
+  prepareLesson: (lessonVersionId: string) => void;
+  /** The lesson screen: takes the start prepared by the tap (once), or starts the lesson now. */
+  startLesson: (lessonVersionId: string) => Promise<LessonStart>;
 }
 
 export const KidModeContext = createContext<KidMode>({
@@ -49,6 +57,8 @@ export const KidModeContext = createContext<KidMode>({
   styleReady: false,
   setStyle: () => {},
   sendResult: () => Promise.reject(new Error("No child mode")),
+  prepareLesson: () => {},
+  startLesson: () => Promise.reject(new Error("No child mode")),
 });
 
 export function useKidMode(): KidMode {

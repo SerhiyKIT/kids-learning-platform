@@ -52,8 +52,7 @@ public class AttemptController {
 	@ResponseStatus(HttpStatus.CREATED)
 	public StartAttemptResponse startAttempt(@AuthenticationPrincipal AppUserPrincipal principal,
 			@PathVariable UUID childId, @Valid @RequestBody StartAttemptRequest request) {
-		LessonAttempt attempt = attemptService.startAttempt(principal.getId(), childId, request.lessonVersionId());
-		return new StartAttemptResponse(attempt.getId());
+		return attemptService.startAttempt(principal.getId(), childId, request.lessonVersionId());
 	}
 
 	@PostMapping("/api/attempts/{attemptId}/answers")

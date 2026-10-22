@@ -1,4 +1,4 @@
-import { expect, test } from "@playwright/test";
+import { expect, type Request, type Response, test } from "@playwright/test";
 import { teacherGroupWithLesson } from "./support/content";
 import { expectKidTargets } from "./support/kid";
 import { exitChildMode, playStubLesson } from "./support/kid-play";
@@ -35,7 +35,27 @@ test("child mode: join by code → play choice + sorting → celebration → sti
   await expect(page.getByRole("img", { name: "Поверни пристрій горизонтально" })).toHaveCount(0);
   await expect(page.locator(".kid-shelf a")).toHaveCount(1);
   await expectKidTargets(page);
+  // QA1-036: the tap itself starts the lesson, in one round trip — the attempt, the scenario and
+  // the album all leave before the attempt's answer is back, and nothing else is waited for.
+  const timeline: string[] = [];
+  const onRequest = (r: Request) => {
+    const path = new URL(r.url()).pathname;
+    if (path.startsWith("/api/children/")) timeline.push(`request ${r.method()} ${path.replace(/^\/api\/children\/[^/]+/, "")}`);
+  };
+  const onResponse = (r: Response) => {
+    if (r.request().method() === "POST" && /\/attempts$/.test(r.url())) timeline.push("attempt answered");
+  };
+  page.on("request", onRequest);
+  page.on("response", onResponse);
   await page.locator(".kid-shelf a").first().click();
+  await page.locator('button[aria-label="Далі"]').waitFor();
+  page.off("request", onRequest);
+  page.off("response", onResponse);
+  const answered = timeline.indexOf("attempt answered");
+  expect(timeline.slice(0, answered)).toEqual(
+    expect.arrayContaining(["request POST /attempts", expect.stringMatching(/^request GET \/lessons\/.+\/scenario$/), "request GET /stickers"]),
+  );
+  expect(timeline.filter((t) => t.includes("available-lessons"))).toEqual([]);
   await page.locator('button[aria-label="Далі"]').waitFor();
   await expectKidTargets(page);
 

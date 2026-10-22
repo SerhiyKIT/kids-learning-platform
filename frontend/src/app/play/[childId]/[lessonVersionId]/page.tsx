@@ -3,23 +3,17 @@
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { apiFetch, ApiError } from "@/lib/api";
-import type { PlayState, StickersResponse } from "@/lib/api-types";
+import { ApiError } from "@/lib/api";
+import type { PlayState } from "@/lib/api-types";
 import { ExitButton, KidStage, Mascot } from "@/components/kid/KidChrome";
 import { LessonFinale } from "@/components/kid/LessonFinale";
 import { SleepScreen } from "@/components/kid/SleepScreen";
+import { useKidMode } from "@/components/kid/kid-mode-context";
 import { useKidAudio } from "@/components/scene-engine/KidAudio";
 import { PlaythroughEngine } from "@/components/scene-engine/PlaythroughEngine";
 import { voiceLineAudioUrls, type LessonScenario } from "@/lib/scenario-types";
 
-interface StartAttemptResponse {
-  attemptId: string;
-}
 
-interface AvailableLesson {
-  lessonVersionId: string;
-  lessonId: string;
-}
 
 type LoadState =
   | { status: "loading" }
@@ -37,6 +31,7 @@ export default function PlaythroughPage() {
   const { childId, lessonVersionId } = useParams<{ childId: string; lessonVersionId: string }>();
   const router = useRouter();
   const { preload } = useKidAudio();
+  const { startLesson } = useKidMode();
   const [state, setState] = useState<LoadState>({ status: "loading" });
   // Starting an attempt is a real POST with a side effect, so it must run at most once — even
   // under React StrictMode's dev-only mount/cleanup/remount cycle, which reuses this same ref
@@ -50,25 +45,15 @@ export default function PlaythroughPage() {
     started.current = true;
     (async () => {
       try {
-        const { attemptId } = await apiFetch<StartAttemptResponse>(`/children/${childId}/attempts`, {
-          method: "POST",
-          body: JSON.stringify({ lessonVersionId }),
-        });
-        const [scenario, lessons, album] = await Promise.all([
-          apiFetch<LessonScenario>(`/children/${childId}/lessons/${lessonVersionId}/scenario`),
-          apiFetch<AvailableLesson[]>(`/children/${childId}/available-lessons`),
-          // Only decides between "new sticker" and "replay" — never worth failing the lesson over.
-          apiFetch<StickersResponse>(`/children/${childId}/stickers`).catch(() => null),
-        ]);
+        // Usually already under way since the tap on the shelf (QA1-036).
+        const { attemptId, lessonId, scenario, earnedBefore } = await startLesson(lessonVersionId);
         if (scenario.scenes[0]) preload(voiceLineAudioUrls(scenario.scenes[0]));
-        const lessonId = lessons.find((l) => l.lessonVersionId === lessonVersionId)?.lessonId ?? lessonVersionId;
-        const earnedBefore = album?.stickers.some((s) => s.lessonId === lessonId) ?? false;
         setState({ status: "ready", attemptId, scenario, lessonId, earnedBefore });
       } catch (err) {
         setState(err instanceof ApiError && err.code === "CHILD_RESTING" ? { status: "resting" } : { status: "error" });
       }
     })();
-  }, [childId, lessonVersionId, preload]);
+  }, [lessonVersionId, preload, startLesson]);
 
   const backToShelf = useCallback(() => router.push(`/play/${childId}`), [router, childId]);
 
