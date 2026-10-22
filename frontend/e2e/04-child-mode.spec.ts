@@ -10,7 +10,12 @@ test("child mode: join by code → play choice + sorting → celebration → sti
   const page = parent.page;
 
   await page.goto(`/children/${parent.childId}`);
-  await page.getByLabel("Приєднатися за кодом").fill(group.joinCode);
+  // QA1-013: a wrong code gets a Ukrainian explanation; the right one works as typed on a phone —
+  // lower case, with stray spaces.
+  await page.getByLabel("Приєднатися за кодом").fill("ZZZZZZZZ");
+  await page.getByRole("button", { name: "Приєднатися" }).click();
+  await expect(page.getByText("Код не знайдено. Перевірте, чи правильно його введено.")).toBeVisible();
+  await page.getByLabel("Приєднатися за кодом").fill(`  ${group.joinCode.toLowerCase()} `);
   await page.getByRole("button", { name: "Приєднатися" }).click();
   await expect(page.getByText("Зайчики")).toBeVisible();
 

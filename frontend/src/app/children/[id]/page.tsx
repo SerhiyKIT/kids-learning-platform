@@ -187,7 +187,7 @@ export default function ChildPage() {
     try {
       await apiFetch("/groups/join", {
         method: "POST",
-        body: JSON.stringify({ joinCode, childId: id }),
+        body: JSON.stringify({ joinCode: joinCode.trim(), childId: id }),
       });
       setJoinCode("");
       loadGroups();
@@ -699,7 +699,8 @@ function consentHistoryText(consent: ConsentEntry | null): string {
 
 function joinErrorText(error: ApiError): string {
   if (error.code === "CHILD_NOT_ACTIVE") return "Спершу надайте згоду для цієї дитини.";
-  if (error.code === "GROUP_INACTIVE") return "Ця група більше не активна.";
+  if (error.code === "GROUP_INACTIVE") return "Ця група вже неактивна.";
+  if (error.status === 404) return "Код не знайдено. Перевірте, чи правильно його введено.";
   return errorText(error);
 }
 

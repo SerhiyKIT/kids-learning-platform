@@ -257,6 +257,34 @@ class GroupControllerTest extends WebIntegrationTest {
 	}
 
 	@Test
+	void aCodeTypedInLowerCaseOrWithSpacesStillJoins() throws Exception {
+		String teacherEmail = uniqueEmail("teacher");
+		registerTeacher(teacherEmail);
+		GroupInfo group = createGroup(login(teacherEmail), "Class A");
+		String parentEmail = uniqueEmail("parent");
+		registerVerifiedParent(parentEmail);
+		MockHttpSession parentSession = login(parentEmail);
+		UUID first = createActiveChild(parentSession, "Kid");
+		UUID second = createActiveChild(parentSession, "Kid 2");
+
+		// As typed from a note, and as pasted from a message (a JSON-escaped tab and newline around it).
+		String[] typed = {"  " + group.joinCode().toLowerCase() + " ", "\\t" + group.joinCode() + "\\n"};
+		UUID[] children = {first, second};
+		for (int i = 0; i < typed.length; i++) {
+			mockMvc.perform(post("/api/groups/join").with(csrf())
+							.session(parentSession)
+							.contentType(MediaType.APPLICATION_JSON)
+							.content(joinBody(typed[i], children[i])))
+					.andExpect(status().isOk());
+		}
+		Number count = (Number) entityManager
+				.createQuery("select count(m) from GroupMember m where m.id.groupId = :groupId")
+				.setParameter("groupId", group.id())
+				.getSingleResult();
+		assertThat(count.longValue()).isEqualTo(2);
+	}
+
+	@Test
 	void joinIsIdempotent() throws Exception {
 		String teacherEmail = uniqueEmail("teacher");
 		registerTeacher(teacherEmail);
