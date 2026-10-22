@@ -2,6 +2,9 @@ spring:
   application:
     name: backend
   jpa:
+    # No session held open for the whole request: every database access happens inside a service
+    # transaction, and a connection isn't kept while a slow client reads the response (QA1-005).
+    open-in-view: false
     hibernate:
       ddl-auto: validate
   flyway:
