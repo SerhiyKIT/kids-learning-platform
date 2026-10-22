@@ -364,6 +364,7 @@ class AccessMatrixTest extends WebIntegrationTest {
 				new Case(HttpMethod.POST, "/api/bootstrap/admin",
 						"{\"token\":\"%s\",\"email\":\"matrix-boot@example.test\",\"password\":\"%s\",\"displayName\":\"X\"}".formatted(BOOTSTRAP_TOKEN, PASSWORD),
 						open(Expect.GONE)),
+				new Case(HttpMethod.GET, "/api/auth/csrf", null, open(Expect.OK)),
 				new Case(HttpMethod.GET, "/api/auth/me", null, with(anyone(Expect.OK), Actor.ADMIN_SETUP_REQUIRED, Expect.OK)),
 				new Case(HttpMethod.POST, "/api/auth/resend-verification", null, anyone(Expect.OK)),
 				new Case(HttpMethod.POST, "/api/auth/reauthenticate", "{\"password\":\"wrong\"}", anyone(Expect.SKIP)),

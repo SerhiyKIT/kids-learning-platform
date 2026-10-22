@@ -40,14 +40,11 @@ function readCookie(name: string): string | null {
 /**
  * Fire-and-forget GET that provisions the XSRF-TOKEN cookie before the first state-changing
  * request — the backend only sets it as a side effect of a response passing through its filter
- * chain, so a brand-new session has no cookie yet to echo back. Deliberately targets GET /login
- * (public, and already proxied for AJAX calls — see next.config.ts) rather than an
- * authentication-requiring endpoint like /api/auth/me: an anonymous request to a protected
- * endpoint gets captured by Spring Security's SavedRequest cache, which would then hijack a
- * later successful login's redirect target away from this app.
+ * chain, so a brand-new session has no cookie yet to echo back. GET /api/auth/csrf exists for
+ * exactly this: public, empty 204 (it used to be GET /login, a 404 in every console — QA1-037).
  */
 export function ensureCsrfCookie(): void {
-  void fetch("/login", { credentials: "include", headers: { "X-Requested-With": "XMLHttpRequest" } }).catch(() => {});
+  void fetch(`${API_BASE}/auth/csrf`, { credentials: "include" }).catch(() => {});
 }
 
 const STATUS_MESSAGES: Record<number, string> = {

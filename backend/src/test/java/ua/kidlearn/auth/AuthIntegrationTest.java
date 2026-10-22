@@ -5,6 +5,7 @@ import static org.springframework.security.test.web.servlet.request.SecurityMock
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -60,6 +61,16 @@ class AuthIntegrationTest extends WebIntegrationTest {
 				.andExpect(status().isAccepted())
 				.andReturn().getResponse().getContentAsString();
 		assertThat(again).isEqualTo(first);
+	}
+
+	@Test
+	void theCsrfWarmUpIsAPublicEmptyResponse() throws Exception {
+		// QA1-037: the frontend's CSRF warm-up used GET /login, a 404 in every page's console. That
+		// the XSRF-TOKEN cookie comes with it is checked end to end (e2e 07-security): in this shared
+		// context spring-security-test's csrf() swaps the cookie repository for a session one.
+		mockMvc.perform(get("/api/auth/csrf"))
+				.andExpect(status().isNoContent())
+				.andExpect(content().string(""));
 	}
 
 	@Test

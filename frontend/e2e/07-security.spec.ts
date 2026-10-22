@@ -3,8 +3,15 @@ import { api, openLogin } from "./support/api";
 import { PASSWORD, parentWithChild } from "./support/users";
 
 test("security: anonymous → login; another parent's child → not found; dev endpoints don't exist", async ({ browser, page }) => {
+  // QA1-037: opening the login page costs no failing request (the CSRF warm-up used to 404).
+  const failures: string[] = [];
+  page.on("response", (r) => {
+    if (r.status() >= 400) failures.push(`${r.status()} ${new URL(r.url()).pathname}`);
+  });
   await page.goto("/dashboard");
   await expect(page).toHaveURL(/\/login/);
+  await page.waitForFunction(() => document.cookie.includes("XSRF-TOKEN="));
+  expect(failures.filter((f) => !f.endsWith("/api/auth/me"))).toEqual([]);
 
   const owner = await parentWithChild(browser, "Чужа дитина");
   const stranger = await parentWithChild(browser, "Своя дитина");

@@ -62,6 +62,7 @@ public class SecurityConfig {
 						// The resulting first admin lands in the mandatory-2FA "setup required" gate on
 						// their first login, same as any other admin — see ua.kidlearn.twofa.
 						.requestMatchers(HttpMethod.POST, "/api/bootstrap/admin").permitAll()
+						.requestMatchers(HttpMethod.GET, "/api/auth/csrf").permitAll()
 						.requestMatchers("/login", "/error").permitAll()
 						.anyRequest().authenticated())
 				.csrf(csrf -> csrf

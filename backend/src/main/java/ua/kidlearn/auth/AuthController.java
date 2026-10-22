@@ -39,6 +39,16 @@ public class AuthController {
 		return RegisterResponse.CHECK_EMAIL;
 	}
 
+	/**
+	 * Hands a new browser its XSRF-TOKEN cookie (CsrfCookieFilter writes it on every response)
+	 * before its first POST — and nothing else. The frontend used to ask GET /login for it, which
+	 * answered 404 into every page's console (QA1-037).
+	 */
+	@GetMapping("/csrf")
+	@ResponseStatus(HttpStatus.NO_CONTENT)
+	public void csrf() {
+	}
+
 	@GetMapping("/me")
 	public MeResponse me(@AuthenticationPrincipal AppUserPrincipal principal) {
 		return new MeResponse(principal.getId(), principal.getUsername(), principal.getRole(),
