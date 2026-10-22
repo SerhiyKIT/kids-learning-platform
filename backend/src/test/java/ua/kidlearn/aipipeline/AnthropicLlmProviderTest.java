@@ -165,6 +165,18 @@ class AnthropicLlmProviderTest {
 	}
 
 	@Test
+	void anEmergencyNumbersLessonGetsTheVerifiedTableAsItsFacts() {
+		respond(200, toolUseResponse(ScenarioFixtures.VALID_MINIMAL_SCENARIO));
+
+		provider().generate(new GenerationRequest("emergency_numbers", List.of("2.2"), "age_5_6", null, null, null));
+
+		String content = objectMapper.readTree(lastRequest.get().body()).path("messages").get(0).path("content").asText();
+		String facts = content.substring(content.indexOf("VERIFIED_FACTS:"), content.indexOf("ASSET_REGISTRY:"));
+		assertThat(facts).contains("101 — Пожежно-рятувальна служба", "102 — Поліція", "103 — Екстрена медична допомога",
+				"104 — Аварійна служба газу", "112 — Єдиний номер").doesNotContain("(немає");
+	}
+
+	@Test
 	void previousProblemsAreFedBackIntoTheUserMessage() {
 		respond(200, toolUseResponse(ScenarioFixtures.VALID_MINIMAL_SCENARIO));
 

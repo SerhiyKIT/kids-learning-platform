@@ -56,6 +56,24 @@ class ScenarioValidatorTest {
 	}
 
 	@Test
+	void anEmergencyNumberOutsideTheVerifiedTableIsRejected() {
+		String scenario = ScenarioFixtures.VALID_MINIMAL_SCENARIO.replace("\"Look both ways\"", "\"Дзвони 109\"");
+
+		List<ScenarioProblem> problems = validator.validate(parse(scenario));
+
+		assertThat(problems).anyMatch(p -> p.path().endsWith("/label/text") && p.message().contains("109"));
+	}
+
+	@Test
+	void verifiedEmergencyNumbersPass() {
+		String scenario = ScenarioFixtures.VALID_MINIMAL_SCENARIO
+				.replace("\"Look both ways\"", "\"Дзвони 101 або 112\"")
+				.replace("\"Run across fast\"", "\"Дзвони 103\"");
+
+		assertThat(validator.validate(parse(scenario))).isEmpty();
+	}
+
+	@Test
 	void duplicateVoiceLineKeyIsRejected() {
 		String scenario = ScenarioFixtures.VALID_MINIMAL_SCENARIO.replace("\"hint2\"", "\"hint1\"");
 

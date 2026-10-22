@@ -23,6 +23,7 @@ import tools.jackson.databind.ObjectMapper;
 import tools.jackson.databind.node.ArrayNode;
 import tools.jackson.databind.node.ObjectNode;
 import ua.kidlearn.config.LlmProperties;
+import ua.kidlearn.scenario.EmergencyNumber;
 import ua.kidlearn.scenario.ScenarioProblem;
 
 /**
@@ -128,10 +129,12 @@ class AnthropicLlmProvider implements LlmProvider {
 		if (request.learningGoal() != null && !request.learningGoal().isBlank()) {
 			message.append("LEARNING_GOAL: ").append(request.learningGoal()).append('\n');
 		}
-		// TODO: fill VERIFIED_FACTS and ASSET_REGISTRY from real sources once they exist in code
-		// (facts table from docs/Вимоги_модуль_Безпека.md, the exported asset registry). Until then
-		// the prompt's own rule applies: no fact outside VERIFIED_FACTS may be used.
-		message.append("\nVERIFIED_FACTS:\n(немає — не використовуй жодних фактів поза цим блоком)\n");
+		// Emergency numbers come from the one verified table. TODO: the rules of each road-safety
+		// pattern and ASSET_REGISTRY once they exist in code; until then the prompt's own rule
+		// applies to them: no fact outside VERIFIED_FACTS may be used.
+		message.append("\nVERIFIED_FACTS:\n").append("emergency_numbers".equals(request.topic())
+				? EmergencyNumber.factsBlock()
+				: "(немає — не використовуй жодних фактів поза цим блоком)").append('\n');
 		message.append("\nASSET_REGISTRY:\n(реєстр ще не підключено — використовуй короткі описові id у форматі assetRef)\n");
 		message.append("\nJSON_SCHEMA:\n").append(canonicalSchemaText.strip()).append('\n');
 		if (request.previousProblems() != null && !request.previousProblems().isEmpty()) {
