@@ -45,8 +45,9 @@ export default function PlaythroughPage() {
     started.current = true;
     (async () => {
       try {
-        // Usually already under way since the tap on the shelf (QA1-036).
-        const { attemptId, lessonId, scenario, earnedBefore } = await startLesson(lessonVersionId);
+        // Usually already under way since the tap on the shelf (QA1-036). A request that hangs
+        // ends on the friendly "back to the lessons" screen instead of loading forever (QA1-038).
+        const { attemptId, lessonId, scenario, earnedBefore } = await withTimeout(startLesson(lessonVersionId), LESSON_START_TIMEOUT_MS);
         if (scenario.scenes[0]) preload(voiceLineAudioUrls(scenario.scenes[0]));
         setState({ status: "ready", attemptId, scenario, lessonId, earnedBefore });
       } catch (err) {
@@ -80,7 +81,10 @@ export default function PlaythroughPage() {
       <KidStage>
         <ExitButton />
         <div className="relative z-2 flex h-full w-full flex-col items-center justify-center gap-6">
-          <Mascot className="h-[clamp(120px,46dvh,240px)] w-[clamp(100px,38dvh,200px)]" />
+          {/* Loading: the guide "thinks out loud" right away — on a slow network the tap must never
+              look like nothing happened (QA1-038). The dots stay visible with reduced motion. */}
+          <Mascot speaking={state.status === "loading"} className="h-[clamp(120px,46dvh,240px)] w-[clamp(100px,38dvh,200px)]" />
+          {state.status === "loading" ? <ThinkingDots /> : null}
           {state.status === "error" ? (
             <Link
               href={`/play/${childId}`}
@@ -111,4 +115,37 @@ export default function PlaythroughPage() {
   }
 
   return <PlaythroughEngine scenario={state.scenario} attemptId={state.attemptId} onComplete={onComplete} />;
+}
+
+const LESSON_START_TIMEOUT_MS = 15_000;
+
+function withTimeout<T>(promise: Promise<T>, ms: number): Promise<T> {
+  return new Promise<T>((resolve, reject) => {
+    const timer = setTimeout(() => reject(new Error("Lesson start timed out")), ms);
+    promise.then(
+      (value) => {
+        clearTimeout(timer);
+        resolve(value);
+      },
+      (err: unknown) => {
+        clearTimeout(timer);
+        reject(err);
+      },
+    );
+  });
+}
+
+/** Three dots that pulse in turn: "the guide is getting the lesson ready". */
+function ThinkingDots() {
+  return (
+    <div role="status" aria-label="Готуємо урок" className="flex gap-[clamp(8px,2dvh,14px)]">
+      {[0, 1, 2].map((i) => (
+        <span
+          key={i}
+          className="bg-kid-sun size-[clamp(14px,3.5dvh,22px)] animate-[pulsedot_0.9s_ease-in-out_infinite] rounded-full border-[3px] border-white motion-reduce:animate-none"
+          style={{ animationDelay: `${i * 0.15}s` }}
+        />
+      ))}
+    </div>
+  );
 }

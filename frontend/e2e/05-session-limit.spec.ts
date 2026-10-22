@@ -7,7 +7,9 @@ import { PASSWORD, parentWithChild } from "./support/users";
 // The e2e profile makes one "minute" of the limit last a second (app.kid.limit-unit) and the rest 2 minutes.
 test("session limit: parent sets it → after the lesson the child sleeps → reload keeps it → parent wakes the child @phone", async ({ browser, isMobile }) => {
   const group = await teacherGroupWithLesson(browser);
-  const parent = await parentWithChild(browser, "Соня");
+  // No service worker here: WebKit doesn't route requests of a page a worker controls, and the
+  // slow-network check below delays one with page.route.
+  const parent = await parentWithChild(browser, "Соня", { serviceWorkers: "block" });
   const page = parent.page;
   expect((await api(page, "POST", "/groups/join", { joinCode: group.joinCode, childId: parent.childId })).status).toBe(200);
 
@@ -17,7 +19,16 @@ test("session limit: parent sets it → after the lesson the child sleeps → re
 
   await page.goto(`/play/${parent.childId}`);
   await page.getByRole("button", { name: "Почнімо!" }).first().click();
+  // QA1-038: on a slow network the tap is answered at once — the guide "thinks" while the lesson
+  // loads — rather than looking like nothing happened.
+  await page.route("**/api/children/*/attempts", async (route) => {
+    await new Promise((resolve) => setTimeout(resolve, 2_500));
+    await route.continue();
+  });
   await page.locator(".kid-shelf a").first().click();
+  await expect(page.getByRole("status", { name: "Готуємо урок" })).toBeVisible({ timeout: 1_000 });
+  await page.locator('button[aria-label="Далі"]').waitFor();
+  await page.unroute("**/api/children/*/attempts");
   const started = Date.now();
   await playStubLesson(page, isMobile, async () => {
     // The limit applies only when the lesson ends — make sure 10 "minutes" (s) have passed by then.

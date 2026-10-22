@@ -1,4 +1,4 @@
-import { expect, type Browser, type BrowserContext, type Page } from "@playwright/test";
+import { expect, type Browser, type BrowserContext, type BrowserContextOptions, type Page } from "@playwright/test";
 import { api, openLogin } from "./api";
 import { linkFromEmail } from "./mailpit";
 
@@ -28,8 +28,12 @@ export interface Parent {
  * A verified, signed-in parent with one active child, set up through the public API and the
  * verification email (spec 1 covers the same steps through the UI).
  */
-export async function parentWithChild(browser: Browser, childName = "Тестова Дитина"): Promise<Parent & { childId: string }> {
-  const context = await browser.newContext();
+export async function parentWithChild(
+  browser: Browser,
+  childName = "Тестова Дитина",
+  contextOptions: BrowserContextOptions = {},
+): Promise<Parent & { childId: string }> {
+  const context = await browser.newContext(contextOptions);
   const page = await context.newPage();
   const email = uniqueEmail("parent");
   await openLogin(page);
