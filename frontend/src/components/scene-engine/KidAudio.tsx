@@ -158,7 +158,10 @@ export function KidAudioProvider({ children }: { children: ReactNode }) {
         currentUrl.current = null;
         audio.src = silentWav();
       }
-      const started = audio.play().catch(() => {});
+      // Refused even inside the tap: the device or browser won't play sound here (QA1-034).
+      const started = audio.play().catch((err: unknown) => {
+        if (err instanceof DOMException && err.name === "NotAllowedError") setBlocked(true);
+      });
       unlockPending.current = started;
       started.finally(() => {
         if (unlockPending.current === started) unlockPending.current = null;

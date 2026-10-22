@@ -75,6 +75,19 @@ test("child mode: join by code → play choice + sorting → celebration → sti
   // A plain tap on the exit does nothing; holding it opens the adult's password screen.
   await page.getByRole("button", { name: "Вихід для дорослих: утримуйте 2 секунди" }).first().click();
   await expect(page.locator("#kid-exit-password")).toHaveCount(0);
+  // QA1-034: a browser that refuses sound even after «Почнімо!» — the adult gets a quiet hint in
+  // a corner; the child's screen carries on with no error.
+  const silent = await parent.context.newPage();
+  await silent.addInitScript(() => {
+    HTMLMediaElement.prototype.play = () => Promise.reject(new DOMException("Sound is off", "NotAllowedError"));
+  });
+  await silent.goto(`/play/${parent.childId}`);
+  await expect(silent.getByRole("note")).toHaveCount(0);
+  await silent.getByRole("button", { name: "Почнімо!" }).first().click();
+  await expect(silent.getByRole("note")).toContainText("Для дорослого: звук не вмикається");
+  await expect(silent.locator(".kid-shelf a").first()).toBeVisible();
+  await silent.close();
+
   // QA1-035: the exit dialog keeps keyboard focus inside and Esc cancels it.
   const exitButton = page.getByRole("button", { name: "Вихід для дорослих: утримуйте 2 секунди" }).first();
   const box = (await exitButton.boundingBox())!;

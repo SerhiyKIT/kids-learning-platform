@@ -6,7 +6,7 @@ import { createPortal } from "react-dom";
 import { apiFetch, ApiError } from "@/lib/api";
 import type { ShellLine } from "@/lib/api-types";
 import type { StyleResponse } from "@/lib/theme-catalog";
-import { useKidAudio } from "@/components/scene-engine/KidAudio";
+import { useAudioBlocked, useKidAudio } from "@/components/scene-engine/KidAudio";
 import { Button } from "@/components/ui/Button";
 import { PasswordInput } from "@/components/ui/Field";
 import { QuietButton } from "@/components/ui/SecondaryButton";
@@ -119,12 +119,36 @@ export function KidModeProvider({ childId, children }: { childId: string; childr
     <KidModeContext.Provider value={value}>
       <KidThemeScope theme={style?.theme ?? null}>
         {started ? children : <StartScreen onStart={start} />}
+        {started ? <SoundOffHint /> : null}
         {portrait ? <TurnDeviceOverlay onStart={started ? undefined : start} /> : null}
       </KidThemeScope>
       {exitOpen ? (
         <ExitPasswordDialog onCancel={cancelExit} onExited={exited} onSignedOut={() => router.push("/login")} />
       ) : null}
     </KidModeContext.Provider>
+  );
+}
+
+/**
+ * The browser refused to play sound even after «Почнімо!» (UX guide §4: child mode is meant to
+ * be heard). For the adult, not the child: a crossed-out speaker in a corner with one short line,
+ * gone as soon as a line plays. Nothing changes for the child — no error, the lesson goes on. A
+ * device simply muted by its switch can't be detected from a web page.
+ */
+function SoundOffHint() {
+  const blocked = useAudioBlocked();
+  if (!blocked) return null;
+  return (
+    <div
+      role="note"
+      className="bg-surface/90 text-ink-soft pointer-events-none fixed bottom-3 left-3 z-30 flex max-w-[60vw] items-center gap-2 rounded-xl px-3 py-2 text-xs shadow-sm"
+    >
+      <svg viewBox="0 0 24 24" fill="none" className="size-5 flex-none" aria-hidden="true">
+        <path d="M4 9h3l5-4v14l-5-4H4z" fill="currentColor" />
+        <path d="m16 9 5 6m0-6-5 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+      </svg>
+      <span>Для дорослого: звук не вмикається. Увімкніть звук на пристрої й торкніться кнопки «послухати».</span>
+    </div>
   );
 }
 
