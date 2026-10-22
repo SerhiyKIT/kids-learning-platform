@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { apiFetch, ApiError, ensureCsrfCookie } from "@/lib/api";
 import type { DevRegisterRoleRequest, DevRegisterRoleResponse, Role } from "@/lib/api-types";
+import { PASSWORD_TOO_LONG_TEXT, passwordTooLong } from "@/lib/password";
 import { AppHeader } from "@/components/ui/AppHeader";
 import { Alert } from "@/components/ui/Alert";
 import { Button } from "@/components/ui/Button";
@@ -41,6 +42,7 @@ export default function RegisterPage() {
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
+    if (passwordTooLong(password)) return;
     setSubmitting(true);
     setError(null);
     try {
@@ -96,6 +98,7 @@ export default function RegisterPage() {
   }
 
   const emailError = fieldError(error, "email");
+  const passwordError = passwordTooLong(password) ? PASSWORD_TOO_LONG_TEXT : undefined;
 
   return (
     <>
@@ -132,13 +135,14 @@ export default function RegisterPage() {
               )}
             </Field>
 
-            <Field label="Пароль" hint="Мінімум 10 символів.">
+            <Field label="Пароль" hint="Мінімум 10 символів." error={passwordError}>
               {({ id, describedBy }) => (
                 <PasswordInput
                   id={id}
                   aria-describedby={describedBy}
                   required
                   minLength={10}
+                  invalid={Boolean(passwordError)}
                   placeholder="Введіть пароль"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}

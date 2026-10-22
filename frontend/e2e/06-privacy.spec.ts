@@ -2,21 +2,30 @@ import fs from "node:fs";
 import { expect, test } from "@playwright/test";
 import { api } from "./support/api";
 import { teacherGroupWithLesson } from "./support/content";
+import { playStubLesson } from "./support/kid-play";
 import { PASSWORD, parentWithChild, signIn } from "./support/users";
 
-test("privacy: child export holds the attempt → sign out everywhere from another device → delete account → can't log in", async ({ browser }) => {
+test("privacy: an attempt played offline reaches the child export → sign out everywhere from another device → delete account → can't log in", async ({ browser }) => {
   const group = await teacherGroupWithLesson(browser);
   const parent = await parentWithChild(browser, "Тарас");
   const page = parent.page;
   expect((await api(page, "POST", "/groups/join", { joinCode: group.joinCode, childId: parent.childId })).status).toBe(200);
-  const lessons = await api<{ lessonVersionId: string }[]>(page, "GET", `/children/${parent.childId}/available-lessons`);
-  const attempt = await api<{ attemptId: string }>(page, "POST", `/children/${parent.childId}/attempts`, {
-    lessonVersionId: lessons.json[0].lessonVersionId,
-  });
-  await api(page, "POST", `/attempts/${attempt.json.attemptId}/answers`, {
-    sceneKey: "scene_2", tryNo: 1, chosenOption: "a", isCorrect: true, hintsUsed: 0,
-  });
-  await api(page, "POST", `/attempts/${attempt.json.attemptId}/complete`, { result: "completed", score: 1 });
+
+  // QA1-026: the child plays with the network gone mid-lesson. The lesson goes on, and the answers
+  // and the completion reach the server once the network is back — the export below proves it.
+  await page.goto(`/play/${parent.childId}`);
+  await page.getByRole("button", { name: "Почнімо!" }).first().click();
+  await page.locator(".kid-shelf a").first().click();
+  await page.locator('button[aria-label="Далі"]').waitFor();
+  await parent.context.setOffline(true);
+  await playStubLesson(page, false);
+  await expect(page.locator('[data-phase="celebrate"]')).toBeVisible();
+  await parent.context.setOffline(false);
+  await expect
+    .poll(async () => (await api<{ result: string | null }[]>(page, "GET", `/children/${parent.childId}/history`)).json.map((h) => h.result), {
+      timeout: 45_000,
+    })
+    .toEqual(["completed"]);
 
   await page.goto(`/children/${parent.childId}`);
   const [download] = await Promise.all([

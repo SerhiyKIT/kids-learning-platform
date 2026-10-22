@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useEffect, useState } from "react";
 import { apiFetch, ApiError, ensureCsrfCookie } from "@/lib/api";
+import { PASSWORD_TOO_LONG_TEXT, passwordTooLong } from "@/lib/password";
 import { AppHeader } from "@/components/ui/AppHeader";
 import { Alert } from "@/components/ui/Alert";
 import { Button } from "@/components/ui/Button";
@@ -42,8 +43,9 @@ function AcceptInviteScreen() {
   }, []);
 
   const tooShort = password.length > 0 && password.length < MIN_PASSWORD_LENGTH;
+  const tooLong = passwordTooLong(password);
   const mismatch = confirm.length > 0 && confirm !== password;
-  const canSubmit = token !== "" && password.length >= MIN_PASSWORD_LENGTH && password === confirm;
+  const canSubmit = token !== "" && password.length >= MIN_PASSWORD_LENGTH && !tooLong && password === confirm;
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -105,13 +107,13 @@ function AcceptInviteScreen() {
               </Alert>
             ) : null}
             {error ? <Alert title="Не вдалося створити пароль">{error}</Alert> : null}
-            <Field label="Пароль" error={tooShort ? `Щонайменше ${MIN_PASSWORD_LENGTH} символів` : undefined}>
+            <Field label="Пароль" error={tooShort ? `Щонайменше ${MIN_PASSWORD_LENGTH} символів` : tooLong ? PASSWORD_TOO_LONG_TEXT : undefined}>
               {({ id }) => (
                 <PasswordInput
                   id={id}
                   required
                   autoComplete="new-password"
-                  invalid={tooShort}
+                  invalid={tooShort || tooLong}
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                 />

@@ -6,6 +6,7 @@ import { useEffect, useState } from "react";
 import { apiFetch, ApiError, logout } from "@/lib/api";
 import type { DeletionPreview, Me } from "@/lib/api-types";
 import { downloadExport } from "@/lib/download";
+import { PASSWORD_TOO_LONG_TEXT, passwordTooLong } from "@/lib/password";
 import { AppHeader } from "@/components/ui/AppHeader";
 import { Button } from "@/components/ui/Button";
 import { Section, SectionHeader } from "@/components/ui/Card";
@@ -133,6 +134,10 @@ function PasswordSection() {
     setDone(false);
     if (next !== repeat) {
       setError("Нові паролі не збігаються.");
+      return;
+    }
+    if (passwordTooLong(next)) {
+      setError(PASSWORD_TOO_LONG_TEXT);
       return;
     }
     setSaving(true);

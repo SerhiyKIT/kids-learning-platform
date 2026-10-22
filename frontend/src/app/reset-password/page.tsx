@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useEffect, useState } from "react";
 import { apiFetch, ensureCsrfCookie } from "@/lib/api";
+import { PASSWORD_TOO_LONG_TEXT, passwordTooLong } from "@/lib/password";
 import { AppHeader } from "@/components/ui/AppHeader";
 import { Alert } from "@/components/ui/Alert";
 import { Button } from "@/components/ui/Button";
@@ -40,7 +41,8 @@ function ResetPasswordScreen() {
     ensureCsrfCookie();
   }, []);
 
-  const canSubmit = token !== "" && password.length >= MIN_PASSWORD_LENGTH && password === confirm;
+  const tooLong = passwordTooLong(password);
+  const canSubmit = token !== "" && password.length >= MIN_PASSWORD_LENGTH && !tooLong && password === confirm;
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -81,9 +83,9 @@ function ResetPasswordScreen() {
             <CardHeader title="Придумайте пароль" description={`Щонайменше ${MIN_PASSWORD_LENGTH} символів.`} />
             <CardBody>
               {error || token === "" ? <Alert title="Не вдалося">{error ?? "Посилання недійсне."}</Alert> : null}
-              <Field label="Новий пароль">
+              <Field label="Новий пароль" error={tooLong ? PASSWORD_TOO_LONG_TEXT : undefined}>
                 {({ id }) => (
-                  <PasswordInput id={id} required minLength={MIN_PASSWORD_LENGTH} autoComplete="new-password" value={password} onChange={(e) => setPassword(e.target.value)} />
+                  <PasswordInput id={id} required minLength={MIN_PASSWORD_LENGTH} invalid={tooLong} autoComplete="new-password" value={password} onChange={(e) => setPassword(e.target.value)} />
                 )}
               </Field>
               <Field label="Повторіть пароль">

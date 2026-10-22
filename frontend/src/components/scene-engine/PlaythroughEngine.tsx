@@ -1,9 +1,9 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { apiFetch } from "@/lib/api";
 import type { PlayState } from "@/lib/api-types";
 import { voiceLineAudioUrls, type LessonScenario } from "@/lib/scenario-types";
+import { useKidMode } from "@/components/kid/kid-mode-context";
 import { useKidAudio } from "./KidAudio";
 import { type AnswerEvent, SceneRenderer } from "./SceneRenderer";
 
@@ -30,6 +30,7 @@ export function PlaythroughEngine({
   const scene = scenario.scenes[sceneIndex];
   const isLastScene = sceneIndex === scenario.scenes.length - 1;
   const { preload } = useKidAudio();
+  const { sendResult } = useKidMode();
 
   // While the child is in this scene, fetch the next scene's lines so it starts without silence.
   useEffect(() => {
@@ -39,11 +40,11 @@ export function PlaythroughEngine({
 
   const recordAnswer = useCallback(
     (event: AnswerEvent) => {
-      void apiFetch(`/attempts/${attemptId}/answers`, { method: "POST", body: JSON.stringify(event) }).catch(() => {
-        // Best-effort: a lost answer write shouldn't block the child mid-lesson.
+      sendResult(`/attempts/${attemptId}/answers`, event).catch(() => {
+        // Never blocks the child mid-lesson; without network the outbox keeps and retries it.
       });
     },
-    [attemptId],
+    [attemptId, sendResult],
   );
 
   const recordScore = useCallback(
@@ -62,13 +63,10 @@ export function PlaythroughEngine({
     }
     const results = [...firstTryResults.current.values()];
     const score = results.length > 0 ? results.filter(Boolean).length / results.length : 1;
-    apiFetch<PlayState>(`/attempts/${attemptId}/complete`, {
-      method: "POST",
-      body: JSON.stringify({ result: "completed", score }),
-    })
-      // Still celebrate locally even if this particular write failed.
+    sendResult<PlayState>(`/attempts/${attemptId}/complete`, { result: "completed", score })
+      // Still celebrate locally even if this write failed or waits in the outbox.
       .then(onComplete, () => onComplete(null));
-  }, [isLastScene, attemptId, onComplete]);
+  }, [isLastScene, attemptId, onComplete, sendResult]);
 
   if (!scene) {
     return null;

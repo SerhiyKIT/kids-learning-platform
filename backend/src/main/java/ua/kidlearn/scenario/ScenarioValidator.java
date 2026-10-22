@@ -10,6 +10,8 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import org.springframework.stereotype.Component;
 import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.ObjectMapper;
@@ -32,9 +34,12 @@ public class ScenarioValidator {
 	private static final int TIER_A_MAX_WORDS = 10;
 	private static final int TIER_B_MAX_WORDS = 15;
 	private static final int TIER_B_MIN_SCENES = 5;
+	/** A standalone three-digit number — the shape of every Ukrainian emergency number. */
+	private static final Pattern THREE_DIGITS = Pattern.compile("(?<!\\d)\\d{3}(?!\\d)");
 
 	private final Schema schema;
 	private final ScenarioVocabulary vocabulary;
+	private final StopWords stopWords = StopWords.load();
 
 	public ScenarioValidator(ObjectMapper objectMapper) {
 		try (InputStream in = getClass().getClassLoader().getResourceAsStream(SCHEMA_CLASSPATH_LOCATION)) {
@@ -75,6 +80,9 @@ public class ScenarioValidator {
 		if (problems.isEmpty()) {
 			checkVoiceLines(scenario, "", new HashMap<>(), maxWordsPerVoiceLine, problems);
 			checkScenes(scenario.path("scenes"), problems);
+			for (String field : new String[] {"title", "learning_goal"}) {
+				checkStopWords(scenario.path(field).asText(), field, "/" + field, problems);
+			}
 		}
 		return problems;
 	}
@@ -103,6 +111,8 @@ public class ScenarioValidator {
 					problems.add(new ScenarioProblem(path + "/text",
 							"Репліка '" + key + "' завдовга: " + wordCount + " слів (максимум " + maxWords + ")"));
 				}
+				checkNumbers(textNode.asText(), key, path, problems);
+				checkStopWords(textNode.asText(), "Репліка '" + key + "'", path + "/text", problems);
 			}
 			for (Map.Entry<String, JsonNode> field : node.properties()) {
 				checkVoiceLines(field.getValue(), path + "/" + field.getKey(), firstPathByKey, maxWords, problems);
@@ -111,6 +121,29 @@ public class ScenarioValidator {
 			for (int i = 0; i < node.size(); i++) {
 				checkVoiceLines(node.get(i), path + "/" + i, firstPathByKey, maxWords, problems);
 			}
+		}
+	}
+
+	/**
+	 * docs/Промпт_генерації_уроків.md §3 rule 9: a lesson names emergency numbers only from the
+	 * verified table (EmergencyNumber). Applied to every topic — a road-safety lesson must not
+	 * carry an invented number either. Which service a verified number is paired with is left to
+	 * the human moderator.
+	 */
+	private static void checkNumbers(String text, String key, String path, List<ScenarioProblem> problems) {
+		Matcher matcher = THREE_DIGITS.matcher(text);
+		while (matcher.find()) {
+			if (!EmergencyNumber.isVerified(matcher.group())) {
+				problems.add(new ScenarioProblem(path + "/text", "Репліка '" + key + "' називає номер " + matcher.group()
+						+ ", якого немає в перевіреній таблиці (101, 102, 103, 104, 112)"));
+			}
+		}
+	}
+
+	/** docs/Промпт_генерації_уроків.md §3 rule 8: nothing from the stop list reaches the moderator's queue. */
+	private void checkStopWords(String text, String what, String path, List<ScenarioProblem> problems) {
+		for (String hit : stopWords.find(text)) {
+			problems.add(new ScenarioProblem(path, what + " містить заборонене слово «" + hit + "» (стоп-словник)"));
 		}
 	}
 
