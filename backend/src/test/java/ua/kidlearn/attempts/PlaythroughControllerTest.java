@@ -400,6 +400,43 @@ class PlaythroughControllerTest extends WebIntegrationTest {
 	}
 
 	@Test
+	void publishingANewVersionSupersedesTheOldOneButItsAssignmentsKeepWorking() throws Exception {
+		Fixture fixture = buildAssignedFixture();
+		UUID lessonId = jdbc.queryForObject("SELECT lesson_id FROM lesson_versions WHERE id = ?", UUID.class, fixture.versionId());
+
+		String adminEmail = uniqueEmail("admin2");
+		registerAdmin(adminEmail);
+		MockHttpSession admin = login(adminEmail);
+		AdminTwoFactorTestSupport.completeSetup(mockMvc, admin);
+		String newVersion = JsonPath.read(mockMvc.perform(post("/api/admin/lessons/" + lessonId + "/generate").with(csrf())
+						.session(admin).contentType(MediaType.APPLICATION_JSON).content(GENERATION_REQUEST_BODY))
+				.andExpect(status().isOk()).andReturn().getResponse().getContentAsString(), "$.versionId");
+		mockMvc.perform(post("/api/admin/lesson-versions/" + newVersion + "/approve").with(csrf()).session(admin))
+				.andExpect(status().isOk());
+		mockMvc.perform(post("/api/admin/lesson-versions/" + newVersion + "/publish").with(csrf()).session(admin))
+				.andExpect(status().isOk());
+
+		// QA1-021: one published version per lesson.
+		mockMvc.perform(get("/api/admin/lesson-versions/" + fixture.versionId()).session(admin))
+				.andExpect(jsonPath("$.status").value("superseded"));
+		mockMvc.perform(get("/api/admin/lesson-versions/" + newVersion).session(admin))
+				.andExpect(jsonPath("$.status").value("published"));
+		mockMvc.perform(get("/api/catalog/lessons").session(fixture.teacherSession()))
+				.andExpect(jsonPath("$[?(@.lessonId=='" + lessonId + "')].currentVersionId").value(newVersion));
+		// The children assigned the old version still play it…
+		mockMvc.perform(get("/api/children/" + fixture.childId() + "/lessons/" + fixture.versionId() + "/scenario")
+						.session(fixture.parentSession()))
+				.andExpect(status().isOk());
+		startAttempt(fixture.parentSession(), fixture.childId(), fixture.versionId());
+		// …but it isn't offered for new assignments any more.
+		mockMvc.perform(post("/api/assignments").with(csrf()).session(fixture.teacherSession())
+						.contentType(MediaType.APPLICATION_JSON)
+						.content("{\"lessonVersionId\":\"%s\",\"childId\":\"%s\"}".formatted(fixture.versionId(), fixture.childId())))
+				.andExpect(status().isConflict())
+				.andExpect(jsonPath("$.code").value("NOT_PUBLISHED"));
+	}
+
+	@Test
 	void nonTeacherAndNonParentAreForbidden() throws Exception {
 		Fixture fixture = buildAssignedFixture();
 

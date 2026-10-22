@@ -22,6 +22,8 @@ public class LessonVersion {
 	public static final String STATUS_REJECTED_AUTO = "rejected_auto";
 	public static final String STATUS_APPROVED = "approved";
 	public static final String STATUS_ARCHIVED = "archived";
+	/** Was published until a newer version of the lesson was (QA1-021); see V12. */
+	public static final String STATUS_SUPERSEDED = "superseded";
 
 	@Id
 	@GeneratedValue(strategy = GenerationType.UUID)
@@ -116,6 +118,18 @@ public class LessonVersion {
 
 	public boolean isPublished() {
 		return STATUS_PUBLISHED.equals(status);
+	}
+
+	/**
+	 * A child may play it: published, or published before and then superseded — an assignment
+	 * names an exact version, and replacing the lesson mustn't take it away from the children.
+	 */
+	public boolean isPlayable() {
+		return STATUS_PUBLISHED.equals(status) || STATUS_SUPERSEDED.equals(status);
+	}
+
+	public void supersede() {
+		this.status = STATUS_SUPERSEDED;
 	}
 
 	public void publish() {

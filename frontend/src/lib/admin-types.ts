@@ -10,7 +10,9 @@ export type LessonVersionStatus =
   | "rejected_auto"
   | "approved"
   | "published"
-  | "archived";
+  | "archived"
+  /** Was published until a newer version of the lesson was; its assignments keep working. */
+  | "superseded";
 
 /** GET /api/admin/lesson-versions?status=auto_validated */
 export interface PendingReviewEntry {
@@ -140,6 +142,7 @@ export const VERSION_STATUS_LABELS: Record<LessonVersionStatus, { label: string;
   approved: { label: "Схвалено", tone: "ok" },
   published: { label: "Опубліковано", tone: "ok" },
   archived: { label: "Відхилено модератором", tone: "bad" },
+  superseded: { label: "Замінено новою версією", tone: "neutral" },
 };
 
 export const AUDIT_ACTION_LABELS: Record<string, string> = {
@@ -182,6 +185,7 @@ export function moderationTab(status: LessonVersionStatus): "pending" | "approve
     case "approved":
       return "approved";
     case "published":
+    case "superseded":
       return "published";
     case "rejected_auto":
     case "archived":

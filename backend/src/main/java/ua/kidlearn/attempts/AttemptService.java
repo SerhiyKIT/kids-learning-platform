@@ -108,7 +108,7 @@ public class AttemptService {
 			throw notFound();
 		}
 		LessonVersion version = lessonVersionRepository.findById(lessonVersionId).orElseThrow(this::notFound);
-		if (!version.isPublished()) {
+		if (!version.isPlayable()) {
 			throw notFound();
 		}
 		return scenarioAudioEnricher.withAudioUrls(objectMapper.readTree(version.getScenario()));
@@ -209,7 +209,7 @@ public class AttemptService {
 		Map<UUID, String> playableTopicByLesson = new LinkedHashMap<>();
 		for (LessonAssignment assignment : resolveAssignmentsForChild(childId)) {
 			LessonVersion version = lessonVersionRepository.findById(assignment.getLessonVersionId()).orElseThrow();
-			if (version.isPublished()) {
+			if (version.isPlayable()) {
 				playableTopicByLesson.putIfAbsent(version.getLessonId(),
 						objectMapper.readTree(version.getScenario()).path("topic").asText());
 			}

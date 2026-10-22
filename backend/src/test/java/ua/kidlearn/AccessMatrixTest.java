@@ -237,9 +237,12 @@ class AccessMatrixTest extends WebIntegrationTest {
 		ok(parent, HttpMethod.POST, "/api/groups/join", "{\"joinCode\":\"%s\",\"childId\":\"%s\"}".formatted(joinCode, childId));
 	}
 
+	/** A published version of a lesson of its own (a lesson has one published version at a time). */
 	private UUID publishedVersion() throws Exception {
+		String ownLesson = JsonPath.read(ok(Actor.ADMIN_ELEVATED, HttpMethod.POST, "/api/admin/lessons",
+				"{\"moduleCode\":\"safety\",\"title\":\"Матриця %s\"}".formatted(UUID.randomUUID())), "$.id");
 		UUID id = UUID.fromString(JsonPath.read(ok(Actor.ADMIN_ELEVATED, HttpMethod.POST,
-				"/api/admin/lessons/" + lessonId + "/generate", GENERATION_BODY), "$.versionId"));
+				"/api/admin/lessons/" + ownLesson + "/generate", GENERATION_BODY), "$.versionId"));
 		ok(Actor.ADMIN_ELEVATED, HttpMethod.POST, "/api/admin/lesson-versions/" + id + "/approve", null);
 		ok(Actor.ADMIN_ELEVATED, HttpMethod.POST, "/api/admin/lesson-versions/" + id + "/publish", null);
 		return id;

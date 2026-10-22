@@ -27,7 +27,7 @@ type TabKey = "pending" | "approved" | "published" | "rejected";
 const TABS: { key: TabKey; label: string; statuses: LessonVersionStatus[] }[] = [
   { key: "pending", label: "На перевірці", statuses: ["auto_validated"] },
   { key: "approved", label: "Схвалені", statuses: ["approved"] },
-  { key: "published", label: "Опубліковані", statuses: ["published"] },
+  { key: "published", label: "Опубліковані", statuses: ["published", "superseded"] },
   { key: "rejected", label: "Відхилені", statuses: ["rejected_auto", "archived"] },
 ];
 

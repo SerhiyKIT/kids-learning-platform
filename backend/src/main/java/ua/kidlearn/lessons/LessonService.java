@@ -97,6 +97,11 @@ public class LessonService {
 		if (!LessonVersion.STATUS_APPROVED.equals(version.getStatus())) {
 			throw new NotApprovedException();
 		}
+		// One published version per lesson (QA1-021): the one it replaces is superseded, which
+		// keeps existing assignments to it playable (LessonVersion#isPlayable).
+		lessonVersionRepository.findByLessonIdIn(List.of(version.getLessonId())).stream()
+				.filter(LessonVersion::isPublished)
+				.forEach(LessonVersion::supersede);
 		version.publish();
 		Lesson lesson = lessonRepository.findById(version.getLessonId())
 				.orElseThrow(() -> new IllegalStateException("Lesson missing for version " + lessonVersionId));
