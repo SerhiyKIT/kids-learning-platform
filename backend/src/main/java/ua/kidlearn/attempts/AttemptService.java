@@ -1,15 +1,18 @@
 package ua.kidlearn.attempts;
 
-import java.time.Clock;
-
 import java.math.BigDecimal;
+import java.time.Clock;
 import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+import java.util.stream.Collectors;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -215,12 +218,22 @@ public class AttemptService {
 		if (!group.getTeacherId().equals(teacherId)) {
 			throw notFound();
 		}
+		// Only lessons this teacher gave: the group's assignments and their own individual ones. A
+		// child in several groups has other teachers' lessons too, and those aren't this teacher's.
+		Set<UUID> groupAssignments = lessonAssignmentRepository.findByGroupId(groupId).stream()
+				.map(LessonAssignment::getId)
+				.collect(Collectors.toSet());
 		List<TeacherResultChild> results = new ArrayList<>();
 		for (var member : groupMemberRepository.findById_GroupId(groupId)) {
 			UUID childId = member.getId().getChildId();
 			Child child = childRepository.findById(childId).orElseThrow();
+			Set<UUID> ownAssignments = new HashSet<>(groupAssignments);
+			lessonAssignmentRepository.findByChildId(childId).stream()
+					.filter(a -> teacherId.equals(a.getAssignedBy()))
+					.forEach(a -> ownAssignments.add(a.getId()));
 			List<TeacherResultAttempt> attempts = lessonAttemptRepository.findByChildIdOrderByStartedAtDesc(childId)
 					.stream()
+					.filter(attempt -> ownAssignments.contains(attempt.getAssignmentId()))
 					.map(this::toTeacherResultAttempt)
 					.toList();
 			results.add(new TeacherResultChild(childId, child.getDisplayName(), attempts));
@@ -232,7 +245,30 @@ public class AttemptService {
 		LessonVersion version = lessonVersionRepository.findById(attempt.getLessonVersionId()).orElseThrow();
 		Lesson lesson = lessonRepository.findById(version.getLessonId()).orElseThrow();
 		return new TeacherResultAttempt(lesson.getTitle(), attempt.getCompletedAt(), attempt.getResult(),
-				attempt.getScore());
+				attempt.getScore(), sceneResults(attempt, version));
+	}
+
+	private List<TeacherSceneResult> sceneResults(LessonAttempt attempt, LessonVersion version) {
+		Map<String, JsonNode> scenes = new HashMap<>();
+		for (JsonNode scene : objectMapper.readTree(version.getScenario()).path("scenes")) {
+			scenes.put(scene.path("key").asText(), scene);
+		}
+		Map<String, List<SceneAnswer>> byScene = new LinkedHashMap<>();
+		sceneAnswerRepository.findByAttemptId(attempt.getId()).stream()
+				.sorted(Comparator.comparing(SceneAnswer::getAnsweredAt))
+				.forEach(answer -> byScene.computeIfAbsent(answer.getSceneKey(), k -> new ArrayList<>()).add(answer));
+		List<TeacherSceneResult> results = new ArrayList<>();
+		byScene.forEach((key, answers) -> {
+			JsonNode scene = scenes.get(key);
+			List<SceneAnswer> firstTries = answers.stream().filter(a -> a.getTryNo() == 1).toList();
+			results.add(new TeacherSceneResult(key,
+					scene == null ? null : scene.path("type").asText(null),
+					scene != null && scene.path("is_control").asBoolean(false),
+					!firstTries.isEmpty() && firstTries.stream().allMatch(SceneAnswer::isCorrect),
+					answers.stream().mapToInt(SceneAnswer::getTryNo).max().orElse(0),
+					answers.stream().mapToInt(SceneAnswer::getHintsUsed).max().orElse(0)));
+		});
+		return results;
 	}
 
 	private List<LessonAssignment> resolveAssignmentsForChild(UUID childId) {

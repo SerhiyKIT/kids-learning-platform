@@ -12,6 +12,7 @@ import type {
   Group,
   GroupMemberInfo,
   TeacherResultChild,
+  TeacherSceneResult,
 } from "@/lib/api-types";
 import { AppHeader } from "@/components/ui/AppHeader";
 import { Avatar, tintFor } from "@/components/ui/Avatar";
@@ -409,7 +410,7 @@ export default function GroupPage() {
           <Section>
             <SectionHeader
               title="Результати"
-              description="Останні спроби учнів за призначеними уроками."
+              description="Спроби учнів за уроками, які ви призначили: як пройшла кожна сцена (без самих відповідей)."
             />
 
             {resultsError ? <p className="text-danger px-6 py-4 text-sm">{errorText(resultsError)}</p> : null}
@@ -429,6 +430,7 @@ export default function GroupPage() {
                       <th className="px-4 py-3 text-left font-medium">Урок</th>
                       <th className="px-4 py-3 text-left font-medium">Дата</th>
                       <th className="px-4 py-3 text-left font-medium">Результат</th>
+                      <th className="px-4 py-3 text-left font-medium">Сцени</th>
                       <th className="px-6 py-3 text-right font-medium">Бали</th>
                     </tr>
                   </thead>
@@ -448,6 +450,9 @@ export default function GroupPage() {
                             <Pill tone={result ? result.tone : "waiting"}>
                               {result ? result.label : "У процесі"}
                             </Pill>
+                          </td>
+                          <td className="px-4 py-3.5">
+                            <SceneOutcomes scenes={attempt.scenes} />
                           </td>
                           <td className="text-avatar-ink px-6 py-3.5 text-right font-mono">
                             {attempt.score != null ? `${Math.round(attempt.score * 100)}%` : "—"}
@@ -536,4 +541,30 @@ function assignmentsLabel(n: number): string {
   if (mod10 === 1) return `${n} призначений урок`;
   if (mod10 >= 2 && mod10 <= 4) return `${n} призначені уроки`;
   return `${n} призначених уроків`;
+}
+
+const SCENE_TYPES: Record<string, string> = { choice: "Вибір", sorting: "Сортування", dialog: "Діалог" };
+
+/** Per-scene outcome of an attempt: right first time, or how many tries and how much help it took. */
+function SceneOutcomes({ scenes }: { scenes: TeacherSceneResult[] }) {
+  if (scenes.length === 0) return <span className="text-ink-faint text-sm">—</span>;
+  return (
+    <ul className="flex flex-col gap-1 text-sm">
+      {scenes.map((scene, i) => (
+        <li key={scene.sceneKey} data-scene={scene.sceneKey} className="flex flex-wrap items-baseline gap-x-1.5">
+          <span className="text-ink-soft">
+            {i + 1}. {scene.control ? "Контрольна" : (SCENE_TYPES[scene.type ?? ""] ?? "Сцена")}:
+          </span>{" "}
+          {scene.correctFirstTry ? (
+            <span className="text-mark-ok font-medium">з 1-ї спроби</span>
+          ) : (
+            <span className="text-avatar-ink">
+              спроб: {scene.tries}
+              {scene.hintsUsed > 0 ? `, підказки: ${scene.hintsUsed} з 2` : ""}
+            </span>
+          )}
+        </li>
+      ))}
+    </ul>
+  );
 }

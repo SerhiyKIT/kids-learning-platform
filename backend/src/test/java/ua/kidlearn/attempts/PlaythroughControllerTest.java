@@ -314,6 +314,52 @@ class PlaythroughControllerTest extends WebIntegrationTest {
 	}
 
 	@Test
+	void teacherSeesHowEachSceneWentButNotTheAnswersAndOnlyTheirOwnLessons() throws Exception {
+		Fixture fixture = buildAssignedFixture();
+		UUID attemptId = startAttempt(fixture.parentSession(), fixture.childId(), fixture.versionId());
+		for (String answer : new String[] {
+				"{\"sceneKey\":\"scene_2\",\"tryNo\":1,\"chosenOption\":\"b\",\"isCorrect\":false,\"hintsUsed\":1}",
+				"{\"sceneKey\":\"scene_2\",\"tryNo\":2,\"chosenOption\":\"a\",\"isCorrect\":true,\"hintsUsed\":2}"}) {
+			mockMvc.perform(post("/api/attempts/" + attemptId + "/answers").with(csrf())
+							.session(fixture.parentSession()).contentType(MediaType.APPLICATION_JSON).content(answer))
+					.andExpect(status().isCreated());
+		}
+		mockMvc.perform(post("/api/attempts/" + attemptId + "/complete").with(csrf())
+						.session(fixture.parentSession()).contentType(MediaType.APPLICATION_JSON)
+						.content("{\"result\":\"completed\",\"score\":0}"))
+				.andExpect(status().isOk());
+
+		// The same child is also in another teacher's group and plays that teacher's lesson.
+		UUID otherVersion = createPublishedVersion("Another teacher's lesson");
+		String otherTeacherEmail = uniqueEmail("teacherC");
+		registerTeacher(otherTeacherEmail);
+		MockHttpSession otherTeacher = login(otherTeacherEmail);
+		UUID[] otherGroup = new UUID[1];
+		String otherCode = createGroupWithJoinCode(otherTeacher, otherGroup);
+		mockMvc.perform(post("/api/assignments").with(csrf()).session(otherTeacher).contentType(MediaType.APPLICATION_JSON)
+						.content("{\"lessonVersionId\":\"%s\",\"groupId\":\"%s\"}".formatted(otherVersion, otherGroup[0])))
+				.andExpect(status().isCreated());
+		mockMvc.perform(post("/api/groups/join").with(csrf()).session(fixture.parentSession()).contentType(MediaType.APPLICATION_JSON)
+						.content("{\"joinCode\":\"%s\",\"childId\":\"%s\"}".formatted(otherCode, fixture.childId())))
+				.andExpect(status().isOk());
+		startAttempt(fixture.parentSession(), fixture.childId(), otherVersion);
+
+		String body = mockMvc.perform(get("/api/groups/" + fixture.groupId() + "/results").session(fixture.teacherSession()))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$[0].attempts.length()").value(1))
+				.andExpect(jsonPath("$[0].attempts[0].title").value("Crossing the street"))
+				.andExpect(jsonPath("$[0].attempts[0].scenes.length()").value(1))
+				.andExpect(jsonPath("$[0].attempts[0].scenes[0].sceneKey").value("scene_2"))
+				.andExpect(jsonPath("$[0].attempts[0].scenes[0].type").value("choice"))
+				.andExpect(jsonPath("$[0].attempts[0].scenes[0].control").value(false))
+				.andExpect(jsonPath("$[0].attempts[0].scenes[0].correctFirstTry").value(false))
+				.andExpect(jsonPath("$[0].attempts[0].scenes[0].tries").value(2))
+				.andExpect(jsonPath("$[0].attempts[0].scenes[0].hintsUsed").value(2))
+				.andReturn().getResponse().getContentAsString();
+		assertThat(body).doesNotContain("chosenOption", "Another teacher's lesson").doesNotContainIgnoringCase("email");
+	}
+
+	@Test
 	void nonTeacherAndNonParentAreForbidden() throws Exception {
 		Fixture fixture = buildAssignedFixture();
 

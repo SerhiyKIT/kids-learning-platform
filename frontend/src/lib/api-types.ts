@@ -97,13 +97,24 @@ export interface Assignment {
   dueAt: string | null;
 }
 
-/** One attempt inside a TeacherResultChild — same result/score shape as HistoryEntry, minus
- * per-scene answers (teachers see outcomes, not the attempt-by-attempt detail parents see). */
+/** How one scene of an attempt went — never what the child chose (that stays with the parents). */
+export interface TeacherSceneResult {
+  sceneKey: string;
+  type: "choice" | "sorting" | "dialog" | null;
+  control: boolean;
+  correctFirstTry: boolean;
+  tries: number;
+  hintsUsed: number;
+}
+
+/** One attempt inside a TeacherResultChild — same result/score shape as HistoryEntry, with
+ * per-scene outcomes instead of the answers themselves. */
 export interface TeacherResultAttempt {
   title: string;
   completedAt: string | null;
   result: AttemptResult | null;
   score: number | null;
+  scenes: TeacherSceneResult[];
 }
 
 /** GET /api/groups/{groupId}/results — deliberately excludes anything about the child's parent. */

@@ -71,6 +71,11 @@ test("child mode: join by code → play choice + sorting → celebration → sti
   await group.teacher.goto(`/groups/${group.groupId}`);
   await expect(group.teacher.getByRole("cell", { name: "Остапчик" }).first()).toBeVisible();
   await expect(group.teacher.getByRole("cell", { name: group.lessonTitle }).first()).toBeVisible();
+  // QA1-031: the teacher sees how each scene went (no answers) — the stub lesson's choice, sorting
+  // and control scenes were all done right the first time.
+  await expect(group.teacher.locator('[data-scene="scene_2"]').first()).toContainText("Вибір: з 1-ї спроби");
+  await expect(group.teacher.locator('[data-scene="scene_3"]').first()).toContainText("Сортування:");
+  await expect(group.teacher.locator('[data-scene="scene_4"]').first()).toContainText("Контрольна: з 1-ї спроби");
 
   // A plain tap on the exit does nothing; holding it opens the adult's password screen.
   await page.getByRole("button", { name: "Вихід для дорослих: утримуйте 2 секунди" }).first().click();
