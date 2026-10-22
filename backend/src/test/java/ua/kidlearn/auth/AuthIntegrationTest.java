@@ -1,5 +1,6 @@
 package ua.kidlearn.auth;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestBuilders.formLogin;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -36,7 +37,7 @@ class AuthIntegrationTest extends WebIntegrationTest {
 		mockMvc.perform(post("/api/auth/register").with(csrf())
 						.contentType(MediaType.APPLICATION_JSON)
 						.content(REGISTER_BODY))
-				.andExpect(status().isCreated());
+				.andExpect(status().isAccepted());
 
 		MvcResult loginResult = mockMvc.perform(formLogin().user(EMAIL).password(PASSWORD))
 				.andExpect(status().is3xxRedirection())
@@ -45,18 +46,20 @@ class AuthIntegrationTest extends WebIntegrationTest {
 	}
 
 	@Test
-	void registerSucceedsThenRejectsDuplicateEmail() throws Exception {
-		mockMvc.perform(post("/api/auth/register").with(csrf())
+	void registerAnswersTheSameForATakenEmailAndKeepsOneAccount() throws Exception {
+		String first = mockMvc.perform(post("/api/auth/register").with(csrf())
 						.contentType(MediaType.APPLICATION_JSON)
 						.content(REGISTER_BODY))
-				.andExpect(status().isCreated())
-				.andExpect(jsonPath("$.email").value(EMAIL))
-				.andExpect(jsonPath("$.displayName").value("Test Parent"));
+				.andExpect(status().isAccepted())
+				.andExpect(jsonPath("$.status").value("check_email"))
+				.andReturn().getResponse().getContentAsString();
 
-		mockMvc.perform(post("/api/auth/register").with(csrf())
+		String again = mockMvc.perform(post("/api/auth/register").with(csrf())
 						.contentType(MediaType.APPLICATION_JSON)
 						.content(REGISTER_BODY))
-				.andExpect(status().isConflict());
+				.andExpect(status().isAccepted())
+				.andReturn().getResponse().getContentAsString();
+		assertThat(again).isEqualTo(first);
 	}
 
 	@Test

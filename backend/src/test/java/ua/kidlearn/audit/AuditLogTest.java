@@ -91,7 +91,7 @@ class AuditLogTest extends WebIntegrationTest {
 		mockMvc.perform(post("/api/auth/register").with(csrf())
 						.contentType(MediaType.APPLICATION_JSON)
 						.content(body))
-				.andExpect(status().isCreated());
+				.andExpect(status().isAccepted());
 		User user = userRepository.findActiveByEmail(email).orElseThrow();
 		user.markEmailVerified(Instant.now());
 		return userRepository.save(user);

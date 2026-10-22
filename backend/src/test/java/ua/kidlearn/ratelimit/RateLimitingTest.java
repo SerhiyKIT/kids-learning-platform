@@ -46,7 +46,7 @@ class RateLimitingTest extends ClockedWebIntegrationTest {
 						.header("X-Forwarded-For", ip)
 						.contentType(MediaType.APPLICATION_JSON)
 						.content("{\"email\":\"%s\",\"password\":\"%s\",\"displayName\":\"Test\"}".formatted(email, PASSWORD)))
-				.andExpect(status().isCreated());
+				.andExpect(status().isAccepted());
 	}
 
 	private ResultActions failLogin(String email, String ip) throws Exception {

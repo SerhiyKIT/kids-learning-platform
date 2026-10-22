@@ -1,7 +1,9 @@
 package ua.kidlearn.auth;
 
 import java.time.Clock;
+import java.time.Duration;
 import java.time.Instant;
+import java.util.Optional;
 import java.util.UUID;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.dao.DataIntegrityViolationException;
@@ -11,6 +13,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 import ua.kidlearn.config.AuthProperties;
+import ua.kidlearn.ratelimit.RateLimiter;
 import ua.kidlearn.users.EmailAddress;
 import ua.kidlearn.users.Role;
 import ua.kidlearn.users.User;
@@ -25,35 +28,68 @@ public class AuthService {
 	private final TokenGenerator tokenGenerator;
 	private final AuthProperties authProperties;
 	private final ApplicationEventPublisher eventPublisher;
+	private final RateLimiter rateLimiter;
 	private final Clock clock;
+
+	/** At most one "you already have an account" email per account in this interval. */
+	private static final Duration ALREADY_REGISTERED_NOTICE_INTERVAL = Duration.ofMinutes(15);
 
 	public AuthService(UserRepository userRepository, UserTokenRepository userTokenRepository,
 			PasswordEncoder passwordEncoder, TokenGenerator tokenGenerator, AuthProperties authProperties,
-			ApplicationEventPublisher eventPublisher, Clock clock) {
+			ApplicationEventPublisher eventPublisher, RateLimiter rateLimiter, Clock clock) {
 		this.userRepository = userRepository;
 		this.userTokenRepository = userTokenRepository;
 		this.passwordEncoder = passwordEncoder;
 		this.tokenGenerator = tokenGenerator;
 		this.authProperties = authProperties;
 		this.eventPublisher = eventPublisher;
+		this.rateLimiter = rateLimiter;
 		this.clock = clock;
 	}
 
+	/**
+	 * Sign-up that never tells whether the address already has an account (QA1-006): the caller
+	 * always gets the same answer, and only the mailbox's owner learns what happened.
+	 * <ul>
+	 * <li>new address — a PARENT account and a verification email, as before;</li>
+	 * <li>existing, verified — an "you already have an account" email (log in / reset password);
+	 * the account is not touched;</li>
+	 * <li>existing, not verified yet — the verification email again, under the same 60 s
+	 * anti-spam as "resend";</li>
+	 * <li>a deleted account's address — nothing.</li>
+	 * </ul>
+	 * The password is hashed in every branch, so the response time doesn't single out the "new"
+	 * one; emails go out after commit, asynchronously, like every other auth email.
+	 *
+	 * @throws RegistrationRaceException when a concurrent sign-up took the address between the
+	 * check and the insert — the controller answers it like every other case
+	 */
 	@Transactional
-	public User register(RegisterRequest request) {
-		if (userRepository.existsAnyByEmail(request.email())) {
-			throw new ResponseStatusException(HttpStatus.CONFLICT, "Email already registered");
+	public void register(RegisterRequest request) {
+		String passwordHash = passwordEncoder.encode(request.password());
+		Optional<User> existing = userRepository.findActiveByEmail(request.email());
+		if (existing.isPresent()) {
+			User user = existing.get();
+			if (!user.isEmailVerified()) {
+				if (!recentTokenIssued(user, TokenType.EMAIL_VERIFICATION)) {
+					issueEmailVerificationToken(user);
+				}
+			} else if (rateLimiter.tryAcquire("register-notice:" + user.getId(), 1, ALREADY_REGISTERED_NOTICE_INTERVAL)) {
+				eventPublisher.publishEvent(new AlreadyRegisteredNoticeRequestedEvent(user));
+			}
+			return;
 		}
-		User user = new User(request.email(), passwordEncoder.encode(request.password()), Role.PARENT,
-				request.displayName(), "uk");
+		if (userRepository.existsAnyByEmail(request.email())) {
+			return;
+		}
+		User user = new User(request.email(), passwordHash, Role.PARENT, request.displayName(), "uk");
 		try {
 			// Flush now so the DB's unique constraint on email fires here, not later.
 			user = userRepository.saveAndFlush(user);
 		} catch (DataIntegrityViolationException e) {
-			throw new ResponseStatusException(HttpStatus.CONFLICT, "Email already registered", e);
+			throw new RegistrationRaceException(e);
 		}
 		issueEmailVerificationToken(user);
-		return user;
 	}
 
 	@Transactional
@@ -187,7 +223,8 @@ public class AuthService {
 
 	private boolean recentTokenIssued(User user, TokenType type) {
 		return userTokenRepository.findFirstByUserAndTypeOrderByCreatedAtDesc(user, type)
-				.map(t -> t.getCreatedAt().isAfter(clock.instant().minusSeconds(60)))
+				// No created_at yet: issued in this very transaction (the DB fills it on insert).
+				.map(t -> t.getCreatedAt() == null || t.getCreatedAt().isAfter(clock.instant().minusSeconds(60)))
 				.orElse(false);
 	}
 

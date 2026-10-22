@@ -48,7 +48,7 @@ class DevSeedControllerTest extends WebIntegrationTest {
 		mockMvc.perform(post("/api/auth/register").with(csrf())
 						.contentType(MediaType.APPLICATION_JSON)
 						.content(body))
-				.andExpect(status().isCreated());
+				.andExpect(status().isAccepted());
 		return userRepository.findActiveByEmail(email).orElseThrow();
 	}
 

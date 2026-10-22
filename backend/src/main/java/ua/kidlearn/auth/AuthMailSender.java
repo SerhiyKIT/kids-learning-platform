@@ -10,4 +10,7 @@ public interface AuthMailSender {
 
 	void sendTeacherInvite(User user, String rawToken);
 
+	/** To the owner of an existing account someone just tried to sign up with: log in or reset. */
+	void sendAlreadyRegistered(User user);
+
 }

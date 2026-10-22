@@ -34,7 +34,7 @@ export async function parentWithChild(browser: Browser, childName = "Тесто�
   const email = uniqueEmail("parent");
   await openLogin(page);
   const registered = await api(page, "POST", "/auth/register", { email, password: PASSWORD, displayName: "Мама" });
-  expect(registered.status).toBe(201);
+  expect(registered.status).toBe(202);
   const link = await linkFromEmail(email, "/verify-email");
   expect((await api(page, "POST", "/auth/verify-email", { token: link.searchParams.get("token") })).status).toBe(200);
   await signIn(page, email);

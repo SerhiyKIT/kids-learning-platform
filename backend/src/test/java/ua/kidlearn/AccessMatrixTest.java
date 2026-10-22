@@ -572,7 +572,7 @@ class AccessMatrixTest extends WebIntegrationTest {
 	}
 
 	@Test
-	void loginAndPasswordResetDontTellWhetherAnAccountExists() throws Exception {
+	void loginPasswordResetAndSignUpDontTellWhetherAnAccountExists() throws Exception {
 		String existing = secrets.stream().filter(e -> e.contains("-parentB-")).findFirst().orElseThrow();
 		MockHttpServletResponse wrongPassword = mockMvc.perform(formLogin().user(existing).password("wrong-password-1")).andReturn().getResponse();
 		MockHttpServletResponse unknown = mockMvc.perform(formLogin().user("matrix-nobody-" + run + "@example.test")
@@ -587,6 +587,15 @@ class AccessMatrixTest extends WebIntegrationTest {
 				"{\"email\":\"matrix-nobody-%s@example.test\"}".formatted(run), true);
 		assertThat(forgotExisting.getStatus()).isEqualTo(forgotUnknown.getStatus());
 		assertThat(forgotExisting.getContentAsString()).isEqualTo(forgotUnknown.getContentAsString());
+
+		// QA1-006: signing up with a taken address answers exactly like a new one.
+		String body = "{\"email\":\"%s\",\"password\":\"%s\",\"displayName\":\"Х\"}";
+		MockHttpServletResponse registerExisting = perform(Actor.ANON, HttpMethod.POST, "/api/auth/register",
+				body.formatted(existing.toUpperCase(), PASSWORD), true);
+		MockHttpServletResponse registerNew = perform(Actor.ANON, HttpMethod.POST, "/api/auth/register",
+				body.formatted("matrix-brand-new-" + run + "@example.test", PASSWORD), true);
+		assertThat(registerExisting.getStatus()).isEqualTo(registerNew.getStatus()).isEqualTo(202);
+		assertThat(registerExisting.getContentAsString()).isEqualTo(registerNew.getContentAsString());
 	}
 
 	private String nameOf(UUID childId) {

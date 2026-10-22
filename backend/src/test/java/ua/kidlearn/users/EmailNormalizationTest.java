@@ -59,8 +59,7 @@ class EmailNormalizationTest extends WebIntegrationTest {
 	@Test
 	void mixedCaseRegistrationIsStoredNormalizedAndLogsInWithAnyCase() throws Exception {
 		String name = local();
-		register("  " + name.toUpperCase() + "@Gmail.COM ").andExpect(status().isCreated())
-				.andExpect(jsonPath("$.email").value(name + "@gmail.com"));
+		register("  " + name.toUpperCase() + "@Gmail.COM ").andExpect(status().isAccepted());
 
 		MvcResult login = mockMvc.perform(formLogin().user(name + "@gmail.com").password(PASSWORD)).andReturn();
 		assertThat(login.getResponse().getRedirectedUrl()).isEqualTo("/");
@@ -73,8 +72,9 @@ class EmailNormalizationTest extends WebIntegrationTest {
 	@Test
 	void theSameEmailInAnotherCaseIsTaken() throws Exception {
 		String name = local();
-		register(name + "@gmail.com").andExpect(status().isCreated());
-		register(name.toUpperCase() + "@GMAIL.com").andExpect(status().isConflict());
+		register(name + "@gmail.com").andExpect(status().isAccepted());
+		// Taken in another case: the same answer as for a new address (QA1-006), no second account.
+		register(name.toUpperCase() + "@GMAIL.com").andExpect(status().isAccepted());
 		assertThat(jdbc.queryForObject("SELECT count(*) FROM users WHERE lower(email) = ?", Integer.class,
 				name + "@gmail.com")).isEqualTo(1);
 	}
@@ -82,7 +82,7 @@ class EmailNormalizationTest extends WebIntegrationTest {
 	@Test
 	void forgotPasswordFindsTheAccountInAnyCaseAndAnswersLikeForAnUnknownEmail() throws Exception {
 		String name = local();
-		register(name + "@gmail.com").andExpect(status().isCreated());
+		register(name + "@gmail.com").andExpect(status().isAccepted());
 		UUID userId = userRepository.findActiveByEmail(name + "@gmail.com").orElseThrow().getId();
 
 		String known = mockMvc.perform(post("/api/auth/forgot-password").with(csrf())
@@ -103,7 +103,7 @@ class EmailNormalizationTest extends WebIntegrationTest {
 	@Test
 	void invitingATeacherWithAnExistingEmailInAnotherCaseIsEmailTaken() throws Exception {
 		String name = local();
-		register(name + "@gmail.com").andExpect(status().isCreated());
+		register(name + "@gmail.com").andExpect(status().isAccepted());
 		String adminEmail = "admin-" + UUID.randomUUID() + "@example.test";
 		userRepository.saveAndFlush(new User(adminEmail, passwordEncoder.encode(PASSWORD), Role.ADMIN, "Admin", "uk"));
 		MockHttpSession admin = (MockHttpSession) mockMvc.perform(formLogin().user(adminEmail).password(PASSWORD))

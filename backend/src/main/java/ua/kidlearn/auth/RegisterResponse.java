@@ -1,6 +1,11 @@
 package ua.kidlearn.auth;
 
-import java.util.UUID;
+/**
+ * The one answer to every sign-up (202), whether or not the address already has an account
+ * (QA1-006): what happened is told only to the mailbox's owner.
+ */
+public record RegisterResponse(String status) {
 
-public record RegisterResponse(UUID id, String email, String displayName) {
+	public static final RegisterResponse CHECK_EMAIL = new RegisterResponse("check_email");
+
 }

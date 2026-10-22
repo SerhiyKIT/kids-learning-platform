@@ -29,10 +29,14 @@ public class AuthController {
 	}
 
 	@PostMapping("/register")
-	@ResponseStatus(HttpStatus.CREATED)
+	@ResponseStatus(HttpStatus.ACCEPTED)
 	public RegisterResponse register(@Valid @RequestBody RegisterRequest request) {
-		User user = authService.register(request);
-		return new RegisterResponse(user.getId(), user.getEmail(), user.getDisplayName());
+		try {
+			authService.register(request);
+		} catch (RegistrationRaceException e) {
+			// The address was taken a moment ago — the same answer as for any taken address.
+		}
+		return RegisterResponse.CHECK_EMAIL;
 	}
 
 	@GetMapping("/me")

@@ -45,7 +45,7 @@ class PasswordLengthTest extends WebIntegrationTest {
 		String email = "long-password-" + UUID.randomUUID() + "@example.test";
 		postJson("/api/auth/register",
 				"{\"email\":\"%s\",\"password\":\"%s\",\"displayName\":\"Тест\"}".formatted(email, password), null)
-				.andExpect(status().isCreated());
+				.andExpect(status().isAccepted());
 		return email;
 	}
 

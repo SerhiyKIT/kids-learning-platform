@@ -85,7 +85,7 @@ class DevRoutesAbsentOutsideDevProfileTest {
 						.contentType(MediaType.APPLICATION_JSON)
 						.content("{\"email\":\"%s\",\"password\":\"%s\",\"displayName\":\"Test\"}"
 								.formatted(email, PASSWORD)))
-				.andExpect(status().isCreated());
+				.andExpect(status().isAccepted());
 
 		MvcResult result = mockMvc.perform(post("/login").with(csrf())
 						.param("username", email)

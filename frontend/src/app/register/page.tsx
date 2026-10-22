@@ -12,10 +12,9 @@ import { Button } from "@/components/ui/Button";
 import { AuthLayout, Card, CardBody, CardFooter, CardHeader, PageHeading } from "@/components/ui/Card";
 import { Field, PasswordInput, Select, TextInput } from "@/components/ui/Field";
 
+/** The same answer for every sign-up, whether or not the address already has an account (QA1-006). */
 interface RegisterResponse {
-  id: string;
-  email: string;
-  displayName: string;
+  status: "check_email";
 }
 
 const IS_DEV = process.env.NODE_ENV !== "production";
@@ -77,13 +76,14 @@ export default function RegisterPage() {
         <AuthLayout>
           <PageHeading
             title="Перевірте пошту"
-            description={`Ми надіслали лист із посиланням на ${email}. Підтвердіть адресу, щоб увійти до кабінету.`}
+            description={`Ми надіслали лист на ${email}. Перейдіть за посиланням із нього, щоб продовжити.`}
           />
           <Card>
             <CardBody>
               <p className="text-ink-soft text-[15px] leading-relaxed text-pretty">
-                Лист не прийшов протягом кількох хвилин? Перевірте теку «Спам» — або повторіть
-                реєстрацію з іншою адресою.
+                Лист не прийшов протягом кількох хвилин? Перевірте теку «Спам» і чи правильно введено
+                адресу. Якщо акаунт із цією адресою вже є, у листі буде посилання для входу або
+                відновлення пароля.
               </p>
             </CardBody>
             <CardFooter>
@@ -218,13 +218,9 @@ export default function RegisterPage() {
   );
 }
 
-/** 409 і валідаційні problems по email показуємо під самим полем, а не окремим блоком. */
+/** Валідаційні problems по полю показуємо під самим полем, а не окремим блоком. */
 function fieldError(error: ApiError | null, path: string): string | undefined {
-  if (!error) return undefined;
-  if (error.status === 409 && path === "email") {
-    return "Адреса вже зареєстрована або має невірний формат.";
-  }
-  return error.problems?.find((p) => p.path === path)?.message;
+  return error?.problems?.find((p) => p.path === path)?.message;
 }
 
 function errorText(error: ApiError): string {

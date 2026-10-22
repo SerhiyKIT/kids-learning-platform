@@ -37,6 +37,15 @@ class SmtpAuthMailSender implements AuthMailSender {
 						+ "Set your password here (the link works once): " + link);
 	}
 
+	@Override
+	public void sendAlreadyRegistered(User user) {
+		String base = appProperties.baseUrl();
+		send(user.getEmail(), "Ви вже зареєстровані в «Безпечному Просторі»",
+				"Вітаємо!\n\nХтось (можливо, ви) щойно спробував зареєструватися з цією адресою, але акаунт із нею вже є."
+						+ " Нічого не змінено.\n\nУвійти: " + base + "/login\nЗабули пароль? Відновіть його: " + base
+						+ "/forgot-password\n\nЯкщо це були не ви — просто проігноруйте цей лист.");
+	}
+
 	private void send(String to, String subject, String text) {
 		SimpleMailMessage message = new SimpleMailMessage();
 		if (appProperties.mailFrom() != null && !appProperties.mailFrom().isBlank()) {

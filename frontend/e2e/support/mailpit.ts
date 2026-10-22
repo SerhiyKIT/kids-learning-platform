@@ -25,3 +25,10 @@ export async function linkFromEmail(to: string, path: string): Promise<URL> {
     .toBe(true);
   return new URL(link!);
 }
+
+/** Subjects of every email to `to`, newest first. */
+export async function subjectsTo(to: string): Promise<string[]> {
+  const search = await fetch(`${MAILPIT_URL}/api/v1/search?query=${encodeURIComponent(`to:"${to}"`)}`);
+  const { messages } = (await search.json()) as { messages: { Subject: string }[] };
+  return (messages ?? []).map((m) => m.Subject);
+}

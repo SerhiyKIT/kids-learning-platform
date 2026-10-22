@@ -46,6 +46,16 @@ class AuthMailEventListener {
 
 	@Async
 	@TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
+	public void onAlreadyRegisteredNoticeRequested(AlreadyRegisteredNoticeRequestedEvent event) {
+		try {
+			authMailSender.sendAlreadyRegistered(event.user());
+		} catch (Exception e) {
+			log.error("Failed to send already-registered email to user {}", event.user().getId(), e);
+		}
+	}
+
+	@Async
+	@TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
 	public void onTeacherInviteRequested(TeacherInviteRequestedEvent event) {
 		try {
 			authMailSender.sendTeacherInvite(event.user(), event.rawToken());
