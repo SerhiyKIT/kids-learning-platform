@@ -38,3 +38,14 @@ that routing is nginx's job (see the root README / `/infra`), not this file.
 `public/manifest.webmanifest` + `public/sw.js` (registers, does no caching yet) make the app
 installable. Offline lesson caching is out of scope here — see the UX guide §8/§9 for what that
 will eventually need to satisfy.
+
+## Safari / WebKit against a production build
+
+A production build (`NODE_ENV=production`, the standalone server, the e2e stack) sends a CSP with
+`upgrade-insecure-requests`. WebKit applies it even on `http://127.0.0.1`, so every script and API
+request is upgraded to `https://` and fails: the page never hydrates and no CSRF cookie appears.
+Chromium and Firefox treat loopback as secure and don't upgrade. Production is HTTPS only, so this
+is expected, and the directive stays (QA1-002 — deliberately not changed): to look at a production
+build in Safari/WebKit locally, put a TLS proxy in front of it (any self-signed one, e.g. a few lines
+of `node:https` forwarding to `127.0.0.1:3100`) and open `https://127.0.0.1:<proxy port>`. The dev
+server (`npm run dev`) doesn't send the directive and works in Safari as is.
