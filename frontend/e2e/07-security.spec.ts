@@ -18,6 +18,10 @@ test("security: anonymous → login; another parent's child → not found; dev e
   })).status).toBe(404);
   await openLogin(page);
   expect((await api(page, "GET", "/actuator/env")).status).not.toBe(200);
+  // QA1-025: none of create-next-app's sample files are served.
+  for (const sample of ["vercel.svg", "next.svg", "globe.svg", "window.svg", "file.svg"]) {
+    expect((await page.request.get(`/${sample}`)).status(), sample).toBe(404);
+  }
 
   // QA1-017: the session ends under an open cabinet page (signed out everywhere from elsewhere).
   // The next action leads to the login page, which brings the parent back — never a raw
