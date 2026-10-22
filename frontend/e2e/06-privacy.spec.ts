@@ -17,9 +17,29 @@ test("privacy: an attempt played offline reaches the child export → sign out e
   await page.getByRole("button", { name: "Почнімо!" }).first().click();
   await page.locator(".kid-shelf a").first().click();
   await page.locator('button[aria-label="Далі"]').waitFor();
+  // QA1-027: soon after the first scene the whole lesson's audio is on the device…
+  const lessonAudio = await page.evaluate(async (childId) => {
+    const lessons = await (await fetch(`/api/children/${childId}/available-lessons`)).json();
+    const scenario = await (await fetch(`/api/children/${childId}/lessons/${lessons[0].lessonVersionId}/scenario`)).json();
+    return [...new Set(JSON.stringify(scenario).match(/\/api\/audio\/[0-9a-f]{64}/g) ?? [])];
+  }, parent.childId);
+  expect(lessonAudio.length).toBeGreaterThan(10);
+  await expect
+    .poll(() => page.evaluate(async (urls) => {
+      const cache = await caches.open("kid-audio-v1");
+      const cached = (await cache.keys()).map((r) => new URL(r.url).pathname);
+      return urls.filter((u) => !cached.includes(u)).length;
+    }, lessonAudio), { timeout: 30_000 })
+    .toBe(0);
+  // …so with the network gone, no line of the rest of the lesson has to be fetched.
+  const failedAudio: string[] = [];
+  page.on("requestfailed", (r) => {
+    if (r.url().includes("/api/audio/")) failedAudio.push(r.url());
+  });
   await parent.context.setOffline(true);
   await playStubLesson(page, false);
   await expect(page.locator('[data-phase="celebrate"]')).toBeVisible();
+  expect(failedAudio).toEqual([]);
   await parent.context.setOffline(false);
   await expect
     .poll(async () => (await api<{ result: string | null }[]>(page, "GET", `/children/${parent.childId}/history`)).json.map((h) => h.result), {

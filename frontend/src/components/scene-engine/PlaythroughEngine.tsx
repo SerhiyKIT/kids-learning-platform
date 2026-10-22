@@ -7,6 +7,8 @@ import { useKidMode } from "@/components/kid/kid-mode-context";
 import { useKidAudio } from "./KidAudio";
 import { type AnswerEvent, SceneRenderer } from "./SceneRenderer";
 
+const WHOLE_LESSON_PRELOAD_DELAY_MS = 1_500;
+
 /**
  * Drives one lesson playthrough: current scene, per-scene answer recording, and — on the last
  * scene — completing the attempt with a score. Score is the fraction of interactive scenes (choice,
@@ -37,6 +39,15 @@ export function PlaythroughEngine({
     const next = scenario.scenes[sceneIndex + 1];
     if (next) preload(voiceLineAudioUrls(next));
   }, [scenario, sceneIndex, preload]);
+
+  // Once the first scene is on screen, the rest of the lesson's lines follow in the background, so
+  // a network drop mid-lesson doesn't leave it silent (UX guide §8, QA1-027). Delayed a little so
+  // they don't compete with the first scene's own lines; downloads go through the service worker,
+  // which keeps them for the next visit too.
+  useEffect(() => {
+    const timer = setTimeout(() => preload(voiceLineAudioUrls(scenario)), WHOLE_LESSON_PRELOAD_DELAY_MS);
+    return () => clearTimeout(timer);
+  }, [scenario, preload]);
 
   const recordAnswer = useCallback(
     (event: AnswerEvent) => {
