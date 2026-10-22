@@ -132,6 +132,17 @@ public class AttemptService {
 	@Transactional
 	public SceneAnswer recordAnswer(UUID parentId, UUID attemptId, RecordAnswerRequest request) {
 		LessonAttempt attempt = requireOwnedAttempt(parentId, attemptId);
+		if (attempt.getCompletedAt() != null) {
+			throw new AttemptCompletedException();
+		}
+		LessonVersion version = lessonVersionRepository.findById(attempt.getLessonVersionId()).orElseThrow();
+		boolean sceneExists = false;
+		for (JsonNode scene : objectMapper.readTree(version.getScenario()).path("scenes")) {
+			sceneExists |= request.sceneKey().equals(scene.path("key").asText());
+		}
+		if (!sceneExists) {
+			throw new UnknownSceneException();
+		}
 		return sceneAnswerRepository.save(new SceneAnswer(attempt.getId(), request.sceneKey(), request.tryNo(),
 				request.chosenOption(), request.isCorrect(), request.hintsUsed(), clock.instant()));
 	}
@@ -143,6 +154,9 @@ public class AttemptService {
 	@Transactional
 	public PlayStateResponse complete(UUID parentId, UUID attemptId, String result, BigDecimal score) {
 		LessonAttempt attempt = requireOwnedAttempt(parentId, attemptId);
+		if (attempt.getCompletedAt() != null) {
+			throw new AttemptCompletedException();
+		}
 		if (!VALID_RESULTS.contains(result)) {
 			throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid result: " + result);
 		}

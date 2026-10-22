@@ -148,7 +148,7 @@ class PlayStateTest extends ClockedWebIntegrationTest {
 		mockMvc.perform(post("/api/attempts/" + attemptId + "/answers").with(csrf())
 						.session(parent)
 						.contentType(MediaType.APPLICATION_JSON)
-						.content("{\"sceneKey\":\"s2\",\"tryNo\":1,\"chosenOption\":\"a\",\"isCorrect\":true,\"hintsUsed\":0}"))
+						.content("{\"sceneKey\":\"scene_2\",\"tryNo\":1,\"chosenOption\":\"a\",\"isCorrect\":true,\"hintsUsed\":0}"))
 				.andExpect(status().isCreated());
 		playState(parent).andExpect(jsonPath("$.resting").value(false));
 

@@ -246,12 +246,12 @@ class PlaythroughControllerTest extends WebIntegrationTest {
 		mockMvc.perform(post("/api/attempts/" + attemptId + "/answers").with(csrf())
 						.session(fixture.parentSession())
 						.contentType(MediaType.APPLICATION_JSON)
-						.content("{\"sceneKey\":\"scene1\",\"tryNo\":1,\"chosenOption\":\"a\",\"isCorrect\":true,\"hintsUsed\":0}"))
+						.content("{\"sceneKey\":\"scene_2\",\"tryNo\":1,\"chosenOption\":\"a\",\"isCorrect\":true,\"hintsUsed\":0}"))
 				.andExpect(status().isCreated());
 		mockMvc.perform(post("/api/attempts/" + attemptId + "/answers").with(csrf())
 						.session(fixture.parentSession())
 						.contentType(MediaType.APPLICATION_JSON)
-						.content("{\"sceneKey\":\"scene2\",\"tryNo\":1,\"chosenOption\":\"b\",\"isCorrect\":false,\"hintsUsed\":1}"))
+						.content("{\"sceneKey\":\"scene_3\",\"tryNo\":1,\"chosenOption\":\"b\",\"isCorrect\":false,\"hintsUsed\":1}"))
 				.andExpect(status().isCreated());
 		mockMvc.perform(post("/api/attempts/" + attemptId + "/complete").with(csrf())
 						.session(fixture.parentSession())
@@ -266,9 +266,9 @@ class PlaythroughControllerTest extends WebIntegrationTest {
 				.andExpect(jsonPath("$[0].result").value("completed"))
 				.andExpect(jsonPath("$[0].score").value(0.5))
 				.andExpect(jsonPath("$[0].answers.length()").value(2))
-				.andExpect(jsonPath("$[0].answers[0].sceneKey").value("scene1"))
+				.andExpect(jsonPath("$[0].answers[0].sceneKey").value("scene_2"))
 				.andExpect(jsonPath("$[0].answers[0].isCorrect").value(true))
-				.andExpect(jsonPath("$[0].answers[1].sceneKey").value("scene2"))
+				.andExpect(jsonPath("$[0].answers[1].sceneKey").value("scene_3"))
 				.andExpect(jsonPath("$[0].answers[1].isCorrect").value(false));
 	}
 
@@ -357,6 +357,46 @@ class PlaythroughControllerTest extends WebIntegrationTest {
 				.andExpect(jsonPath("$[0].attempts[0].scenes[0].hintsUsed").value(2))
 				.andReturn().getResponse().getContentAsString();
 		assertThat(body).doesNotContain("chosenOption", "Another teacher's lesson").doesNotContainIgnoringCase("email");
+	}
+
+	@Test
+	void answersAndCompletionStayWithinWhatTheLessonCanProduce() throws Exception {
+		Fixture fixture = buildAssignedFixture();
+		UUID attemptId = startAttempt(fixture.parentSession(), fixture.childId(), fixture.versionId());
+		String answers = "/api/attempts/" + attemptId + "/answers";
+		String template = "{\"sceneKey\":\"%s\",\"tryNo\":%d,\"chosenOption\":\"%s\",\"isCorrect\":true,\"hintsUsed\":%d}";
+		for (String bad : new String[] {
+				template.formatted("no_such_scene", 1, "a", 0),
+				template.formatted("scene_2", 0, "a", 0),
+				template.formatted("scene_2", -1, "a", 0),
+				template.formatted("scene_2", 1, "a", 3),
+				template.formatted("scene_2", 1, "a", -3),
+				template.formatted("scene_2", 1, "x".repeat(65), 0)}) {
+			mockMvc.perform(post(answers).with(csrf()).session(fixture.parentSession())
+							.contentType(MediaType.APPLICATION_JSON).content(bad))
+					.andExpect(status().isBadRequest());
+		}
+		mockMvc.perform(post(answers).with(csrf()).session(fixture.parentSession())
+						.contentType(MediaType.APPLICATION_JSON).content(template.formatted("scene_2", 1, "a", 2)))
+				.andExpect(status().isCreated());
+
+		String complete = "/api/attempts/" + attemptId + "/complete";
+		for (String score : new String[] {"7", "-1", "1.01"}) {
+			mockMvc.perform(post(complete).with(csrf()).session(fixture.parentSession())
+							.contentType(MediaType.APPLICATION_JSON).content("{\"result\":\"completed\",\"score\":" + score + "}"))
+					.andExpect(status().isBadRequest());
+		}
+		mockMvc.perform(post(complete).with(csrf()).session(fixture.parentSession())
+						.contentType(MediaType.APPLICATION_JSON).content("{\"result\":\"completed\",\"score\":1}"))
+				.andExpect(status().isOk());
+		// Finished means finished: no second completion, no late answers.
+		mockMvc.perform(post(complete).with(csrf()).session(fixture.parentSession())
+						.contentType(MediaType.APPLICATION_JSON).content("{\"result\":\"completed\",\"score\":0.5}"))
+				.andExpect(status().isConflict())
+				.andExpect(jsonPath("$.code").value("ATTEMPT_COMPLETED"));
+		mockMvc.perform(post(answers).with(csrf()).session(fixture.parentSession())
+						.contentType(MediaType.APPLICATION_JSON).content(template.formatted("scene_2", 2, "a", 0)))
+				.andExpect(status().isConflict());
 	}
 
 	@Test
