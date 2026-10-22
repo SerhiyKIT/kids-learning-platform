@@ -2,6 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore, type ReactNode } from "react";
+import { createPortal } from "react-dom";
 import { apiFetch, ApiError } from "@/lib/api";
 import type { ShellLine } from "@/lib/api-types";
 import type { StyleResponse } from "@/lib/theme-catalog";
@@ -12,6 +13,7 @@ import { QuietButton } from "@/components/ui/SecondaryButton";
 import { ExitButton, KidStage, ListenButton, Mascot } from "./KidChrome";
 import { KidModeContext, type KidMode, type ShellLineKey } from "./kid-mode-context";
 import { KidThemeScope } from "./KidTheme";
+import { useDialogFocus } from "@/components/ui/use-dialog-focus";
 import { useOutbox } from "./outbox";
 
 /**
@@ -216,6 +218,10 @@ function ExitPasswordDialog({
   const [password, setPassword] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<ApiError | null>(null);
+  // Same keyboard behaviour as every adult dialog: focus trapped inside, the child-mode screen
+  // behind it inert, Esc = «Скасувати» (QA1-035).
+  const dialogRef = useRef<HTMLFormElement>(null);
+  useDialogFocus(dialogRef, onCancel);
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -244,9 +250,10 @@ function ExitPasswordDialog({
     }
   }
 
-  return (
+  return createPortal(
     <div className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto bg-[color:var(--color-ink)]/55 p-4">
       <form
+        ref={dialogRef}
         role="dialog"
         aria-modal="true"
         aria-labelledby="kid-exit-title"
@@ -285,7 +292,8 @@ function ExitPasswordDialog({
           </Button>
         </div>
       </form>
-    </div>
+    </div>,
+    document.body,
   );
 }
 

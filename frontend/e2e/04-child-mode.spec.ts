@@ -55,6 +55,20 @@ test("child mode: join by code → play choice + sorting → celebration → sti
   // A plain tap on the exit does nothing; holding it opens the adult's password screen.
   await page.getByRole("button", { name: "Вихід для дорослих: утримуйте 2 секунди" }).first().click();
   await expect(page.locator("#kid-exit-password")).toHaveCount(0);
+  // QA1-035: the exit dialog keeps keyboard focus inside and Esc cancels it.
+  const exitButton = page.getByRole("button", { name: "Вихід для дорослих: утримуйте 2 секунди" }).first();
+  const box = (await exitButton.boundingBox())!;
+  await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
+  await page.mouse.down();
+  await page.waitForTimeout(2300);
+  await page.mouse.up();
+  await expect(page.locator("#kid-exit-password")).toBeFocused();
+  for (const key of ["Tab", "Tab", "Tab", "Tab", "Shift+Tab", "Shift+Tab"]) {
+    await page.keyboard.press(key);
+    expect(await page.evaluate(() => Boolean(document.activeElement?.closest("[role=dialog]"))), `focus after ${key}`).toBe(true);
+  }
+  await page.keyboard.press("Escape");
+  await expect(page.locator("#kid-exit-password")).toHaveCount(0);
   await exitChildMode(page, PASSWORD);
   await expect(page).toHaveURL(new RegExp(`/children/${parent.childId}$`));
 
