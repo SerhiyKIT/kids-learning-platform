@@ -74,6 +74,33 @@ class ScenarioValidatorTest {
 	}
 
 	@Test
+	void aStopListWordInAVoiceLineOrTheLearningGoalIsRejected() {
+		String scenario = ScenarioFixtures.VALID_MINIMAL_SCENARIO
+				.replace("\"Run across fast\"", "\"Побігти й побачити кров\"")
+				.replace("\"learning_goal\": \"Look both ways before crossing\"",
+						"\"learning_goal\": \"Інакше страшно буде\"");
+
+		List<ScenarioProblem> problems = validator.validate(parse(scenario));
+
+		assertThat(problems).anyMatch(p -> p.path().endsWith("/label/text") && p.message().contains("«кров»"));
+		assertThat(problems).anyMatch(p -> p.path().equals("/learning_goal") && p.message().contains("«страшно буде»"));
+	}
+
+	@Test
+	void inflectedStopWordsAreCaughtButTheVerifiedServiceNamesAreNot() {
+		String scenario = ScenarioFixtures.VALID_MINIMAL_SCENARIO
+				.replace("\"Run across fast\"", "\"Без крові й без смерті\"")
+				.replace("\"Look both ways\"", "\"Аварійна служба газу: 104\"");
+
+		List<ScenarioProblem> problems = validator.validate(parse(scenario));
+
+		assertThat(problems).extracting(ScenarioProblem::message)
+				.anyMatch(m -> m.contains("«крові»"))
+				.anyMatch(m -> m.contains("«смерті»"))
+				.noneMatch(m -> m.contains("аварійна"));
+	}
+
+	@Test
 	void duplicateVoiceLineKeyIsRejected() {
 		String scenario = ScenarioFixtures.VALID_MINIMAL_SCENARIO.replace("\"hint2\"", "\"hint1\"");
 
