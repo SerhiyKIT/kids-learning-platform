@@ -399,7 +399,7 @@ export default function ChildPage() {
                   <p className="text-danger text-[13px] leading-snug">{joinErrorText(joinError)}</p>
                 ) : (
                   <p className="text-ink-soft text-[13px] leading-snug">
-                    Код видає вчитель. Одна дитина може бути щонайбільше у трьох групах.
+                    Код видає вчитель. Дитина може бути в кількох групах — наприклад, у садочку й на гуртку.
                   </p>
                 )}
               </form>

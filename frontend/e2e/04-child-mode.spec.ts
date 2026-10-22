@@ -12,6 +12,8 @@ test("child mode: join by code → play choice + sorting → celebration → sti
   await page.goto(`/children/${parent.childId}`);
   // QA1-013: a wrong code gets a Ukrainian explanation; the right one works as typed on a phone —
   // lower case, with stray spaces.
+  // QA1-014: no group limit (deliberately), so the form doesn't promise one.
+  await expect(page.getByText("Дитина може бути в кількох групах")).toBeVisible();
   await page.getByLabel("Приєднатися за кодом").fill("ZZZZZZZZ");
   await page.getByRole("button", { name: "Приєднатися" }).click();
   await expect(page.getByText("Код не знайдено. Перевірте, чи правильно його введено.")).toBeVisible();
