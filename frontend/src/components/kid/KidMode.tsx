@@ -93,7 +93,7 @@ export function KidModeProvider({ childId, children }: { childId: string; childr
     <KidModeContext.Provider value={value}>
       <KidThemeScope theme={style?.theme ?? null}>
         {started ? children : <StartScreen onStart={start} />}
-        {portrait ? <TurnDeviceOverlay /> : null}
+        {portrait ? <TurnDeviceOverlay onStart={started ? undefined : start} /> : null}
       </KidThemeScope>
       {exitOpen ? (
         <ExitPasswordDialog onCancel={cancelExit} onExited={exited} onSignedOut={() => router.push("/login")} />
@@ -159,11 +159,16 @@ function usePortrait(): boolean {
   );
 }
 
-/** A picture, not text: a phone turning on its side. */
-function TurnDeviceOverlay() {
+/**
+ * A picture, not text: a phone turning on its side. Before «Почнімо!» it carries that button too:
+ * the tap is what asks for fullscreen + a landscape lock (Android), and a phone whose rotation is
+ * locked in portrait would otherwise never get past this picture. The one line of text is for the
+ * adult, for the devices where nothing can turn the screen but its owner (iOS rotation lock).
+ */
+function TurnDeviceOverlay({ onStart }: { onStart?: () => void }) {
   return (
     <div
-      className="fixed inset-0 z-40 flex items-center justify-center bg-[radial-gradient(120%_90%_at_50%_30%,var(--color-kid-bg-top)_0%,var(--color-kid-canvas)_60%,var(--color-kid-bg-bottom)_100%)]"
+      className="fixed inset-0 z-40 flex flex-col items-center justify-center gap-6 bg-[radial-gradient(120%_90%_at_50%_30%,var(--color-kid-bg-top)_0%,var(--color-kid-canvas)_60%,var(--color-kid-bg-bottom)_100%)]"
     >
       {/* The adult can still leave from here. */}
       <ExitButton />
@@ -182,6 +187,10 @@ function TurnDeviceOverlay() {
           <circle cx="100" cy="158" r="4" fill="var(--color-kid-ink)" />
         </g>
       </svg>
+      {onStart ? <ListenButton label="Почнімо!" onClick={onStart} animation="breathe" className="size-[clamp(80px,22dvh,108px)]" /> : null}
+      <p className="text-kid-ink-soft max-w-[80vw] text-center text-sm">
+        Для дорослого: якщо екран не повертається, вимкніть блокування повороту.
+      </p>
     </div>
   );
 }
