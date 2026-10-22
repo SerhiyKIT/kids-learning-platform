@@ -27,9 +27,9 @@ import ua.kidlearn.users.ActiveAccountFilter;
 import ua.kidlearn.users.UserRepository;
 
 /**
- * Session-based security for the web-first PWA.
- *
- * TODO: Google OAuth2 login, admin data-access audit log.
+ * Session-based security for the web-first PWA: email + password for adults, 2FA for admins.
+ * Sign-in with Google is deferred until after the pilot — a recorded decision, see
+ * docs/Ролі_та_приватність.md §2 (QA1-032). The data-access audit log lives in ua.kidlearn.audit.
  */
 @Configuration
 @EnableMethodSecurity(prePostEnabled = true)
