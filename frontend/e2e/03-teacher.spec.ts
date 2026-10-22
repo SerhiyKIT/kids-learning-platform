@@ -14,12 +14,14 @@ test("teacher: invited by the admin → email → set password → login → gro
   await admin.getByRole("button", { name: "Запросити вчителя" }).click();
   await admin.getByLabel("Email").fill(email);
   await admin.getByLabel("Ім'я").fill("Олена Петрівна");
-  await admin.getByRole("button", { name: "Надіслати запрошення" }).click();
+  await admin.getByRole("button", { name: "Надіслати запрошення", exact: true }).click();
   await expect(admin.getByText(email).first()).toBeVisible();
   await adminContext.close();
 
   const link = await linkFromEmail(email, "/accept-invite");
   await page.goto(link.pathname + link.search);
+  // The page sets the CSRF cookie from an effect, i.e. only once hydrated; typing earlier gets reset (QA1-003).
+  await page.waitForFunction(() => document.cookie.includes("XSRF-TOKEN="));
   await page.getByLabel("Пароль", { exact: true }).fill(PASSWORD);
   await page.getByLabel("Повторіть пароль").fill(PASSWORD);
   await page.getByRole("button", { name: "Створити пароль" }).click();
