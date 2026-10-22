@@ -6,6 +6,7 @@ import { useCallback, useEffect, useState } from "react";
 import { apiFetch, ApiError } from "@/lib/api";
 import { errorText, useApiErrors } from "@/lib/errors";
 import type {
+  AgeBand,
   Assignment,
   CatalogEntry,
   CreateAssignmentRequest,
@@ -225,6 +226,13 @@ export default function GroupPage() {
 
   const assignedVersionIds = new Set(assignments?.map((a) => a.lessonVersionId) ?? []);
   const availableCatalog = catalog?.filter((c) => !assignedVersionIds.has(c.currentVersionId)) ?? [];
+  // A soft hint, never a block: the teacher knows the group (QA1-033).
+  const selectedBand = catalog?.find((c) => c.currentVersionId === selectedVersionId)?.ageBand ?? null;
+  const otherBand = members?.filter((m) => selectedBand && m.ageBand !== selectedBand).length ?? 0;
+  const ageHint =
+    selectedBand && otherBand > 0 && members
+      ? `Урок для дітей ${AGE_BANDS[selectedBand]}; у групі ${otherBand} з ${members.length} учнів іншого віку. Призначити все одно можна.`
+      : null;
   const resultRows = (results ?? []).flatMap((child) =>
     child.attempts.map((attempt, i) => ({ key: `${child.childId}-${i}`, child: child.displayName, attempt })),
   );
@@ -309,7 +317,10 @@ export default function GroupPage() {
                     className="border-line-head flex items-center gap-3 rounded-xl border px-3.5 py-3"
                   >
                     <Avatar name={member.displayName} tint={tintFor(member.childId)} />
-                    <span className="min-w-0 flex-1 text-[15px] font-medium">{member.displayName}</span>
+                    <span className="min-w-0 flex-1 text-[15px] font-medium">
+                      {member.displayName}
+                      <span className="text-ink-soft ml-2 text-sm font-normal">{AGE_BANDS[member.ageBand]}</span>
+                    </span>
                     <QuietButton
                       type="button"
                       onClick={() => onRemoveMember(member.childId)}
@@ -350,7 +361,7 @@ export default function GroupPage() {
                   </option>
                   {availableCatalog.map((entry) => (
                     <option key={entry.currentVersionId} value={entry.currentVersionId}>
-                      {entry.title} ({entry.moduleCode})
+                      {entry.title} ({entry.ageBand ? AGE_BANDS[entry.ageBand] : entry.moduleCode})
                     </option>
                   ))}
                 </Select>
@@ -364,6 +375,11 @@ export default function GroupPage() {
               </Button>
             </form>
 
+            {ageHint ? (
+              <p role="status" className="text-notice-title px-6 pb-1 text-sm">
+                {ageHint}
+              </p>
+            ) : null}
             {catalogError ? <p className="text-danger px-6 py-3 text-sm">{errorText(catalogError)}</p> : null}
             {assignError ? (
               <p className="text-danger px-6 py-3 text-sm">{assignErrorText(assignError)}</p>
@@ -568,3 +584,5 @@ function SceneOutcomes({ scenes }: { scenes: TeacherSceneResult[] }) {
     </ul>
   );
 }
+
+const AGE_BANDS: Record<AgeBand, string> = { age_3_4: "3–4 роки", age_5_6: "5–6 років" };

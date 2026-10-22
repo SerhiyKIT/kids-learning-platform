@@ -1,5 +1,7 @@
 package ua.kidlearn.groups;
 
+import java.time.Clock;
+import java.time.Year;
 import java.util.List;
 import java.util.UUID;
 import org.springframework.http.HttpStatus;
@@ -18,13 +20,15 @@ public class GroupService {
 	private final GroupMemberRepository groupMemberRepository;
 	private final ChildRepository childRepository;
 	private final JoinCodeGenerator joinCodeGenerator;
+	private final Clock clock;
 
 	public GroupService(GroupRepository groupRepository, GroupMemberRepository groupMemberRepository,
-			ChildRepository childRepository, JoinCodeGenerator joinCodeGenerator) {
+			ChildRepository childRepository, JoinCodeGenerator joinCodeGenerator, Clock clock) {
 		this.groupRepository = groupRepository;
 		this.groupMemberRepository = groupMemberRepository;
 		this.childRepository = childRepository;
 		this.joinCodeGenerator = joinCodeGenerator;
+		this.clock = clock;
 	}
 
 	@Transactional
@@ -56,7 +60,7 @@ public class GroupService {
 				.map(member -> member.getId().getChildId())
 				.toList();
 		return childRepository.findAllById(childIds).stream()
-				.map(GroupService::toMemberInfo)
+				.map(this::toMemberInfo)
 				.toList();
 	}
 
@@ -85,8 +89,11 @@ public class GroupService {
 		return group;
 	}
 
-	private static GroupMemberInfo toMemberInfo(Child child) {
-		return new GroupMemberInfo(child.getId(), child.getDisplayName(), child.getAvatarId());
+	private GroupMemberInfo toMemberInfo(Child child) {
+		// Up to the year the child turns 4: level A (3–4); from 5: level B (5–6).
+		int age = Year.now(clock).getValue() - child.getBirthYear();
+		return new GroupMemberInfo(child.getId(), child.getDisplayName(), child.getAvatarId(),
+				age <= 4 ? "age_3_4" : "age_5_6");
 	}
 
 	private ResponseStatusException notFound() {

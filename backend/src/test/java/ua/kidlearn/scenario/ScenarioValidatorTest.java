@@ -101,6 +101,35 @@ class ScenarioValidatorTest {
 	}
 
 	@Test
+	void levelAWantsTwoOptionsAndLevelBWantsFiveToSixScenesWithThree() {
+		// Level A with a third option in its choice.
+		String threeOptions = ScenarioFixtures.VALID_MINIMAL_SCENARIO.replace(
+				"{\"id\": \"b\", \"icon\": \"icon_run\"",
+				"{\"id\": \"c\", \"icon\": \"icon_wait\", \"label\": {\"key\": \"opt_c3\", \"text\": \"Wait\"}, \"correct\": false,"
+						+ " \"feedback\": {\"line\": {\"key\": \"fb_c3\", \"text\": \"Wait for a grown-up\"}}},"
+						+ " {\"id\": \"b\", \"icon\": \"icon_run\"");
+		assertThat(validator.validate(parse(threeOptions)))
+				.anyMatch(p -> p.path().endsWith("/options") && p.message().contains("рівня А") && p.message().contains("2 варіанти"));
+
+		// The same 3-scene, 2-option lesson labelled level B.
+		String levelB = ScenarioFixtures.VALID_MINIMAL_SCENARIO.replace("\"age_band\": \"age_3_4\"", "\"age_band\": \"age_5_6\"");
+		assertThat(validator.validate(parse(levelB)))
+				.anyMatch(p -> p.path().equals("/scenes") && p.message().contains("5–6 сцен"))
+				.anyMatch(p -> p.path().endsWith("/options") && p.message().contains("3 варіанти"));
+	}
+
+	@Test
+	void aRightAnswerWithAConsequenceIsRejected() {
+		String scenario = ScenarioFixtures.VALID_MINIMAL_SCENARIO.replace(
+				"\"feedback\": {\"line\": {\"key\": \"fb_a\", \"text\": \"Great job looking both ways\"}}",
+				"\"feedback\": {\"line\": {\"key\": \"fb_a\", \"text\": \"Great job looking both ways\"}, \"consequence_animation\": \"car_horn_stop\"}");
+		assertThat(scenario).isNotEqualTo(ScenarioFixtures.VALID_MINIMAL_SCENARIO);
+
+		assertThat(validator.validate(parse(scenario)))
+				.anyMatch(p -> p.path().endsWith("/feedback/consequence_animation") && p.message().contains("car_horn_stop"));
+	}
+
+	@Test
 	void duplicateVoiceLineKeyIsRejected() {
 		String scenario = ScenarioFixtures.VALID_MINIMAL_SCENARIO.replace("\"hint2\"", "\"hint1\"");
 

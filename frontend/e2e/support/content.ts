@@ -15,7 +15,7 @@ export async function publishedLesson(admin: Page, title: string): Promise<strin
   const generated = await api<{ versionId: string; status: string }>(admin, "POST", `/admin/lessons/${lesson.json.id}/generate`, {
     topic: "road_safety",
     patternIds: ["1.6"],
-    ageBand: "age_5_6",
+    ageBand: "age_3_4",
     learningGoal: "Безпечно переходити дорогу",
   });
   expect(generated.json.status).toBe("auto_validated");

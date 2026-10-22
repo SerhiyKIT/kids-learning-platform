@@ -11,7 +11,7 @@ public final class ScenarioFixtures {
 			  "module": "safety",
 			  "topic": "road_safety",
 			  "pattern_ids": ["1.6"],
-			  "age_band": "age_5_6",
+			  "age_band": "age_3_4",
 			  "title": "Crossing the street",
 			  "learning_goal": "Look both ways before crossing",
 			  "reality_bridge": {"key": "bridge1", "text": "Remember to look both ways"},

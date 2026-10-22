@@ -147,7 +147,9 @@ class AdminModerationTest extends WebIntegrationTest {
 
 		mockMvc.perform(get("/api/catalog/lessons").session(adminSession))
 				.andExpect(status().isOk())
-				.andExpect(jsonPath("$[?(@.currentVersionId=='" + versionId + "')]").isNotEmpty());
+				.andExpect(jsonPath("$[?(@.currentVersionId=='" + versionId + "')]").isNotEmpty())
+				// QA1-033: the teacher picks lessons by age — the catalog says which level each is.
+				.andExpect(jsonPath("$[?(@.currentVersionId=='" + versionId + "')].ageBand").value("age_5_6"));
 	}
 
 	@Test

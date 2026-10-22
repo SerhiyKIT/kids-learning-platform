@@ -5,11 +5,15 @@ import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.node.ArrayNode;
+import tools.jackson.databind.node.ObjectNode;
 
 /**
- * Deterministic fake LLM: no network, no API key, always returns the same fixed, schema-valid
- * scenario — with every interactive scene type the child engine plays except dialog (demo, choice,
- * sorting, and a control choice), so the end-to-end tests can play them all on generated content. Active whenever the real provider isn't (see {@link AnthropicLlmCondition}): the
+ * Deterministic fake LLM: no network, no API key, always returns the same fixed, valid scenario
+ * for the requested age band (QA1-033: scene and option counts follow it). Level A (age_3_4):
+ * demo, choice, sorting and a control choice with 2 options each — what the end-to-end tests
+ * play. Level B (age_5_6): the same lesson with a third option in every choice and a dialog scene
+ * before the control, so 5 scenes. Active whenever the real provider isn't (see {@link AnthropicLlmCondition}): the
  * default in dev and the only provider the test suite and CI ever see — mirroring how
  * MinioAudioStorage/InMemoryAudioStorage are split between real and test wiring.
  */
@@ -25,7 +29,7 @@ class StubLlmProvider implements LlmProvider {
 			  "module": "safety",
 			  "topic": "road_safety",
 			  "pattern_ids": ["1.6"],
-			  "age_band": "age_5_6",
+			  "age_band": "age_3_4",
 			  "title": "Crossing the street",
 			  "learning_goal": "Look both ways before crossing",
 			  "reality_bridge": {"key": "bridge1", "text": "Remember to look both ways"},
@@ -118,9 +122,52 @@ class StubLlmProvider implements LlmProvider {
 		JsonNode scenario = forcedScenario.get();
 		if (scenario == null) {
 			scenario = objectMapper.readTree(FIXED_VALID_SCENARIO);
+			if ("age_5_6".equals(request.ageBand())) {
+				scenario = levelB((ObjectNode) scenario);
+			}
 		}
 		return new GeneratedScenario(scenario, MODEL_ID);
 	}
+
+	/** Level B: a third option in every choice and a dialog before the control scene. */
+	private JsonNode levelB(ObjectNode scenario) {
+		scenario.put("age_band", "age_5_6");
+		ArrayNode scenes = (ArrayNode) scenario.path("scenes");
+		for (JsonNode scene : scenes) {
+			if ("choice".equals(scene.path("type").asText())) {
+				String key = scene.path("key").asText();
+				((ArrayNode) scene.path("options")).add(objectMapper.readTree("""
+						{"id": "c", "icon": "icon_wait", "label": {"key": "%1$s_opt_wait", "text": "Wait alone by the road"},
+						 "correct": false, "feedback": {"line": {"key": "%1$s_fb_wait", "text": "Wait for a grown-up instead"}}}
+						""".formatted(key)));
+			}
+		}
+		scenes.insert(scenes.size() - 1, objectMapper.readTree(LEVEL_B_DIALOG));
+		return scenario;
+	}
+
+	private static final String LEVEL_B_DIALOG = """
+			{
+			  "key": "scene_5", "type": "dialog", "is_control": false, "background": "street_bg",
+			  "characters": [{"id": "guide", "emotion": "thinking"}],
+			  "question": {"key": "dlg_q", "text": "Who helps you cross the road?"},
+			  "answers": [
+			    {"id": "a", "icon": "icon_adult", "label": {"key": "dlg_a", "text": "A grown-up"}, "correct": true,
+			     "feedback": {"key": "dlg_fa", "text": "Yes, a grown-up keeps you safe"}},
+			    {"id": "b", "icon": "icon_cat", "label": {"key": "dlg_b", "text": "A cat"}, "correct": false,
+			     "feedback": {"key": "dlg_fb", "text": "A cat can't help. Try again"}},
+			    {"id": "c", "icon": "icon_friend", "label": {"key": "dlg_c", "text": "A little friend"}, "correct": false,
+			     "feedback": {"key": "dlg_fc", "text": "Your friend needs a grown-up too"}}
+			  ],
+			  "assistant": {
+			    "hints": [
+			      {"level": 1, "line": {"key": "dlg_h1", "text": "Who is big and careful?"}},
+			      {"level": 2, "line": {"key": "dlg_h2", "text": "Mum, dad or your teacher"}}
+			    ],
+			    "re_explain": {"key": "dlg_re", "text": "Always cross with a grown-up"}
+			  }
+			}
+			""";
 
 	/** Test hook: makes every call return {@code scenario} instead of the fixed default, until cleared. */
 	void forceNextScenario(JsonNode scenario) {

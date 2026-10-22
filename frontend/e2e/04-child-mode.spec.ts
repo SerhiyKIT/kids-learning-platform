@@ -73,6 +73,8 @@ test("child mode: join by code → play choice + sorting → celebration → sti
   await expect(group.teacher.getByRole("cell", { name: group.lessonTitle }).first()).toBeVisible();
   // QA1-031: the teacher sees how each scene went (no answers) — the stub lesson's choice, sorting
   // and control scenes were all done right the first time.
+  // QA1-033: the teacher sees each child's age level (not the birth year) to pick lessons by.
+  await expect(group.teacher.getByText("Остапчик5–6 років")).toBeVisible();
   await expect(group.teacher.locator('[data-scene="scene_2"]').first()).toContainText("Вибір: з 1-ї спроби");
   await expect(group.teacher.locator('[data-scene="scene_3"]').first()).toContainText("Сортування:");
   await expect(group.teacher.locator('[data-scene="scene_4"]').first()).toContainText("Контрольна: з 1-ї спроби");

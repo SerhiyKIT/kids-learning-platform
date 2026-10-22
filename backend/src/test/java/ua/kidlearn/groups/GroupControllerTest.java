@@ -285,6 +285,35 @@ class GroupControllerTest extends WebIntegrationTest {
 	}
 
 	@Test
+	void membersShowTheirAgeLevelButNotTheirBirthYear() throws Exception {
+		String teacherEmail = uniqueEmail("teacher");
+		registerTeacher(teacherEmail);
+		MockHttpSession teacherSession = login(teacherEmail);
+		GroupInfo group = createGroup(teacherSession, "Class A");
+		String parentEmail = uniqueEmail("parent");
+		registerVerifiedParent(parentEmail);
+		MockHttpSession parentSession = login(parentEmail);
+		for (var kid : java.util.Map.of("Молодший", 3, "Старший", 6).entrySet()) {
+			String id = JsonPath.read(mockMvc.perform(post("/api/children").with(csrf()).session(parentSession)
+							.contentType(MediaType.APPLICATION_JSON)
+							.content("{\"displayName\":\"%s\",\"birthYear\":%d,\"relation\":\"mother\"}"
+									.formatted(kid.getKey(), Year.now().getValue() - kid.getValue())))
+					.andExpect(status().isCreated()).andReturn().getResponse().getContentAsString(), "$.id");
+			mockMvc.perform(post("/api/children/" + id + "/consent").with(csrf()).session(parentSession))
+					.andExpect(status().isOk());
+			mockMvc.perform(post("/api/groups/join").with(csrf()).session(parentSession)
+							.contentType(MediaType.APPLICATION_JSON).content(joinBody(group.joinCode(), UUID.fromString(id))))
+					.andExpect(status().isOk());
+		}
+
+		mockMvc.perform(get("/api/groups/" + group.id() + "/members").session(teacherSession))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$[?(@.displayName=='Молодший')].ageBand").value("age_3_4"))
+				.andExpect(jsonPath("$[?(@.displayName=='Старший')].ageBand").value("age_5_6"))
+				.andExpect(jsonPath("$[0].birthYear").doesNotExist());
+	}
+
+	@Test
 	void joinIsIdempotent() throws Exception {
 		String teacherEmail = uniqueEmail("teacher");
 		registerTeacher(teacherEmail);

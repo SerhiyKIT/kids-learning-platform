@@ -63,10 +63,15 @@ export interface CreateGroupRequest {
 }
 
 /** GET /api/groups/{id}/members — deliberately excludes anything about the child's parent. */
+/** The lessons' age level: «Вимоги до модуля Безпека» §4 (A: 3–4 years, B: 5–6). */
+export type AgeBand = "age_3_4" | "age_5_6";
+
 export interface GroupMemberInfo {
   childId: string;
   displayName: string;
   avatarId: string;
+  /** The level that fits the child now — not the birth year. */
+  ageBand: AgeBand;
 }
 
 /** GET /api/catalog/lessons — published lessons only. */
@@ -75,6 +80,7 @@ export interface CatalogEntry {
   title: string;
   moduleCode: string;
   currentVersionId: string;
+  ageBand: AgeBand | null;
 }
 
 /** POST /api/assignments body — exactly one of groupId/childId. */

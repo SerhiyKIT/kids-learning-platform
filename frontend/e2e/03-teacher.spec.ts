@@ -35,7 +35,7 @@ test("teacher: invited by the admin → email → set password → login → gro
   await page.getByRole("button", { name: "Створити", exact: true }).click();
   await page.getByRole("link", { name: /Сонечко/ }).first().click();
   await expect(page).toHaveURL(/\/groups\/.+/);
-  await page.getByLabel("Призначити урок").selectOption({ label: `${lessonTitle} (safety)` });
+  await page.getByLabel("Призначити урок").selectOption({ label: `${lessonTitle} (3–4 роки)` });
   await page.getByRole("button", { name: "Призначити", exact: true }).click();
   await expect(page.getByText(lessonTitle).last()).toBeVisible();
 });

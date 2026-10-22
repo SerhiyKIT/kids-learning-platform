@@ -171,9 +171,14 @@ public class LessonService {
 		Map<UUID, Module> modulesById = moduleRepository.findAllById(published.stream().map(Lesson::getModuleId).toList())
 				.stream()
 				.collect(Collectors.toMap(Module::getId, m -> m));
+		Map<UUID, String> ageBands = lessonVersionRepository
+				.findAllById(published.stream().map(Lesson::getCurrentVersionId).toList()).stream()
+				.collect(Collectors.toMap(LessonVersion::getId,
+						v -> objectMapper.readTree(v.getScenario()).path("age_band").asText("")));
 		return published.stream()
 				.map(lesson -> new CatalogEntry(lesson.getId(), lesson.getTitle(),
-						modulesById.get(lesson.getModuleId()).getCode(), lesson.getCurrentVersionId()))
+						modulesById.get(lesson.getModuleId()).getCode(), lesson.getCurrentVersionId(),
+						ageBands.get(lesson.getCurrentVersionId())))
 				.toList();
 	}
 

@@ -33,7 +33,7 @@ public class ScenarioValidator {
 	private static final String SCHEMA_CLASSPATH_LOCATION = "schema/lesson-scenario.schema.json";
 	private static final int TIER_A_MAX_WORDS = 10;
 	private static final int TIER_B_MAX_WORDS = 15;
-	private static final int TIER_B_MIN_SCENES = 5;
+	private static final String AGE_BAND_A = "age_3_4";
 	/** A standalone three-digit number — the shape of every Ukrainian emergency number. */
 	private static final Pattern THREE_DIGITS = Pattern.compile("(?<!\\d)\\d{3}(?!\\d)");
 
@@ -80,6 +80,7 @@ public class ScenarioValidator {
 		if (problems.isEmpty()) {
 			checkVoiceLines(scenario, "", new HashMap<>(), maxWordsPerVoiceLine, problems);
 			checkScenes(scenario.path("scenes"), problems);
+			checkAgeBand(scenario, problems);
 			for (String field : new String[] {"title", "learning_goal"}) {
 				checkStopWords(scenario.path(field).asText(), field, "/" + field, problems);
 			}
@@ -87,10 +88,39 @@ public class ScenarioValidator {
 		return problems;
 	}
 
-	/** Level A (3–4 scenes) allows ≤10 words per voice line; level B (5–6 scenes) allows ≤15. */
+	/** Level A (age_3_4) allows ≤10 words per voice line; level B (age_5_6) allows ≤15. */
 	private static int defaultMaxWordsPerVoiceLine(JsonNode scenario) {
+		return AGE_BAND_A.equals(scenario.path("age_band").asText()) ? TIER_A_MAX_WORDS : TIER_B_MAX_WORDS;
+	}
+
+	/**
+	 * docs/Промпт_генерації_уроків.md §3 rule 1, numbers from docs/Вимоги_модуль_Безпека.md §4:
+	 * level A (age_3_4) — 3–4 scenes and 2 options to choose from; level B (age_5_6) — 5–6 scenes
+	 * and 3 options. "Options" are a choice scene's options and a dialog's answers (QA1-033).
+	 */
+	private static void checkAgeBand(JsonNode scenario, List<ScenarioProblem> problems) {
+		boolean levelA = AGE_BAND_A.equals(scenario.path("age_band").asText());
+		int minScenes = levelA ? 3 : 5;
+		int maxScenes = levelA ? 4 : 6;
+		int options = levelA ? 2 : 3;
+		String level = levelA ? "рівня А (3–4 роки)" : "рівня Б (5–6 років)";
 		JsonNode scenes = scenario.path("scenes");
-		return scenes.isArray() && scenes.size() >= TIER_B_MIN_SCENES ? TIER_B_MAX_WORDS : TIER_A_MAX_WORDS;
+		if (scenes.size() < minScenes || scenes.size() > maxScenes) {
+			problems.add(new ScenarioProblem("/scenes", "Для " + level + " потрібно " + minScenes + "–" + maxScenes
+					+ " сцен, а їх " + scenes.size()));
+		}
+		for (int i = 0; i < scenes.size(); i++) {
+			JsonNode scene = scenes.get(i);
+			String field = switch (scene.path("type").asText()) {
+				case "choice" -> "options";
+				case "dialog" -> "answers";
+				default -> null;
+			};
+			if (field != null && scene.path(field).size() != options) {
+				problems.add(new ScenarioProblem("/scenes/" + i + "/" + field, "Для " + level + " потрібно " + options
+						+ " варіанти, а їх " + scene.path(field).size()));
+			}
+		}
 	}
 
 	/** Recursively finds every {key,text} voiceLine object, checking key uniqueness and word count. */
@@ -195,9 +225,16 @@ public class ScenarioValidator {
 			return;
 		}
 		int correctCount = 0;
-		for (JsonNode item : items) {
+		for (int i = 0; i < items.size(); i++) {
+			JsonNode item = items.get(i);
 			if (item.path("correct").asBoolean(false)) {
 				correctCount++;
+				// Prompt §3 rule 6: a right answer never comes with a "consequence" (QA1-033).
+				String consequence = item.path("feedback").path("consequence_animation").asText("none");
+				if (!"none".equals(consequence)) {
+					problems.add(new ScenarioProblem(itemsPath + "/" + i + "/feedback/consequence_animation",
+							"Правильна відповідь не може мати наслідку (" + consequence + "), лише none"));
+				}
 			}
 		}
 		if (correctCount != 1) {
