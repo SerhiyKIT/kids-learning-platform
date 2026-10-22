@@ -36,6 +36,8 @@ export interface Child {
   displayName: string;
   birthYear: number;
   status: ChildStatus;
+  /** Another adult is linked too: removing the profile here only unlinks this parent (QA1-007). */
+  hasOtherParent: boolean;
 }
 
 export type ParentRelation = "mother" | "father" | "guardian";

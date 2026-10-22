@@ -41,7 +41,7 @@ public class ChildController {
 	@ResponseStatus(HttpStatus.CREATED)
 	public ChildResponse create(@AuthenticationPrincipal AppUserPrincipal principal,
 			@Valid @RequestBody CreateChildRequest request) {
-		return ChildResponse.from(childService.create(principal.getId(), request));
+		return ChildResponse.from(childService.create(principal.getId(), request), false);
 	}
 
 	@PostMapping("/{id}/consent")
@@ -72,21 +72,24 @@ public class ChildController {
 
 	@GetMapping
 	public List<ChildResponse> list(@AuthenticationPrincipal AppUserPrincipal principal) {
-		return childService.listForParent(principal.getId()).stream().map(ChildResponse::from).toList();
+		return childService.listForParent(principal.getId()).stream()
+				.map(child -> ChildResponse.from(child, childService.hasOtherParent(child.getId())))
+				.toList();
 	}
 
 	@GetMapping("/{id}")
 	public ChildResponse get(@AuthenticationPrincipal AppUserPrincipal principal, @PathVariable UUID id) {
-		return ChildResponse.from(childService.getForParent(principal.getId(), id));
+		return ChildResponse.from(childService.getForParent(principal.getId(), id), childService.hasOtherParent(id));
 	}
 
 	@DeleteMapping("/{id}")
 	@ResponseStatus(HttpStatus.NO_CONTENT)
 	public void delete(@AuthenticationPrincipal AppUserPrincipal principal, @PathVariable UUID id,
 			HttpServletRequest request) {
-		childService.delete(principal.getId(), id);
-		auditService.record(principal.getId(), principal.getRole(), AuditAction.DELETE_CHILD, AuditTargetType.CHILD,
-				id, clientIpResolver.resolve(request));
+		boolean deleted = childService.removeForParent(principal.getId(), id);
+		auditService.record(principal.getId(), principal.getRole(),
+				deleted ? AuditAction.DELETE_CHILD : AuditAction.UNLINK_CHILD, AuditTargetType.CHILD, id,
+				clientIpResolver.resolve(request));
 	}
 
 }

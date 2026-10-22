@@ -149,6 +149,7 @@ export const AUDIT_ACTION_LABELS: Record<string, string> = {
   VIEW_CHILD_HISTORY: "Перегляд історії дитини",
   VIEW_GROUP_RESULTS: "Перегляд результатів групи",
   DELETE_CHILD: "Видалення дитини",
+  UNLINK_CHILD: "Від'єднання від дитини",
   GENERATE_VERSION: "Генерація версії",
   APPROVE_VERSION: "Схвалення версії",
   REJECT_VERSION: "Відхилення версії",

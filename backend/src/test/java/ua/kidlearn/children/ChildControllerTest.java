@@ -50,6 +50,12 @@ class ChildControllerTest extends WebIntegrationTest {
 	@Autowired
 	private PasswordEncoder passwordEncoder;
 
+	@Autowired
+	private ParentChildRepository parentChildRepository;
+
+	@Autowired
+	private ChildRepository childRepository;
+
 	@PersistenceContext
 	private EntityManager entityManager;
 
@@ -217,6 +223,36 @@ class ChildControllerTest extends WebIntegrationTest {
 
 		mockMvc.perform(get("/api/children/" + childId).session(sessionB))
 				.andExpect(status().isNotFound());
+	}
+
+	@Test
+	void removingASharedChildOnlyUnlinksThisParent() throws Exception {
+		String firstEmail = uniqueEmail("first");
+		registerVerifiedParent(firstEmail);
+		MockHttpSession first = login(firstEmail);
+		UUID childId = UUID.fromString(JsonPath.read(mockMvc.perform(post("/api/children").with(csrf()).session(first)
+						.contentType(MediaType.APPLICATION_JSON).content(createChildBody("Спільна")))
+				.andExpect(status().isCreated()).andReturn().getResponse().getContentAsString(), "$.id"));
+		String secondEmail = uniqueEmail("second");
+		User second = registerVerifiedParent(secondEmail);
+		parentChildRepository.saveAndFlush(new ParentChild(second.getId(), childId, "father", false));
+		MockHttpSession secondSession = login(secondEmail);
+
+		mockMvc.perform(get("/api/children/" + childId).session(first))
+				.andExpect(jsonPath("$.hasOtherParent").value(true));
+		// QA1-007: the first parent removes the child from their cabinet — the child stays with the second.
+		mockMvc.perform(delete("/api/children/" + childId).with(csrf()).session(first))
+				.andExpect(status().isNoContent());
+		mockMvc.perform(get("/api/children/" + childId).session(first)).andExpect(status().isNotFound());
+		mockMvc.perform(get("/api/children/" + childId).session(secondSession))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.displayName").value("Спільна"))
+				.andExpect(jsonPath("$.hasOtherParent").value(false));
+
+		// Now the only parent: removing it deletes the child for good.
+		mockMvc.perform(delete("/api/children/" + childId).with(csrf()).session(secondSession))
+				.andExpect(status().isNoContent());
+		assertThat(childRepository.findById(childId)).isEmpty();
 	}
 
 	@Test

@@ -6,6 +6,8 @@ public final class AuditAction {
 	public static final String VIEW_CHILD_HISTORY = "VIEW_CHILD_HISTORY";
 	public static final String VIEW_GROUP_RESULTS = "VIEW_GROUP_RESULTS";
 	public static final String DELETE_CHILD = "DELETE_CHILD";
+	/** A parent left a child who has another parent: only their link was removed (QA1-007). */
+	public static final String UNLINK_CHILD = "UNLINK_CHILD";
 	public static final String DELETE_ACCOUNT = "DELETE_ACCOUNT";
 	public static final String EXPORT_CHILD_DATA = "EXPORT_CHILD_DATA";
 	public static final String EXPORT_ACCOUNT_DATA = "EXPORT_ACCOUNT_DATA";

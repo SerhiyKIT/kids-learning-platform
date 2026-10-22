@@ -603,16 +603,23 @@ export default function ChildPage() {
           <section className="bg-surface border-danger-line-soft flex flex-col gap-4 rounded-xl border px-6 py-5.5">
             <div className="flex flex-col gap-1.5">
               <h2 className="text-danger-title text-lg font-medium">Небезпечна зона</h2>
-              <p className="text-ink-soft text-sm leading-relaxed text-pretty">
-                Видалення профілю остаточно стирає все, що система знає про {child.displayName}: профіль,
-                надані згоди, членство в групах, усю історію уроків з відповідями й оцінками, наліпки,
-                налаштування часу гри та вибір оформлення. Дані не можна відновити. Записи журналу дій
-                лишаються без даних дитини. Перед видаленням можна завантажити копію даних вище.
-              </p>
+              {child.hasOtherParent ? (
+                <p className="text-ink-soft text-sm leading-relaxed text-pretty" data-fate="unlinked">
+                  У {child.displayName} є ще один дорослий у системі. Профіль, історія уроків і наліпки
+                  лишаються з ним — з вашого кабінету дитина зникне, і ви більше не бачитимете її даних.
+                </p>
+              ) : (
+                <p className="text-ink-soft text-sm leading-relaxed text-pretty" data-fate="deleted">
+                  Видалення профілю остаточно стирає все, що система знає про {child.displayName}: профіль,
+                  надані згоди, членство в групах, усю історію уроків з відповідями й оцінками, наліпки,
+                  налаштування часу гри та вибір оформлення. Дані не можна відновити. Записи журналу дій
+                  лишаються без даних дитини. Перед видаленням можна завантажити копію даних вище.
+                </p>
+              )}
             </div>
             <div className="flex flex-wrap items-center gap-3">
               <DangerButton type="button" onClick={() => setConfirmOpen(true)}>
-                Видалити дитину
+                {child.hasOtherParent ? "Прибрати дитину з мого кабінету" : "Видалити дитину"}
               </DangerButton>
             </div>
           </section>
@@ -666,14 +673,23 @@ export default function ChildPage() {
                 onClick={onDelete}
                 disabled={confirmText !== child.displayName || deleting}
               >
-                {deleting ? "Видаляємо…" : "Видалити назавжди"}
+                {deleting ? "Видаляємо…" : child.hasOtherParent ? "Прибрати з мого кабінету" : "Видалити назавжди"}
               </DangerButton>
             </>
           }
         >
           <p className="text-ink-soft text-sm leading-relaxed text-pretty">
-            Щоб назавжди видалити <strong className="text-ink font-medium">{child.displayName}</strong>{" "}
-            та всю історію уроків, введіть ім&apos;я дитини нижче.
+            {child.hasOtherParent ? (
+              <>
+                Щоб прибрати <strong className="text-ink font-medium">{child.displayName}</strong> зі свого
+                кабінету (дані лишаться в іншого дорослого), введіть ім&apos;я дитини нижче.
+              </>
+            ) : (
+              <>
+                Щоб назавжди видалити <strong className="text-ink font-medium">{child.displayName}</strong>{" "}
+                та всю історію уроків, введіть ім&apos;я дитини нижче.
+              </>
+            )}
           </p>
           <TextInput
             type="text"

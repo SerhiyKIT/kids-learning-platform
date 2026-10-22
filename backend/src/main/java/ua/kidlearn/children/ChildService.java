@@ -142,12 +142,35 @@ public class ChildService {
 		return childRepository.findById(childId).orElseThrow(this::notFound);
 	}
 
+	@Transactional(readOnly = true)
+	public boolean hasOtherParent(UUID childId) {
+		return parentChildRepository.countById_ChildId(childId) > 1;
+	}
+
 	@Transactional
 	public void delete(UUID parentId, UUID childId) {
 		requireOwnership(parentId, childId);
 		// Right to be forgotten: DB FKs cascade to parent_child, consents,
 		// attempts, scene_answers, assistant_dialogs, group_members, style_prefs.
 		childRepository.deleteById(childId);
+	}
+
+	/**
+	 * «Видалити профіль» from one parent's cabinet (QA1-007). A child who has another parent stays
+	 * with them — only this parent's link goes, as when a parent deletes their whole account. A
+	 * child with no other parent is deleted completely ({@link #delete}).
+	 *
+	 * @return true if the child was deleted, false if only this parent was unlinked
+	 */
+	@Transactional
+	public boolean removeForParent(UUID parentId, UUID childId) {
+		requireOwnership(parentId, childId);
+		if (parentChildRepository.countById_ChildId(childId) == 1) {
+			delete(parentId, childId);
+			return true;
+		}
+		parentChildRepository.deleteById(new ParentChildId(parentId, childId));
+		return false;
 	}
 
 	private void requireOwnership(UUID parentId, UUID childId) {
