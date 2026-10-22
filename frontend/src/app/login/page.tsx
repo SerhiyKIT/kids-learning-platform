@@ -11,11 +11,14 @@ import { AuthLayout, Card, CardBody, CardFooter, CardHeader, PageHeading } from 
 import { Field, PasswordInput, TextInput } from "@/components/ui/Field";
 import { errorText as apiErrorText, safeNext } from "@/lib/errors";
 import { twoFactorRedirect } from "@/lib/two-factor";
+import { useField } from "@/lib/use-field";
 
 export default function LoginPage() {
   const router = useRouter();
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
+  const emailField = useField();
+  const email = emailField.value;
+  const passwordField = useField();
+  const password = passwordField.value;
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<ApiError | null>(null);
 
@@ -70,8 +73,7 @@ export default function LoginPage() {
                   required
                   placeholder="name@example.com"
                   invalid={error?.status === 401}
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
+                  {...emailField.inputProps}
                 />
               )}
             </Field>
@@ -90,8 +92,7 @@ export default function LoginPage() {
                 required
                 placeholder="Введіть пароль"
                 invalid={error?.status === 401}
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
+                {...passwordField.inputProps}
               />
             </div>
           </CardBody>

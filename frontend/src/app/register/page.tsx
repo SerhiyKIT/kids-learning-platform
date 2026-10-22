@@ -12,6 +12,7 @@ import { Alert } from "@/components/ui/Alert";
 import { Button } from "@/components/ui/Button";
 import { AuthLayout, Card, CardBody, CardFooter, CardHeader, PageHeading } from "@/components/ui/Card";
 import { Field, PasswordInput, Select, TextInput } from "@/components/ui/Field";
+import { useField } from "@/lib/use-field";
 
 /** The same answer for every sign-up, whether or not the address already has an account (QA1-006). */
 interface RegisterResponse {
@@ -28,9 +29,12 @@ const DEV_ROLE_LABELS: Record<Role, string> = {
 
 export default function RegisterPage() {
   const router = useRouter();
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [displayName, setDisplayName] = useState("");
+  const emailField = useField();
+  const email = emailField.value;
+  const passwordField = useField();
+  const password = passwordField.value;
+  const displayNameField = useField();
+  const displayName = displayNameField.value;
   const [devRole, setDevRole] = useState<Role>("PARENT");
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<ApiError | null>(null);
@@ -130,8 +134,7 @@ export default function RegisterPage() {
                   required
                   invalid={Boolean(emailError)}
                   placeholder="name@example.com"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
+                  {...emailField.inputProps}
                 />
               )}
             </Field>
@@ -145,8 +148,7 @@ export default function RegisterPage() {
                   minLength={10}
                   invalid={Boolean(passwordError)}
                   placeholder="Введіть пароль"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
+                  {...passwordField.inputProps}
                 />
               )}
             </Field>
@@ -158,8 +160,7 @@ export default function RegisterPage() {
                   type="text"
                   required
                   placeholder="Олена Ковальчук"
-                  value={displayName}
-                  onChange={(e) => setDisplayName(e.target.value)}
+                  {...displayNameField.inputProps}
                 />
               )}
             </Field>

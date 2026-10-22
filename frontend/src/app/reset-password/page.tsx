@@ -10,6 +10,7 @@ import { Alert } from "@/components/ui/Alert";
 import { Button } from "@/components/ui/Button";
 import { AuthLayout, Card, CardBody, CardFooter, CardHeader, PageHeading } from "@/components/ui/Card";
 import { Field, PasswordInput } from "@/components/ui/Field";
+import { useField } from "@/lib/use-field";
 
 /** Same minimum as registration (backend ResetPasswordRequest, @Size(min = 10)). */
 const MIN_PASSWORD_LENGTH = 10;
@@ -31,8 +32,10 @@ function ResetPasswordScreen() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [token] = useState(() => searchParams.get("token") ?? "");
-  const [password, setPassword] = useState("");
-  const [confirm, setConfirm] = useState("");
+  const passwordField = useField();
+  const password = passwordField.value;
+  const confirmField = useField();
+  const confirm = confirmField.value;
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [done, setDone] = useState(false);
@@ -52,8 +55,8 @@ function ResetPasswordScreen() {
     try {
       await apiFetch("/auth/reset-password", { method: "POST", body: JSON.stringify({ token, newPassword: password }) });
       setDone(true);
-      setPassword("");
-      setConfirm("");
+      passwordField.set("");
+      confirmField.set("");
       router.replace("/reset-password");
     } catch {
       setError("Посилання застаріло або вже використане. Запросіть нове на сторінці «Забули пароль?».");
@@ -85,12 +88,12 @@ function ResetPasswordScreen() {
               {error || token === "" ? <Alert title="Не вдалося">{error ?? "Посилання недійсне."}</Alert> : null}
               <Field label="Новий пароль" error={tooLong ? PASSWORD_TOO_LONG_TEXT : undefined}>
                 {({ id }) => (
-                  <PasswordInput id={id} required minLength={MIN_PASSWORD_LENGTH} invalid={tooLong} autoComplete="new-password" value={password} onChange={(e) => setPassword(e.target.value)} />
+                  <PasswordInput id={id} required minLength={MIN_PASSWORD_LENGTH} invalid={tooLong} autoComplete="new-password" {...passwordField.inputProps} />
                 )}
               </Field>
               <Field label="Повторіть пароль">
                 {({ id }) => (
-                  <PasswordInput id={id} required minLength={MIN_PASSWORD_LENGTH} autoComplete="new-password" value={confirm} onChange={(e) => setConfirm(e.target.value)} />
+                  <PasswordInput id={id} required minLength={MIN_PASSWORD_LENGTH} autoComplete="new-password" {...confirmField.inputProps} />
                 )}
               </Field>
             </CardBody>

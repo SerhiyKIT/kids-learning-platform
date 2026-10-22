@@ -10,6 +10,7 @@ import { Alert } from "@/components/ui/Alert";
 import { Button } from "@/components/ui/Button";
 import { AuthLayout, Card, CardBody, CardFooter, CardHeader, PageHeading } from "@/components/ui/Card";
 import { Field, PasswordInput } from "@/components/ui/Field";
+import { useField } from "@/lib/use-field";
 
 /** Same minimum as registration / password reset (backend AcceptInviteRequest, @Size(min = 10)). */
 const MIN_PASSWORD_LENGTH = 10;
@@ -32,8 +33,10 @@ function AcceptInviteScreen() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [token] = useState(() => searchParams.get("token") ?? "");
-  const [password, setPassword] = useState("");
-  const [confirm, setConfirm] = useState("");
+  const passwordField = useField();
+  const password = passwordField.value;
+  const confirmField = useField();
+  const confirm = confirmField.value;
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [done, setDone] = useState(false);
@@ -55,8 +58,8 @@ function AcceptInviteScreen() {
     try {
       await apiFetch("/auth/accept-invite", { method: "POST", body: JSON.stringify({ token, password }) });
       setDone(true);
-      setPassword("");
-      setConfirm("");
+      passwordField.set("");
+      confirmField.set("");
       // The token is spent — keep it out of the address bar and history.
       router.replace("/accept-invite");
     } catch (err) {
@@ -114,8 +117,7 @@ function AcceptInviteScreen() {
                   required
                   autoComplete="new-password"
                   invalid={tooShort || tooLong}
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
+                  {...passwordField.inputProps}
                 />
               )}
             </Field>
@@ -126,8 +128,7 @@ function AcceptInviteScreen() {
                   required
                   autoComplete="new-password"
                   invalid={mismatch}
-                  value={confirm}
-                  onChange={(e) => setConfirm(e.target.value)}
+                  {...confirmField.inputProps}
                 />
               )}
             </Field>

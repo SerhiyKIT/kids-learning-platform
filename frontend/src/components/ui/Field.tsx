@@ -45,7 +45,7 @@ export function TextInput({
   invalid,
   className = "",
   ...props
-}: React.ComponentPropsWithoutRef<"input"> & { invalid?: boolean }) {
+}: React.ComponentProps<"input"> & { invalid?: boolean }) {
   return (
     <input
       {...props}
@@ -59,7 +59,7 @@ export function TextInput({
 export function PasswordInput({
   invalid,
   ...props
-}: React.ComponentPropsWithoutRef<"input"> & { invalid?: boolean }) {
+}: React.ComponentProps<"input"> & { invalid?: boolean }) {
   const [visible, setVisible] = useState(false);
   return (
     <div className="relative flex items-center">

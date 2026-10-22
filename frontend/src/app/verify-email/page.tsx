@@ -8,6 +8,7 @@ import { AppHeader } from "@/components/ui/AppHeader";
 import { Alert } from "@/components/ui/Alert";
 import { Button } from "@/components/ui/Button";
 import { AuthLayout, Card, CardBody, CardFooter, PageHeading } from "@/components/ui/Card";
+import { useHydrated } from "@/lib/use-field";
 
 export default function VerifyEmailPage() {
   // useSearchParams() needs a Suspense boundary to keep the rest of the route prerenderable.
@@ -28,6 +29,8 @@ function VerifyEmailScreen() {
   const searchParams = useSearchParams();
   const [token] = useState(() => searchParams.get("token") ?? "");
   const [state, setState] = useState<"idle" | "sending" | "done" | "failed">("idle");
+  // No field to keep, but a tap before hydration would do nothing — so the button waits for it (QA1-003).
+  const hydrated = useHydrated();
 
   useEffect(() => {
     ensureCsrfCookie();
@@ -76,7 +79,7 @@ function VerifyEmailScreen() {
             ) : null}
           </CardBody>
           <CardFooter>
-            <Button type="button" onClick={() => void onConfirm()} disabled={token === "" || state === "sending"}>
+            <Button type="button" onClick={() => void onConfirm()} disabled={!hydrated || token === "" || state === "sending"}>
               {state === "sending" ? "Підтверджуємо…" : "Підтвердити адресу"}
             </Button>
           </CardFooter>

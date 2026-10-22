@@ -8,13 +8,15 @@ import { Alert } from "@/components/ui/Alert";
 import { Button } from "@/components/ui/Button";
 import { AuthLayout, Card, CardBody, CardFooter, CardHeader, PageHeading } from "@/components/ui/Card";
 import { Field, TextInput } from "@/components/ui/Field";
+import { useField } from "@/lib/use-field";
 
 /**
  * Asks for a password-reset email. The answer is the same whether or not the address has an
  * account (no account enumeration), exactly like the backend's.
  */
 export default function ForgotPasswordPage() {
-  const [email, setEmail] = useState("");
+  const emailField = useField();
+  const email = emailField.value;
   const [submitting, setSubmitting] = useState(false);
   const [sent, setSent] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -66,7 +68,7 @@ export default function ForgotPasswordPage() {
               {error ? <Alert title="Помилка">{error}</Alert> : null}
               <Field label="Електронна пошта">
                 {({ id }) => (
-                  <TextInput id={id} type="email" required value={email} onChange={(e) => setEmail(e.target.value)} />
+                  <TextInput id={id} type="email" required {...emailField.inputProps} />
                 )}
               </Field>
             </CardBody>
