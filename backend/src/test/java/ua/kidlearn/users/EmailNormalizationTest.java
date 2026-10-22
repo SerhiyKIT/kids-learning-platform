@@ -82,6 +82,20 @@ class EmailNormalizationTest extends WebIntegrationTest {
 	}
 
 	@Test
+	void anAdultsNameIsOneToSixtyCharacters() throws Exception {
+		// QA1-011: a 5000-character name was stored and echoed in emails and cabinets.
+		String body = "{\"email\":\"%s@example.test\",\"password\":\"%s\",\"displayName\":\"%s\"}";
+		for (String name : new String[] {"Я".repeat(61), "   "}) {
+			mockMvc.perform(post("/api/auth/register").with(csrf()).contentType(MediaType.APPLICATION_JSON)
+							.content(body.formatted(local(), PASSWORD, name)))
+					.andExpect(status().isBadRequest());
+		}
+		mockMvc.perform(post("/api/auth/register").with(csrf()).contentType(MediaType.APPLICATION_JSON)
+						.content(body.formatted(local(), PASSWORD, "Я".repeat(60))))
+				.andExpect(status().isAccepted());
+	}
+
+	@Test
 	void theSameEmailInAnotherCaseIsTaken() throws Exception {
 		String name = local();
 		register(name + "@gmail.com").andExpect(status().isAccepted());

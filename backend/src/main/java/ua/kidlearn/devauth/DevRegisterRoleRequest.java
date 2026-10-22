@@ -12,7 +12,7 @@ public record DevRegisterRoleRequest(
 		@NotBlank @Email(regexp = EmailAddress.FORMAT) String email,
 		// Same minimum as RegisterRequest (docs/Ролі_та_приватність.md §2).
 		@NotBlank @Size(min = 10) @FitsBcrypt String password,
-		@NotBlank String displayName,
+		@NotBlank @Size(max = 60) String displayName,
 		@NotNull Role role) {
 
 	/** Surrounding whitespace dropped before bean validation (EmailAddress.normalize does the rest). */

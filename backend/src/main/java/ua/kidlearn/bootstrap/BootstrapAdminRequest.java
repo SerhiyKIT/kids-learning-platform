@@ -11,7 +11,7 @@ public record BootstrapAdminRequest(
 		@NotBlank @Email(regexp = EmailAddress.FORMAT) String email,
 		// Same minimum as RegisterRequest/DevRegisterRoleRequest (docs/Ролі_та_приватність.md §2).
 		@NotBlank @Size(min = 10) @FitsBcrypt String password,
-		@NotBlank String displayName) {
+		@NotBlank @Size(max = 60) String displayName) {
 
 	/** Surrounding whitespace dropped before bean validation (EmailAddress.normalize does the rest). */
 	public BootstrapAdminRequest {

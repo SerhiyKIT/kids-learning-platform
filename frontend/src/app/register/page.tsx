@@ -160,6 +160,7 @@ export default function RegisterPage() {
                   id={id}
                   type="text"
                   required
+                  maxLength={60}
                   placeholder="Олена Ковальчук"
                   {...displayNameField.inputProps}
                 />
