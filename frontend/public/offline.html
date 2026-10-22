@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="uk">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Немає інтернету — Безпечний Простір</title>
+</head>
+<!--
+  Offline fallback of the service worker (public/sw.js, QA1-028): cached once at install and shown
+  only when a page can't be loaded at all. Static on purpose — no script, no data of any user, no
+  request of its own. For the child it is a picture ("ask a grown-up"); the one line of text is for
+  the adult. Inline style attributes only: the page's CSP allows those, not <style> blocks.
+-->
+<body style="margin:0;min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:24px;background:radial-gradient(120% 90% at 50% 30%,#fff3dd 0%,#ffe9c9 60%,#ffd39c 100%);font-family:system-ui,sans-serif;color:#5a4322">
+  <svg viewBox="0 0 320 220" role="img" aria-label="Попроси дорослого допомогти" style="width:min(80vw,70vh);height:auto">
+    <!-- the grown-up -->
+    <circle cx="232" cy="52" r="22" fill="#f0c78a" stroke="#5a4322" stroke-width="5"/>
+    <rect x="206" y="80" width="52" height="92" rx="20" fill="#2fb3a3" stroke="#5a4322" stroke-width="5"/>
+    <rect x="212" y="166" width="16" height="40" rx="7" fill="#5a4322"/>
+    <rect x="236" y="166" width="16" height="40" rx="7" fill="#5a4322"/>
+    <!-- the guide, reaching up to the grown-up's hand -->
+    <ellipse cx="110" cy="150" rx="46" ry="54" fill="#b9e7dd" stroke="#ffffff" stroke-width="6"/>
+    <circle cx="96" cy="140" r="6" fill="#5a4322"/>
+    <circle cx="124" cy="140" r="6" fill="#5a4322"/>
+    <path d="M100 164 q10 8 20 0" fill="none" stroke="#5a4322" stroke-width="5" stroke-linecap="round"/>
+    <path d="M150 128 q30 -30 58 -26" fill="none" stroke="#5a4322" stroke-width="7" stroke-linecap="round"/>
+    <!-- no signal: a wifi sign, crossed out -->
+    <g transform="translate(40 18)" fill="none" stroke="#7a4e0b" stroke-width="6" stroke-linecap="round">
+      <path d="M8 30 a40 40 0 0 1 56 0"/>
+      <path d="M20 42 a22 22 0 0 1 32 0"/>
+      <circle cx="36" cy="54" r="3" fill="#7a4e0b"/>
+      <path d="M8 8 l56 56" stroke="#e05a47"/>
+    </g>
+  </svg>
+  <p style="margin:0;max-width:80vw;text-align:center;font-size:14px;color:#8a6a3c">Для дорослого: немає зв'язку з інтернетом. Перевірте з'єднання й оновіть сторінку.</p>
+</body>
+</html>

@@ -47,6 +47,21 @@ test("privacy: an attempt played offline reaches the child export → sign out e
     })
     .toEqual(["completed"]);
 
+  await parent.context.setOffline(true);
+  // QA1-028: opening a page with no connection shows the "ask a grown-up" picture, not the
+  // browser's error page; and the device keeps nothing but lesson audio and that static page.
+  await page.goto(`/play/${parent.childId}`);
+  await expect(page.getByRole("img", { name: "Попроси дорослого допомогти" })).toBeVisible();
+  const cached = await page.evaluate(async () => {
+    const paths: string[] = [];
+    for (const name of await caches.keys()) {
+      for (const request of await (await caches.open(name)).keys()) paths.push(new URL(request.url).pathname);
+    }
+    return paths;
+  });
+  expect(cached.filter((p) => !/^\/api\/audio\/[0-9a-f]{64}$/.test(p))).toEqual(["/offline.html"]);
+  await parent.context.setOffline(false);
+
   await page.goto(`/children/${parent.childId}`);
   const [download] = await Promise.all([
     page.waitForEvent("download"),
