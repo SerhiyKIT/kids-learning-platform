@@ -113,6 +113,43 @@ class ChildControllerTest extends WebIntegrationTest {
 	}
 
 	@Test
+	void aChildsNameAgeAndAvatarStayWithinBounds() throws Exception {
+		// QA1-016: a 3000-character name, an avatar id outside the library and any age 0–8 were stored.
+		String email = uniqueEmail("bounds");
+		registerVerifiedParent(email);
+		MockHttpSession session = login(email);
+		int year = Year.now().getValue();
+		String body = "{\"displayName\":\"%s\",\"birthYear\":%d,\"relation\":\"mother\"%s}";
+		for (String bad : new String[] {
+				body.formatted("Я".repeat(61), year - 4, ""),
+				body.formatted("Аватар", year - 4, ",\"avatarId\":\"../../etc/passwd\""),
+				body.formatted("Немовля", year - 1, ""),
+				body.formatted("Цього року", year, ""),
+				body.formatted("Школяр", year - 9, "")}) {
+			mockMvc.perform(post("/api/children").with(csrf()).session(session)
+							.contentType(MediaType.APPLICATION_JSON).content(bad))
+					.andExpect(status().isBadRequest());
+		}
+		for (String good : new String[] {
+				body.formatted("Я".repeat(60), year - 2, ""),
+				body.formatted("Старша", year - 8, ",\"avatarId\":\"default\"")}) {
+			mockMvc.perform(post("/api/children").with(csrf()).session(session)
+							.contentType(MediaType.APPLICATION_JSON).content(good))
+					.andExpect(status().isCreated());
+		}
+		// A teacher's group name: 1–80 characters.
+		String teacherEmail = uniqueEmail("teacher");
+		userRepository.save(new User(teacherEmail, passwordEncoder.encode(PASSWORD), Role.TEACHER, "Teacher", "uk"));
+		MockHttpSession teacher = login(teacherEmail);
+		mockMvc.perform(post("/api/groups").with(csrf()).session(teacher).contentType(MediaType.APPLICATION_JSON)
+						.content("{\"name\":\"%s\"}".formatted("Г".repeat(81))))
+				.andExpect(status().isBadRequest());
+		mockMvc.perform(post("/api/groups").with(csrf()).session(teacher).contentType(MediaType.APPLICATION_JSON)
+						.content("{\"name\":\"%s\"}".formatted("Г".repeat(80))))
+				.andExpect(status().isCreated());
+	}
+
+	@Test
 	void teacherCannotCreateChild() throws Exception {
 		User teacher = userRepository.save(new User(uniqueEmail("teacher"), passwordEncoder.encode(PASSWORD),
 				Role.TEACHER, "Teacher", "uk"));

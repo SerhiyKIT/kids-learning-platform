@@ -218,7 +218,7 @@ class TwoFactorFlowTest extends ClockedWebIntegrationTest {
 		MockHttpSession parentSession = login(parentEmail, parentIp);
 		mockMvc.perform(post("/api/children").with(csrf()).session(parentSession)
 						.contentType(MediaType.APPLICATION_JSON)
-						.content("{\"displayName\":\"Kid\",\"birthYear\":2020,\"relation\":\"mother\"}"))
+						.content("{\"displayName\":\"Kid\",\"birthYear\":" + (java.time.Year.now().getValue() - 5) + ",\"relation\":\"mother\"}"))
 				.andExpect(status().isCreated());
 
 		String teacherEmail = uniqueEmail("teacher-no-2fa");

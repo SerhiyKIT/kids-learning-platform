@@ -86,6 +86,7 @@ export default function GroupsPage() {
               type="text"
               required
               autoFocus
+              maxLength={80}
               value={newName}
               onChange={(e) => setNewName(e.target.value)}
               className="rounded border border-black/[.16] px-3 py-2 dark:border-white/[.2]"

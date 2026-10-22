@@ -20,8 +20,12 @@ import ua.kidlearn.users.UserRepository;
 public class ChildService {
 
 	// No avatar library exists yet; the DB column is NOT NULL, so an omitted
-	// avatarId falls back to this placeholder until one is picked.
+	// avatarId falls back to this placeholder until one is picked. Only ids from the library are
+	// accepted (QA1-016) — today that's the placeholder alone; the library adds its ids here.
 	private static final String DEFAULT_AVATAR_ID = "default";
+	private static final Set<String> AVATAR_IDS = Set.of(DEFAULT_AVATAR_ID);
+	// The platform is for 3–6-year-olds: a child is at least 2 and at most 8 this year (QA1-016).
+	private static final int MIN_CHILD_AGE_YEARS = 2;
 	private static final Set<String> VALID_RELATIONS = Set.of("mother", "father", "guardian");
 	private static final int MAX_CHILD_AGE_YEARS = 8;
 	// Consents a parent grants and revokes from the cabinet. "account" has its own flow (POST
@@ -57,13 +61,17 @@ public class ChildService {
 			throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid relation");
 		}
 		int currentYear = Year.now(clock).getValue();
-		if (request.birthYear() < currentYear - MAX_CHILD_AGE_YEARS || request.birthYear() > currentYear) {
+		if (request.birthYear() < currentYear - MAX_CHILD_AGE_YEARS
+				|| request.birthYear() > currentYear - MIN_CHILD_AGE_YEARS) {
 			throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "birthYear out of range");
 		}
 
 		String avatarId = (request.avatarId() == null || request.avatarId().isBlank())
 				? DEFAULT_AVATAR_ID
 				: request.avatarId();
+		if (!AVATAR_IDS.contains(avatarId)) {
+			throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Unknown avatarId");
+		}
 		Child child = childRepository.save(
 				new Child(request.displayName(), (short) request.birthYear(), avatarId, parentId));
 
