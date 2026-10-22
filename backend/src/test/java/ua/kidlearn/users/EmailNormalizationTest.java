@@ -70,6 +70,18 @@ class EmailNormalizationTest extends WebIntegrationTest {
 	}
 
 	@Test
+	void anAddressWithoutADottedDomainIsRejected() throws Exception {
+		// QA1-010: @Email alone accepts "a@b" — an address no mail can reach.
+		for (String email : new String[] {"a@b", local() + "@localhost", "@example.test", "a b@example.test"}) {
+			register(email).andExpect(status().isBadRequest());
+		}
+		mockMvc.perform(post("/api/auth/forgot-password").with(csrf())
+						.contentType(MediaType.APPLICATION_JSON).content("{\"email\":\"a@b\"}"))
+				.andExpect(status().isBadRequest());
+		register(local() + "@mail.example.test").andExpect(status().isAccepted());
+	}
+
+	@Test
 	void theSameEmailInAnotherCaseIsTaken() throws Exception {
 		String name = local();
 		register(name + "@gmail.com").andExpect(status().isAccepted());

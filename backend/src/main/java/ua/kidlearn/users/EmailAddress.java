@@ -11,6 +11,12 @@ import java.util.Locale;
  */
 public final class EmailAddress {
 
+	/**
+	 * What every email field accepts on top of {@code @Email}: a domain with a dot (QA1-010) —
+	 * {@code @Email} alone lets "a@b" through, an address no mail can reach.
+	 */
+	public static final String FORMAT = "^[^@\\s]+@[^@\\s.]+(\\.[^@\\s.]+)+$";
+
 	private EmailAddress() {
 	}
 
