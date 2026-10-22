@@ -33,12 +33,6 @@ app:
     rest-duration: 2m
   retention:
     enabled: false
-  ratelimit:
-    # Every spec registers its own parents from the same machine (one IP): the production 10/hour
-    # would make a second consecutive run fail. Login, 2FA and the other limits stay as in prod.
-    register-per-ip:
-      max: 1000
-      window: 1h
 
 minio:
   endpoint: ${MINIO_ENDPOINT:http://localhost:59000}

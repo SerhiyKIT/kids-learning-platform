@@ -82,27 +82,31 @@ app:
     login-per-account:
       max: 5
       window: 15m
+    # Per-IP limits are sized for a shared address — a kindergarten's Wi-Fi at a parents' meeting,
+    # a mobile carrier's CGNAT — where dozens of honest adults arrive from one IP (QA1-022). The
+    # per-account limits below are what protects each account, and they stay strict. Every per-IP
+    # value can be tuned per deployment from the environment (infra/prod/.env.example).
     login-per-ip:
-      max: 20
-      window: 15m
+      max: ${RATELIMIT_LOGIN_PER_IP_MAX:100}
+      window: ${RATELIMIT_LOGIN_PER_IP_WINDOW:15m}
     forgot-password-per-ip:
-      max: 5
-      window: 1h
+      max: ${RATELIMIT_FORGOT_PASSWORD_PER_IP_MAX:30}
+      window: ${RATELIMIT_FORGOT_PASSWORD_PER_IP_WINDOW:15m}
     resend-verification-per-ip:
-      max: 5
-      window: 1h
+      max: ${RATELIMIT_RESEND_VERIFICATION_PER_IP_MAX:30}
+      window: ${RATELIMIT_RESEND_VERIFICATION_PER_IP_WINDOW:15m}
     register-per-ip:
-      max: 10
-      window: 1h
+      max: ${RATELIMIT_REGISTER_PER_IP_MAX:60}
+      window: ${RATELIMIT_REGISTER_PER_IP_WINDOW:1h}
     verify-email-per-ip:
-      max: 10
-      window: 15m
+      max: ${RATELIMIT_VERIFY_EMAIL_PER_IP_MAX:60}
+      window: ${RATELIMIT_VERIFY_EMAIL_PER_IP_WINDOW:15m}
     reset-password-per-ip:
       max: 10
       window: 15m
     accept-invite-per-ip:
-      max: 10
-      window: 15m
+      max: ${RATELIMIT_ACCEPT_INVITE_PER_IP_MAX:60}
+      window: ${RATELIMIT_ACCEPT_INVITE_PER_IP_WINDOW:15m}
     bootstrap-admin-per-ip:
       max: 5
       window: 15m

@@ -20,6 +20,7 @@ import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.test.web.servlet.ResultActions;
 import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder;
 import org.springframework.transaction.annotation.Transactional;
+import ua.kidlearn.ratelimit.RateLimitProperties;
 import ua.kidlearn.support.ClockedWebIntegrationTest;
 import ua.kidlearn.users.Role;
 import ua.kidlearn.users.User;
@@ -38,6 +39,9 @@ class ReauthenticationTest extends ClockedWebIntegrationTest {
 
 	@Autowired
 	private MockMvc mockMvc;
+
+	@Autowired
+	private RateLimitProperties rateLimitProperties;
 
 	@Autowired
 	private UserRepository userRepository;
@@ -146,13 +150,15 @@ class ReauthenticationTest extends ClockedWebIntegrationTest {
 	@Test
 	void failuresFromOneIpAcrossAccountsHitThePerIpLimit() throws Exception {
 		String ip = uniqueIp();
-		for (int account = 0; account < 5; account++) {
+		// Four failures per account (under its own limit of 5) until the IP's limit is used up.
+		int perIp = rateLimitProperties.loginPerIp().max();
+		for (int failures = 0; failures < perIp; ) {
 			MockHttpSession session = login(newParent(), ip);
-			for (int i = 0; i < 4; i++) {
+			for (int i = 0; i < 4 && failures < perIp; i++, failures++) {
 				reauthenticate(session, ip, "wrong-password").andExpect(status().isUnauthorized());
 			}
 		}
-		// 20 failures from this IP: even a different account's right password is refused from it…
+		// The IP's limit reached: even a different account's right password is refused from it…
 		MockHttpSession other = login(newParent(), uniqueIp());
 		reauthenticate(other, ip, PASSWORD).andExpect(status().isTooManyRequests());
 		// …but not from another IP.

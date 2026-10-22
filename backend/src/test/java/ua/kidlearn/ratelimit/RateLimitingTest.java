@@ -30,6 +30,9 @@ class RateLimitingTest extends ClockedWebIntegrationTest {
 	@Autowired
 	private MockMvc mockMvc;
 
+	@Autowired
+	private RateLimitProperties properties;
+
 	private static String uniqueEmail() {
 		return "ratelimit-" + UUID.randomUUID() + "@example.test";
 	}
@@ -113,7 +116,7 @@ class RateLimitingTest extends ClockedWebIntegrationTest {
 	@Test
 	void forgotPasswordOverIpLimitReturns429ButOtherIpUnaffected() throws Exception {
 		String ip = uniqueIp();
-		for (int i = 0; i < 5; i++) {
+		for (int i = 0; i < properties.forgotPasswordPerIp().max(); i++) {
 			forgotPassword(uniqueEmail(), ip).andExpect(status().isOk());
 		}
 		forgotPassword(uniqueEmail(), ip)
@@ -128,7 +131,7 @@ class RateLimitingTest extends ClockedWebIntegrationTest {
 	@Test
 	void forgedForwardedForPrefixesDoNotCreateFreshRateLimitKeys() throws Exception {
 		String realIp = uniqueIp();
-		for (int i = 0; i < 5; i++) {
+		for (int i = 0; i < properties.forgotPasswordPerIp().max(); i++) {
 			forgotPassword(uniqueEmail(), "10.0.0." + i + ", " + realIp).andExpect(status().isOk());
 		}
 		forgotPassword(uniqueEmail(), "1.2.3.4, " + realIp).andExpect(status().isTooManyRequests());

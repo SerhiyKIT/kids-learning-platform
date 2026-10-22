@@ -4,8 +4,10 @@
 server_tokens off;
 
 # Extra layer in front of the backend's own per-account/per-IP limits: slows down floods of the
-# sensitive auth endpoints before they reach the JVM.
-limit_req_zone $binary_remote_addr zone=auth:10m rate=20r/m;
+# sensitive auth endpoints before they reach the JVM. Sized, like the backend's per-IP limits, for
+# dozens of parents behind one address (a kindergarten's Wi-Fi, mobile CGNAT — QA1-022): the
+# per-account limits in the backend are what protects each account.
+limit_req_zone $binary_remote_addr zone=auth:10m rate=60r/m;
 limit_req_status 429;
 
 upstream backend {
@@ -91,7 +93,7 @@ server {
     }
 
     location = /login {
-        limit_req zone=auth burst=20 nodelay;
+        limit_req zone=auth burst=60 nodelay;
         proxy_pass http://$login_upstream;
     }
 
@@ -100,7 +102,7 @@ server {
     }
 
     location ~ ^/api/(auth/(register|forgot-password|reset-password|verify-email|resend-verification|accept-invite|reauthenticate)|bootstrap/admin)$ {
-        limit_req zone=auth burst=20 nodelay;
+        limit_req zone=auth burst=60 nodelay;
         proxy_pass http://backend;
     }
 
