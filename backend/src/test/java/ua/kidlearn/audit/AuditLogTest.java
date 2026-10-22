@@ -263,6 +263,14 @@ class AuditLogTest extends WebIntegrationTest {
 				.andExpect(status().isOk())
 				.andExpect(jsonPath("$[0].action").value(AuditAction.APPROVE_VERSION));
 
+		// QA1-019: paging stays in bounds — a negative offset used to reach SQL and answer 500.
+		for (String[] paging : new String[][] {{"offset", "-1"}, {"limit", "0"}, {"limit", "201"}, {"limit", "100000"}}) {
+			mockMvc.perform(get("/api/admin/audit").session(adminSession).param(paging[0], paging[1]))
+					.andExpect(status().isBadRequest());
+		}
+		mockMvc.perform(get("/api/admin/audit").session(adminSession).param("limit", "200").param("offset", "0"))
+				.andExpect(status().isOk());
+
 		String teacherEmail = uniqueEmail("audit-teacher");
 		registerTeacher(teacherEmail);
 		MockHttpSession teacherSession = login(teacherEmail);

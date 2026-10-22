@@ -1,5 +1,7 @@
 package ua.kidlearn.admin;
 
+import jakarta.validation.constraints.Max;
+import jakarta.validation.constraints.Min;
 import java.util.List;
 import java.util.UUID;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -26,7 +28,9 @@ public class AdminAuditController {
 	public List<AuditEntryResponse> list(@RequestParam(required = false) String action,
 			@RequestParam(required = false) String targetType,
 			@RequestParam(required = false) UUID targetId, @RequestParam(required = false) UUID actorId,
-			@RequestParam(defaultValue = "50") int limit, @RequestParam(defaultValue = "0") int offset) {
+			// One page at most 200 entries, from a non-negative offset (QA1-019: -1 used to reach SQL).
+			@RequestParam(defaultValue = "50") @Min(1) @Max(200) int limit,
+			@RequestParam(defaultValue = "0") @Min(0) int offset) {
 		return auditService.list(action, targetType, targetId, actorId, limit, offset).stream()
 				.map(AuditEntryResponse::from)
 				.toList();
