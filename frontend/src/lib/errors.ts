@@ -11,6 +11,8 @@ import { ApiError, statusMessage } from "@/lib/api";
  */
 const BY_CODE: Record<string, string> = {
   GROUP_INACTIVE: "Ця група вже неактивна.",
+  ASSIGNMENT_EXISTS: "Цей урок уже призначено.",
+  ATTEMPT_COMPLETED: "Цю спробу вже завершено.",
   CHILD_NOT_ACTIVE: "Спершу надайте згоду на профіль дитини.",
   CHILD_RESTING: "Дитина зараз відпочиває.",
   EMAIL_NOT_VERIFIED: "Спершу підтвердьте email — посилання в листі після реєстрації.",

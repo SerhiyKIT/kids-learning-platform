@@ -282,6 +282,40 @@ class AssignmentControllerTest extends WebIntegrationTest {
 	}
 
 	@Test
+	void noBackwardsDatesNoDuplicatesAndNothingForAnArchivedGroup() throws Exception {
+		UUID versionId = createPublishedVersion();
+		String teacherEmail = uniqueEmail("teacher");
+		registerTeacher(teacherEmail);
+		MockHttpSession teacher = login(teacherEmail);
+		UUID[] groupId = new UUID[1];
+		String joinCode = createGroupWithJoinCode(teacher, groupId);
+		String parentEmail = uniqueEmail("parent");
+		registerVerifiedParent(parentEmail);
+		UUID childId = createActiveChildInGroup(login(parentEmail), joinCode);
+
+		// QA1-018: due before available is nonsense.
+		mockMvc.perform(post("/api/assignments").with(csrf()).session(teacher).contentType(MediaType.APPLICATION_JSON)
+						.content("{\"lessonVersionId\":\"%s\",\"groupId\":\"%s\",\"availableFrom\":\"2026-11-02T00:00:00Z\",\"dueAt\":\"2026-11-01T00:00:00Z\"}"
+								.formatted(versionId, groupId[0])))
+				.andExpect(status().isBadRequest());
+		// The same lesson to the same group, or the same child, only once.
+		for (String body : new String[] {assignGroupBody(versionId, groupId[0]), assignChildBody(versionId, childId)}) {
+			mockMvc.perform(post("/api/assignments").with(csrf()).session(teacher).contentType(MediaType.APPLICATION_JSON).content(body))
+					.andExpect(status().isCreated());
+			mockMvc.perform(post("/api/assignments").with(csrf()).session(teacher).contentType(MediaType.APPLICATION_JSON).content(body))
+					.andExpect(status().isConflict())
+					.andExpect(jsonPath("$.code").value("ASSIGNMENT_EXISTS"));
+		}
+		// An archived group takes no new lessons.
+		mockMvc.perform(post("/api/groups/" + groupId[0] + "/archive").with(csrf()).session(teacher))
+				.andExpect(status().is2xxSuccessful());
+		mockMvc.perform(post("/api/assignments").with(csrf()).session(teacher).contentType(MediaType.APPLICATION_JSON)
+						.content(assignGroupBody(createPublishedVersion(), groupId[0])))
+				.andExpect(status().isConflict())
+				.andExpect(jsonPath("$.code").value("GROUP_INACTIVE"));
+	}
+
+	@Test
 	void nonTeacherCannotHitAssignmentsEndpoint() throws Exception {
 		UUID versionId = createPublishedVersion();
 

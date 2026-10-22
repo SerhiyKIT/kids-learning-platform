@@ -10,6 +10,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 import ua.kidlearn.groups.Group;
 import ua.kidlearn.groups.GroupMemberRepository;
+import ua.kidlearn.groups.GroupInactiveException;
 import ua.kidlearn.groups.GroupRepository;
 
 @Service
@@ -37,14 +38,30 @@ public class AssignmentService {
 			throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Exactly one of groupId or childId is required");
 		}
 
+		if (request.availableFrom() != null && request.dueAt() != null && request.dueAt().isBefore(request.availableFrom())) {
+			throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "dueAt is before availableFrom");
+		}
+
 		LessonVersion version = lessonVersionRepository.findById(request.lessonVersionId())
 				.filter(LessonVersion::isPublished)
 				.orElseThrow(NotPublishedException::new);
 
+		// Ownership first (404 for someone else's), then the state checks (QA1-018): an archived
+		// group takes no new lessons, and the same version isn't given to the same group or child
+		// twice — a duplicate would keep the lesson visible after «Прибрати».
+		List<LessonAssignment> existing;
 		if (hasGroup) {
-			requireOwnedGroup(teacherId, request.groupId());
+			Group group = requireOwnedGroup(teacherId, request.groupId());
+			if (!group.isActive()) {
+				throw new GroupInactiveException();
+			}
+			existing = lessonAssignmentRepository.findByGroupId(request.groupId());
 		} else {
 			requireChildInTeachersGroup(teacherId, request.childId());
+			existing = lessonAssignmentRepository.findByChildId(request.childId());
+		}
+		if (existing.stream().anyMatch(a -> a.getLessonVersionId().equals(version.getId()))) {
+			throw new AssignmentExistsException();
 		}
 
 		return lessonAssignmentRepository.save(new LessonAssignment(version.getId(), request.groupId(),
@@ -66,11 +83,12 @@ public class AssignmentService {
 		lessonAssignmentRepository.delete(assignment);
 	}
 
-	private void requireOwnedGroup(UUID teacherId, UUID groupId) {
+	private Group requireOwnedGroup(UUID teacherId, UUID groupId) {
 		Group group = groupRepository.findById(groupId).orElseThrow(this::notFound);
 		if (!group.getTeacherId().equals(teacherId)) {
 			throw notFound();
 		}
+		return group;
 	}
 
 	private void requireChildInTeachersGroup(UUID teacherId, UUID childId) {
