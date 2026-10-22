@@ -20,21 +20,26 @@ class SmtpAuthMailSender implements AuthMailSender {
 	@Override
 	public void sendVerification(User user, String rawToken) {
 		String link = appProperties.baseUrl() + "/verify-email?token=" + rawToken;
-		send(user.getEmail(), "Confirm your email", "Verify your email: " + link);
+		send(user.getEmail(), "Підтвердіть пошту — Безпечний Простір",
+				"Вітаємо, " + user.getDisplayName() + "!\n\nЩоб завершити реєстрацію, підтвердіть адресу за посиланням"
+						+ " (діє 24 години):\n" + link + "\n\nЯкщо ви не реєструвалися — просто проігноруйте цей лист.");
 	}
 
 	@Override
 	public void sendPasswordReset(User user, String rawToken) {
 		String link = appProperties.baseUrl() + "/reset-password?token=" + rawToken;
-		send(user.getEmail(), "Reset your password", "Reset your password: " + link);
+		send(user.getEmail(), "Новий пароль — Безпечний Простір",
+				"Вітаємо!\n\nЩоб задати новий пароль, перейдіть за посиланням (діє 1 годину):\n" + link
+						+ "\n\nПісля зміни пароля всі пристрої вийдуть з акаунта. Якщо ви не просили новий пароль —"
+						+ " проігноруйте цей лист, старий пароль діє й далі.");
 	}
 
 	@Override
 	public void sendTeacherInvite(User user, String rawToken) {
 		String link = appProperties.baseUrl() + "/accept-invite?token=" + rawToken;
-		send(user.getEmail(), "You're invited to KidLearn as a teacher",
-				"Hello " + user.getDisplayName() + ",\n\nAn administrator has invited you to KidLearn as a teacher. "
-						+ "Set your password here (the link works once): " + link);
+		send(user.getEmail(), "Запрошення для вчителя — Безпечний Простір",
+				"Вітаємо, " + user.getDisplayName() + "!\n\nАдміністратор запросив вас на платформу «Безпечний Простір»"
+						+ " як вчителя. Створіть пароль за посиланням (працює один раз):\n" + link);
 	}
 
 	@Override
