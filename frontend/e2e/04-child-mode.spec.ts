@@ -14,8 +14,20 @@ test("child mode: join by code → play choice + sorting → celebration → sti
   await page.getByRole("button", { name: "Приєднатися" }).click();
   await expect(page.getByText("Зайчики")).toBeVisible();
 
+  // QA1-023: a phone held — or rotation-locked — in portrait gets «Почнімо!» on the "turn the
+  // device" picture itself, with a hint for the adult; turning the device then shows the shelf.
+  const landscape = page.viewportSize()!;
+  await page.setViewportSize({ width: 390, height: 844 });
   await page.goto(`/play/${parent.childId}`);
-  await page.getByRole("button", { name: "Почнімо!" }).first().click();
+  await expect(page.getByRole("img", { name: "Поверни пристрій горизонтально" })).toBeVisible();
+  await expect(page.getByText("Для дорослого: якщо екран не повертається")).toBeVisible();
+  await page.getByRole("button", { name: "Почнімо!" }).last().click();
+  await expect(page.getByRole("button", { name: "Почнімо!" })).toHaveCount(0);
+  await page.evaluate(async () => {
+    if (document.fullscreenElement) await document.exitFullscreen();
+  });
+  await page.setViewportSize(landscape);
+  await expect(page.getByRole("img", { name: "Поверни пристрій горизонтально" })).toHaveCount(0);
   await expect(page.locator(".kid-shelf a")).toHaveCount(1);
   await expectKidTargets(page);
   await page.locator(".kid-shelf a").first().click();
