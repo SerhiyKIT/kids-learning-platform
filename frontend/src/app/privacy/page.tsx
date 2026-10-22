@@ -134,6 +134,10 @@ export default function PrivacyPage() {
             <Todo>Email / адреса для запитів щодо даних.</Todo>
           </Part>
 
+          <p>
+            Правила користування сервісом — в <Link href="/terms">Умовах використання</Link>.
+          </p>
+
           <Link href="/login" className="text-sm">
             ← До входу
           </Link>

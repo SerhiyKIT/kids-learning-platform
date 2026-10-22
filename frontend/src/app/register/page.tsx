@@ -13,6 +13,7 @@ import { Button } from "@/components/ui/Button";
 import { AuthLayout, Card, CardBody, CardFooter, CardHeader, PageHeading } from "@/components/ui/Card";
 import { Field, PasswordInput, Select, TextInput } from "@/components/ui/Field";
 import { useField } from "@/lib/use-field";
+import { LegalLinks } from "@/components/ui/LegalLinks";
 
 /** The same answer for every sign-up, whether or not the address already has an account (QA1-006). */
 interface RegisterResponse {
@@ -215,6 +216,7 @@ export default function RegisterPage() {
           Реєструючись, ви погоджуєтесь з <Link href="/terms">умовами використання</Link> та{" "}
           <Link href="/privacy">політикою конфіденційності</Link>.
         </p>
+        <LegalLinks />
       </AuthLayout>
     </>
   );

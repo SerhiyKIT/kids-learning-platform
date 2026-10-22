@@ -12,6 +12,7 @@ import { Field, PasswordInput, TextInput } from "@/components/ui/Field";
 import { errorText as apiErrorText, safeNext } from "@/lib/errors";
 import { twoFactorRedirect } from "@/lib/two-factor";
 import { useField } from "@/lib/use-field";
+import { LegalLinks } from "@/components/ui/LegalLinks";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -110,10 +111,8 @@ export default function LoginPage() {
           </CardFooter>
         </Card>
 
-        <p className="text-ink-faint text-[13px] leading-relaxed">
-          Дитячі профілі доступні лише після входу дорослого.{" "}
-          <Link href="/privacy">Політика конфіденційності</Link>
-        </p>
+        <p className="text-ink-faint text-[13px] leading-relaxed">Дитячі профілі доступні лише після входу дорослого.</p>
+        <LegalLinks />
       </AuthLayout>
     </>
   );

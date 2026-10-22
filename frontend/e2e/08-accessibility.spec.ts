@@ -9,6 +9,14 @@ test("accessibility: no serious/critical axe violations on the key adult pages",
   await expectNoSeriousA11yViolations(page);
   await page.goto("/register");
   await expectNoSeriousA11yViolations(page);
+  // QA1-012: sign-up says "you agree to the terms" — the terms exist (a draft for a lawyer).
+  await page.getByRole("link", { name: "умовами використання" }).click();
+  await expect(page).toHaveURL(/\/terms$/);
+  await expect(page.getByRole("heading", { name: "Умови використання", level: 1 })).toBeVisible();
+  await expect(page.getByText("ЧЕРНЕТКА — потребує перевірки юристом")).toBeVisible();
+  await expectNoSeriousA11yViolations(page);
+  await page.getByRole("link", { name: "Політиці конфіденційності" }).click();
+  await expect(page).toHaveURL(/\/privacy$/);
 
   const parent = await parentWithChild(browser, "Ліна");
   await parent.page.goto("/dashboard");
